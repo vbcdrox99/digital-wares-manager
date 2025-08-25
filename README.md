@@ -1,73 +1,69 @@
-# Welcome to your Lovable project
+# Digital Wares Manager
 
-## Project info
+Um sistema para gerenciamento de itens digitais, com controle de estoque, pedidos e envios.
 
-**URL**: https://lovable.dev/projects/39907110-9522-41e3-96a5-a94f3f11d499
+## Configuração do Backend no Supabase
 
-## How can I edit this code?
+### Pré-requisitos
 
-There are several ways of editing your application.
+1. Conta no [Supabase](https://supabase.com/)
+2. Projeto criado no Supabase
 
-**Use Lovable**
+### Passos para Configuração
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/39907110-9522-41e3-96a5-a94f3f11d499) and start prompting.
+1. Acesse o painel de controle do seu projeto no Supabase
+2. Navegue até a seção SQL Editor
+3. Copie e cole o conteúdo do arquivo `supabase/migrations/20231101000000_create_tables.sql`
+4. Execute o script SQL para criar as tabelas necessárias
 
-Changes made via Lovable will be committed automatically to this repo.
+### Estrutura do Banco de Dados
 
-**Use your preferred IDE**
+O banco de dados contém as seguintes tabelas:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **chests**: Armazena os baús (categorias de itens)
+  - `id`: UUID (chave primária)
+  - `name`: TEXT (nome do baú)
+  - `created_at`: TIMESTAMP (data de criação)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **items**: Armazena os itens vinculados aos baús
+  - `id`: UUID (chave primária)
+  - `hero_name`: TEXT (nome do herói)
+  - `rarity`: ENUM (raridade do item)
+  - `price`: NUMERIC (preço do item)
+  - `initial_stock`: INTEGER (estoque inicial)
+  - `chest_id`: UUID (referência ao baú)
+  - `created_at`: TIMESTAMP (data de criação)
 
-Follow these steps:
+## Executando o Projeto
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Instalação
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Desenvolvimento
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Acessando a Aplicação
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Versão com armazenamento local: [http://localhost:8080/](http://localhost:8080/)
+- Versão com Supabase: [http://localhost:8080/supabase](http://localhost:8080/supabase)
 
-**Use GitHub Codespaces**
+## Funcionalidades
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Controle de Estoque
 
-## What technologies are used for this project?
+- Criar baús (categorias)
+- Adicionar itens aos baús
+- Visualizar catálogo de itens por baú
+- Excluir itens e baús
 
-This project is built with:
+### Próximas Implementações
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/39907110-9522-41e3-96a5-a94f3f11d499) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- Gerenciamento de pedidos
+- Fila de envios
+- Relatórios e estatísticas

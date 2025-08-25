@@ -14,7 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chests: {
+        Row: {
+          id: string
+          name: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          created_at?: string
+        }
+      }
+      items: {
+        Row: {
+          id: string
+          hero_name: string
+          rarity: Database['public']['Enums']['rarity']
+          price: number
+          initial_stock: number
+          chest_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          hero_name: string
+          rarity: Database['public']['Enums']['rarity']
+          price: number
+          initial_stock: number
+          chest_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          hero_name?: string
+          rarity?: Database['public']['Enums']['rarity']
+          price?: number
+          initial_stock?: number
+          chest_id?: string
+          created_at?: string
+        }
+      }
+      orders: {
+        Row: {
+          id: string
+          customer_name: string
+          steam_id: string
+          order_type: Database['public']['Enums']['order_type']
+          status: Database['public']['Enums']['order_status']
+          created_at: string
+          sent_at: string | null
+          total_value: number
+        }
+        Insert: {
+          id?: string
+          customer_name: string
+          steam_id: string
+          order_type: Database['public']['Enums']['order_type']
+          status?: Database['public']['Enums']['order_status']
+          created_at?: string
+          sent_at?: string | null
+          total_value: number
+        }
+        Update: {
+          id?: string
+          customer_name?: string
+          steam_id?: string
+          order_type?: Database['public']['Enums']['order_type']
+          status?: Database['public']['Enums']['order_status']
+          created_at?: string
+          sent_at?: string | null
+          total_value?: number
+        }
+      }
+      order_items: {
+        Row: {
+          id: string
+          order_id: string
+          item_id: string
+          quantity: number
+          price: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          item_id: string
+          quantity: number
+          price: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          item_id?: string
+          quantity?: number
+          price?: number
+          created_at?: string
+        }
+      }
+      shipping_queue: {
+        Row: {
+          id: string
+          order_id: string
+          deadline: string
+          status: Database['public']['Enums']['shipping_status']
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          deadline: string
+          status?: Database['public']['Enums']['shipping_status']
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          deadline?: string
+          status?: Database['public']['Enums']['shipping_status']
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +149,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      rarity: 'common' | 'uncommon' | 'rare' | 'legendary' | 'immortal' | 'mythic'
+      order_type: 'sale' | 'giveaway'
+      order_status: 'pending' | 'sent' | 'cancelled'
+      shipping_status: 'awaiting' | 'overdue'
     }
     CompositeTypes: {
       [_ in never]: never
