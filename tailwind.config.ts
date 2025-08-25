@@ -61,7 +61,31 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Gaming Rarities
+				mythic: 'hsl(var(--mythic))',
+				legendary: 'hsl(var(--legendary))',
+				immortal: 'hsl(var(--immortal))',
+				rare: 'hsl(var(--rare))',
+				uncommon: 'hsl(var(--uncommon))',
+				common: 'hsl(var(--common))',
+				// Status Colors
+				success: 'hsl(var(--success))',
+				warning: 'hsl(var(--warning))',
+				pending: 'hsl(var(--pending))',
+				overdue: 'hsl(var(--overdue))'
+			},
+			backgroundImage: {
+				'gradient-gaming': 'var(--gradient-gaming)',
+				'gradient-mythic': 'var(--gradient-mythic)',
+				'gradient-card': 'var(--gradient-card)'
+			},
+			boxShadow: {
+				'glow-mythic': 'var(--glow-mythic)',
+				'glow-primary': 'var(--glow-primary)'
+			},
+			transitionTimingFunction: {
+				'smooth': 'var(--transition-smooth)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
