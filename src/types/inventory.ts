@@ -1,12 +1,14 @@
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary' | 'immortal' | 'mythic';
+export type Rarity = 'comum' | 'persona' | 'arcana' | 'immortal';
 
 export interface Item {
   id: string;
+  name: string;
   heroName: string;
   rarity: Rarity;
   price: number;
   initialStock: number;
   chestId: string;
+  imageUrl?: string;
 }
 
 export interface Chest {
@@ -21,6 +23,7 @@ export type OrderStatus = 'pending' | 'sent' | 'cancelled';
 export interface CartItem {
   itemId: string;
   quantity: number;
+  name: string;
   heroName: string;
   rarity: Rarity;
   price: number;

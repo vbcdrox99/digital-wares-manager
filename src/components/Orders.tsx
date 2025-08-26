@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,17 +6,49 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Plus, X, Check, Ban, Calendar } from 'lucide-react';
-import { Chest, Item, Order, CartItem, OrderType, OrderStatus, Rarity } from '@/types/inventory';
-import { toast } from '@/hooks/use-toast';
+import { ShoppingCart, Plus, X, Check, Ban, Calendar, Clock } from 'lucide-react';
+import { Chest, Item, CartItem, Rarity } from '@/types/inventory';
+import { useToast } from '@/hooks/use-toast';
+import { createOrder, getOrdersWithItems, updateOrderStatus, deleteOrder, calculateTimeRemaining } from '@/integrations/supabase/services/orderService';
+import { chestsService } from '@/integrations/supabase/services/chests';
+import { itemsService } from '@/integrations/supabase/services/items';
+import { customersService, Customer } from '@/integrations/supabase/services/customers';
 
-interface OrdersProps {
-  chests: Chest[];
-  items: Item[];
-  orders: Order[];
-  onCreateOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
-  onUpdateOrder: (orderId: string, updates: Partial<Order>) => void;
+interface OrdersProps {}
+
+interface OrderWithItems {
+  id: string;
+  customer_name: string;
+  steam_id: string;
+  order_type: 'sale' | 'giveaway';
+  status: 'pending' | 'sent' | 'cancelled';
+  total_value: number;
+  created_at: string;
+  sent_at?: string;
+  deadline?: string;
+  order_items: {
+    id: string;
+    quantity: number;
+    unit_price: number;
+    items: {
+      id: string;
+      hero_name: string;
+      rarity: string;
+      price: number;
+      chest_id: string;
+      chests: {
+        name: string;
+      };
+    };
+  }[];
 }
+
+interface TimeOption {
+  label: string;
+  days: number;
+}
+
+type OrderStatus = 'pending' | 'sent' | 'cancelled';
 
 const getRarityColor = (rarity: Rarity) => {
   const colors = {
@@ -39,20 +71,162 @@ const getStatusColor = (status: OrderStatus) => {
   return colors[status];
 };
 
-const Orders: React.FC<OrdersProps> = ({
-  chests,
-  items,
-  orders,
-  onCreateOrder,
-  onUpdateOrder
-}) => {
+const Orders: React.FC<OrdersProps> = () => {
   const [customerName, setCustomerName] = useState('');
   const [steamId, setSteamId] = useState('');
-  const [orderType, setOrderType] = useState<OrderType>('sale');
+  const [orderType, setOrderType] = useState<'sale' | 'giveaway'>('sale');
   const [selectedChest, setSelectedChest] = useState('');
   const [selectedItem, setSelectedItem] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [selectedTime, setSelectedTime] = useState<number>(5);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingItem, setPendingItem] = useState<CartItem | null>(null);
+  const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [chests, setChests] = useState<Chest[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Estados para autocomplete de clientes
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerSuggestions, setCustomerSuggestions] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [showSteamSuggestions, setShowSteamSuggestions] = useState(false);
+  
+  const timeOptions: TimeOption[] = [
+    { label: '5 dias', days: 5 },
+    { label: '10 dias', days: 10 },
+    { label: '15 dias', days: 15 },
+    { label: '30 dias', days: 30 }
+  ];
+
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadOrders, 60000); // Atualiza a cada minuto para o cronômetro
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [chestsData, itemsData, ordersData, customersData] = await Promise.all([
+        chestsService.getAll(),
+        itemsService.getAll(),
+        getOrdersWithItems(),
+        customersService.getAll()
+      ]);
+      setChests(chestsData);
+      setItems(itemsData);
+      setOrders(ordersData);
+      setCustomers(customersData);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast({ title: 'Erro ao carregar dados', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadOrders = async () => {
+    try {
+      const ordersData = await getOrdersWithItems();
+      setOrders(ordersData);
+    } catch (error) {
+      console.error('Erro ao carregar pedidos:', error);
+    }
+  };
+
+  // Funções de autocomplete para clientes
+  const searchCustomers = (searchTerm: string, searchBy: 'name' | 'steam_id') => {
+    if (!searchTerm.trim()) {
+      setCustomerSuggestions([]);
+      return;
+    }
+
+    const filtered = customers.filter(customer => {
+      if (searchBy === 'name') {
+        return customer.name.toLowerCase().includes(searchTerm.toLowerCase());
+      } else {
+        return customer.steam_id.includes(searchTerm);
+      }
+    });
+
+    setCustomerSuggestions(filtered.slice(0, 5)); // Limita a 5 sugestões
+  };
+
+  const handleCustomerNameChange = (value: string) => {
+    setCustomerName(value);
+    setSelectedCustomer(null);
+    searchCustomers(value, 'name');
+    setShowCustomerSuggestions(true);
+    setShowSteamSuggestions(false);
+  };
+
+  const handleSteamIdChange = (value: string) => {
+    setSteamId(value);
+    setSelectedCustomer(null);
+    searchCustomers(value, 'steam_id');
+    setShowSteamSuggestions(true);
+    setShowCustomerSuggestions(false);
+  };
+
+  const selectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setCustomerName(customer.name);
+    setSteamId(customer.steam_id);
+    setShowCustomerSuggestions(false);
+    setShowSteamSuggestions(false);
+  };
+
+  const clearCustomerSelection = () => {
+    setSelectedCustomer(null);
+    setCustomerName('');
+    setSteamId('');
+    setCustomerSuggestions([]);
+    setShowCustomerSuggestions(false);
+    setShowSteamSuggestions(false);
+  };
+
+  const createNewCustomer = async (name: string, steamId: string): Promise<Customer | null> => {
+    try {
+      const newCustomer = await customersService.create({ name, steam_id: steamId });
+      // Recarregar lista de clientes
+      const updatedCustomers = await customersService.getAll();
+      setCustomers(updatedCustomers);
+      return newCustomer;
+    } catch (error) {
+      console.error('Erro ao criar cliente:', error);
+      if (error instanceof Error && error.message.includes('duplicate')) {
+        toast({ title: 'Steam ID já cadastrado', variant: 'destructive' });
+      } else {
+        toast({ title: 'Erro ao criar cliente', variant: 'destructive' });
+      }
+      return null;
+    }
+  };
+
+  const getOrCreateCustomer = async (): Promise<Customer | null> => {
+    if (selectedCustomer) {
+      return selectedCustomer;
+    }
+
+    if (!customerName.trim() || !steamId.trim()) {
+      toast({ title: 'Nome e Steam ID são obrigatórios', variant: 'destructive' });
+      return null;
+    }
+
+    // Verificar se já existe um cliente com esse Steam ID
+    const existingCustomer = customers.find(c => c.steam_id === steamId);
+    if (existingCustomer) {
+      return existingCustomer;
+    }
+
+    // Criar novo cliente
+    return await createNewCustomer(customerName.trim(), steamId.trim());
+  };
 
   const calculateAvailableStock = (item: Item) => {
     const usedInOrders = orders
@@ -66,11 +240,11 @@ const Orders: React.FC<OrdersProps> = ({
       .filter(cartItem => cartItem.itemId === item.id)
       .reduce((total, cartItem) => total + cartItem.quantity, 0);
     
-    return Math.max(0, item.initialStock - usedInOrders - usedInCart);
+    return Math.max(0, item.initial_stock - usedInOrders - usedInCart);
   };
 
   const availableItems = items.filter(item => 
-    item.chestId === selectedChest && calculateAvailableStock(item) > 0
+    item.chest_id === selectedChest && calculateAvailableStock(item) > 0
   );
 
   const selectedItemData = items.find(item => item.id === selectedItem);
@@ -82,22 +256,75 @@ const Orders: React.FC<OrdersProps> = ({
       return;
     }
 
-    const chest = chests.find(c => c.id === selectedItemData.chestId);
+    const chest = chests.find(c => c.id === selectedItemData.chest_id);
     const cartItem: CartItem = {
       itemId: selectedItem,
       quantity,
-      heroName: selectedItemData.heroName,
+      name: selectedItemData.name,
+      heroName: selectedItemData.hero_name,
       rarity: selectedItemData.rarity,
       price: selectedItemData.price,
       chestName: chest?.name || ''
     };
 
-    setCart(prev => [...prev, cartItem]);
-    setSelectedChest('');
-    setSelectedItem('');
-    setQuantity(1);
-    toast({ title: 'Item adicionado ao carrinho!' });
+    setPendingItem(cartItem);
+    setShowConfirmation(true);
   };
+
+  const confirmOrder = async () => {
+    if (!pendingItem) return;
+    
+    try {
+      setLoading(true);
+      
+      // Obter ou criar cliente
+      const customer = await getOrCreateCustomer();
+      if (!customer) {
+        return; // Erro já foi mostrado na função getOrCreateCustomer
+      }
+      
+      await createOrder({
+        customer_id: customer.id,
+        customer_name: customer.name,
+        steam_id: customer.steam_id,
+        order_type: orderType,
+        items: [{
+          item_id: pendingItem.itemId,
+          quantity: pendingItem.quantity,
+          price: pendingItem.price
+        }],
+        delivery_days: selectedTime
+      });
+      
+      // Reset form
+       clearCustomerSelection();
+       setOrderType('sale');
+       setSelectedTime(5);
+       setSelectedChest('');
+       setSelectedItem(null);
+       setQuantity(1);
+       setPendingItem(null);
+       setShowConfirmation(false);
+      
+      // Reload orders
+      await loadOrders();
+      
+      toast({ title: 'Pedido criado com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao criar pedido:', error);
+      toast({ title: 'Erro ao criar pedido', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelOrderConfirmation = () => {
+     setPendingItem(null);
+     setShowConfirmation(false);
+     setSelectedChest('');
+     setSelectedItem(null);
+     setQuantity(1);
+   };
 
   const removeFromCart = (index: number) => {
     setCart(prev => prev.filter((_, i) => i !== index));
@@ -108,43 +335,100 @@ const Orders: React.FC<OrdersProps> = ({
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const finishOrder = () => {
-    if (!customerName.trim() || !steamId.trim() || cart.length === 0) {
-      toast({ title: 'Preencha todos os campos e adicione itens ao carrinho', variant: 'destructive' });
+  const handleCreateOrder = async () => {
+    if (cart.length === 0) {
+      toast({ title: 'Adicione itens ao carrinho', variant: 'destructive' });
       return;
     }
 
-    const order: Omit<Order, 'id' | 'createdAt'> = {
-      customerName: customerName.trim(),
-      steamId: steamId.trim(),
-      orderType,
-      items: [...cart],
-      status: 'pending',
-      totalValue: calculateTotal()
-    };
-
-    onCreateOrder(order);
-    
-    // Reset form
-    setCustomerName('');
-    setSteamId('');
-    setOrderType('sale');
-    setCart([]);
-    
-    toast({ title: 'Pedido registrado com sucesso!' });
+    try {
+      setLoading(true);
+      
+      // Obter ou criar cliente
+      const customer = await getOrCreateCustomer();
+      if (!customer) {
+        return; // Erro já foi mostrado na função getOrCreateCustomer
+      }
+      
+      await createOrder({
+        customer_id: customer.id,
+        customer_name: customer.name,
+        steam_id: customer.steam_id,
+        order_type: orderType,
+        items: cart.map(item => ({
+          item_id: item.itemId,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        delivery_days: selectedTime
+      });
+      
+      // Reset form
+      clearCustomerSelection();
+      setOrderType('sale');
+      setSelectedTime(5);
+      setCart([]);
+      
+      // Reload orders
+      await loadOrders();
+      
+      toast({ title: 'Pedido registrado com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao criar pedido:', error);
+      toast({ title: 'Erro ao registrar pedido', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const markAsSent = (orderId: string) => {
-    onUpdateOrder(orderId, { 
-      status: 'sent', 
-      sentAt: new Date().toISOString() 
-    });
-    toast({ title: 'Pedido marcado como enviado!' });
+  const markAsSent = async (orderId: string) => {
+    try {
+      await updateOrderStatus(orderId, 'sent');
+      await loadOrders();
+      toast({ title: 'Pedido marcado como enviado!' });
+    } catch (error) {
+      console.error('Erro ao atualizar pedido:', error);
+      toast({ title: 'Erro ao atualizar pedido', variant: 'destructive' });
+    }
   };
 
-  const cancelOrder = (orderId: string) => {
-    onUpdateOrder(orderId, { status: 'cancelled' });
-    toast({ title: 'Pedido cancelado!' });
+  const cancelOrder = async (orderId: string) => {
+    try {
+      await updateOrderStatus(orderId, 'cancelled');
+      await loadOrders();
+      toast({ title: 'Pedido cancelado!' });
+    } catch (error) {
+      console.error('Erro ao cancelar pedido:', error);
+      toast({ title: 'Erro ao cancelar pedido', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    try {
+      await deleteOrder(orderId);
+      await loadOrders();
+      toast({ title: 'Pedido excluído com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao excluir pedido:', error);
+      toast({ title: 'Erro ao excluir pedido', variant: 'destructive' });
+    }
+  };
+
+  const formatTimeRemaining = (deadline: string) => {
+    const timeRemaining = calculateTimeRemaining(deadline);
+    
+    if (timeRemaining.expired) {
+      return <span className="text-red-500 font-semibold">Expirado</span>;
+    }
+    
+    return (
+      <div className="flex items-center gap-1 text-sm">
+        <Clock className="h-4 w-4" />
+        <span className="font-mono">
+          {timeRemaining.days}d {timeRemaining.hours}h {timeRemaining.minutes}m
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -160,38 +444,113 @@ const Orders: React.FC<OrdersProps> = ({
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Customer Data */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="customer-name">Nome do Cliente</Label>
-              <Input
-                id="customer-name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Ex: João Silva"
-                className="bg-secondary/50"
-              />
-            </div>
+          <div className="space-y-4">
+            {selectedCustomer && (
+              <div className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div>
+                    <div className="font-medium text-green-700 dark:text-green-300">Cliente Selecionado</div>
+                    <div className="text-sm text-green-600 dark:text-green-400">{selectedCustomer.name} - {selectedCustomer.steam_id}</div>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearCustomerSelection}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             
-            <div>
-              <Label htmlFor="steam-id">Steam ID</Label>
-              <Input
-                id="steam-id"
-                value={steamId}
-                onChange={(e) => setSteamId(e.target.value)}
-                placeholder="Ex: STEAM_0:1:12345678"
-                className="bg-secondary/50"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Label htmlFor="customer-name">Nome do Cliente</Label>
+                <Input
+                  id="customer-name"
+                  value={customerName}
+                  onChange={(e) => handleCustomerNameChange(e.target.value)}
+                  placeholder={selectedCustomer ? "Cliente selecionado" : "Digite o nome do cliente..."}
+                  className={`bg-secondary/50 ${selectedCustomer ? 'border-green-500/50' : ''}`}
+                  onFocus={() => customerName && setShowCustomerSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
+                  disabled={!!selectedCustomer}
+                />
+                {showCustomerSuggestions && customerSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    {customerSuggestions.map((customer) => (
+                      <div
+                        key={customer.id}
+                        className="px-3 py-2 hover:bg-secondary cursor-pointer border-b border-border/50 last:border-b-0"
+                        onClick={() => selectCustomer(customer)}
+                      >
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-sm text-muted-foreground">{customer.steam_id}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="relative">
+                <Label htmlFor="steam-id">Steam ID</Label>
+                <Input
+                  id="steam-id"
+                  value={steamId}
+                  onChange={(e) => handleSteamIdChange(e.target.value)}
+                  placeholder={selectedCustomer ? "Cliente selecionado" : "Digite o Steam ID..."}
+                  className={`bg-secondary/50 ${selectedCustomer ? 'border-green-500/50' : ''}`}
+                  onFocus={() => steamId && setShowSteamSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSteamSuggestions(false), 200)}
+                  disabled={!!selectedCustomer}
+                />
+                {showSteamSuggestions && customerSuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    {customerSuggestions.map((customer) => (
+                      <div
+                        key={customer.id}
+                        className="px-3 py-2 hover:bg-secondary cursor-pointer border-b border-border/50 last:border-b-0"
+                        onClick={() => selectCustomer(customer)}
+                      >
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-sm text-muted-foreground">{customer.steam_id}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             
             <div>
               <Label>Tipo de Pedido</Label>
-              <Select value={orderType} onValueChange={(value: OrderType) => setOrderType(value)}>
+              <Select value={orderType} onValueChange={(value: 'sale' | 'giveaway') => setOrderType(value)}>
                 <SelectTrigger className="bg-secondary/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sale">Venda</SelectItem>
                   <SelectItem value="giveaway">Sorteio</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label>Tempo de Entrega</Label>
+              <Select value={selectedTime.toString()} onValueChange={(value) => setSelectedTime(Number(value))}>
+                <SelectTrigger className="bg-secondary/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((option) => (
+                    <SelectItem key={option.days} value={option.days.toString()}>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        {option.label}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -235,7 +594,7 @@ const Orders: React.FC<OrdersProps> = ({
                           <Badge className={getRarityColor(item.rarity)}>
                             {item.rarity}
                           </Badge>
-                          {item.heroName} - R$ {item.price.toFixed(2)} ({calculateAvailableStock(item)} disponível)
+                          {item.name} ({item.hero_name}) - R$ {item.price.toFixed(2)} ({calculateAvailableStock(item)} disponível)
                         </div>
                       </SelectItem>
                     ))}
@@ -273,36 +632,41 @@ const Orders: React.FC<OrdersProps> = ({
               </div>
             </div>
 
-            {/* Cart Display */}
-            {cart.length > 0 && (
+            {/* Confirmation Dialog */}
+            {showConfirmation && pendingItem && (
               <div className="mt-4">
-                <h5 className="font-medium mb-2">Carrinho ({cart.length} itens)</h5>
-                <div className="space-y-2">
-                  {cart.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between bg-secondary/30 p-3 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Badge className={getRarityColor(item.rarity)}>
-                          {item.rarity}
-                        </Badge>
-                        <span className="font-medium">{item.heroName}</span>
-                        <span className="text-muted-foreground">({item.chestName})</span>
-                        <span>x{item.quantity}</span>
-                        <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => removeFromCart(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50">
+                  <h5 className="font-medium mb-3 text-center">Deseja finalizar esse pedido?</h5>
                   
-                  <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                    <span className="font-semibold">Total: R$ {calculateTotal().toFixed(2)}</span>
-                    <Button onClick={finishOrder} className="bg-gradient-gaming">
-                      Finalizar Pedido
+                  <div className="bg-secondary/50 p-3 rounded-lg mb-4">
+                    <div className="flex items-center gap-3">
+                      <Badge className={getRarityColor(pendingItem.rarity)}>
+                        {pendingItem.rarity}
+                      </Badge>
+                      <span className="font-medium">{pendingItem.name}</span>
+                      <span className="text-muted-foreground">({pendingItem.hero_name})</span>
+                      <span className="text-muted-foreground">({pendingItem.chestName})</span>
+                      <span>x{pendingItem.quantity}</span>
+                      <span className="font-medium">R$ {(pendingItem.price * pendingItem.quantity).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3 justify-center">
+                    <Button 
+                      onClick={cancelOrderConfirmation}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={confirmOrder}
+                      className="bg-gradient-gaming flex-1"
+                      disabled={loading}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      {loading ? 'Finalizando...' : 'Confirmar'}
                     </Button>
                   </div>
                 </div>
@@ -312,110 +676,7 @@ const Orders: React.FC<OrdersProps> = ({
         </CardContent>
       </Card>
 
-      {/* Order History */}
-      <Card className="bg-gradient-card border-border/50">
-        <CardHeader>
-          <CardTitle>Histórico de Pedidos</CardTitle>
-          <CardDescription>Todos os pedidos registrados (mais novos primeiro)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-border/50 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/30">
-                  <TableHead>Itens do Pedido</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Data do Pedido</TableHead>
-                  <TableHead>Data de Envio</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  .map((order) => (
-                    <TableRow key={order.id} className="hover:bg-secondary/20">
-                      <TableCell>
-                        <div className="space-y-1">
-                          {order.items.map((item, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-sm">
-                              <Badge className={getRarityColor(item.rarity)}>
-                                {item.rarity}
-                              </Badge>
-                              {item.heroName} x{item.quantity}
-                            </div>
-                          ))}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{order.customerName}</div>
-                          <div className="text-sm text-muted-foreground">{order.steamId}</div>
-                          <Badge variant="outline" className="mt-1">
-                            {order.orderType === 'sale' ? 'Venda' : 'Sorteio'}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {new Date(order.createdAt).toLocaleDateString('pt-BR')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {order.sentAt ? (
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {new Date(order.sentAt).toLocaleDateString('pt-BR')}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(order.status)}>
-                          {order.status === 'pending' ? 'Pendente' : 
-                           order.status === 'sent' ? 'Enviado' : 'Cancelado'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {order.status === 'pending' && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => markAsSent(order.id)}
-                              className="bg-success text-success-foreground"
-                            >
-                              <Check className="h-4 w-4 mr-1" />
-                              Enviado
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => cancelOrder(order.id)}
-                            >
-                              <Ban className="h-4 w-4 mr-1" />
-                              Cancelar
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                
-                {orders.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
-                      Nenhum pedido registrado ainda
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+
     </div>
   );
 };
