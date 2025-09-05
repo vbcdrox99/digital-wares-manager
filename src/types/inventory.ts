@@ -1,4 +1,4 @@
-export type Rarity = 'comum' | 'persona' | 'arcana' | 'immortal';
+export type Rarity = 'comum' | 'persona' | 'arcana' | 'immortal' | 'raro' | 'ultra raro';
 
 export interface Item {
   id: string;
@@ -7,6 +7,7 @@ export interface Item {
   rarity: Rarity;
   price: number;
   initialStock: number;
+  current_stock?: number;
   chestId: string;
   imageUrl?: string;
 }

@@ -10,15 +10,18 @@ import { Plus, Minus, Trash2, Package, Loader2, Users } from 'lucide-react';
 import { Rarity } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
 import { supabaseServices, Chest, Item, Customer } from '@/integrations/supabase/services';
+import { supabase } from '@/integrations/supabase/client';
 
-const rarities: Rarity[] = ['comum', 'persona', 'arcana', 'immortal'];
+const rarities: Rarity[] = ['comum', 'persona', 'arcana', 'immortal', 'raro', 'ultra raro'];
 
 const getRarityColor = (rarity: Rarity) => {
   const colors = {
     comum: 'bg-common/20 text-common border-common/30',
     persona: 'bg-uncommon/20 text-uncommon border-uncommon/30',
     arcana: 'bg-rare/20 text-rare border-rare/30',
-    immortal: 'bg-immortal/20 text-immortal border-immortal/30'
+    immortal: 'bg-immortal/20 text-immortal border-immortal/30',
+    raro: 'bg-purple-500/20 text-purple-500 border-purple-500/30',
+    'ultra raro': 'bg-orange-500/20 text-orange-500 border-orange-500/30'
   };
   return colors[rarity];
 };
@@ -58,9 +61,10 @@ const SupabaseStockControl: React.FC = () => {
     steam_id: ''
   });
   
-  // Estados para controle de preços e descontos
+  // Estados para controle de preços, descontos e estoque
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
   const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
+  const [itemStocks, setItemStocks] = useState<Record<string, number>>({});
 
   // Carregar baús e clientes ao iniciar
   useEffect(() => {
@@ -182,7 +186,7 @@ const SupabaseStockControl: React.FC = () => {
   };
 
   const handleAddItem = async () => {
-    if (!selectedChestForAdd || !newItem.name.trim() || !newItem.hero_name.trim() || newItem.price <= 0 || newItem.initial_stock <= 0) {
+    if (!selectedChestForAdd || !newItem.name.trim() || !newItem.hero_name.trim() || newItem.price <= 0 || newItem.initial_stock < 0) {
       toast({ title: 'Preencha todos os campos obrigatórios corretamente', variant: 'destructive' });
       return;
     }
@@ -222,24 +226,70 @@ const SupabaseStockControl: React.FC = () => {
   };
 
   const handleDeleteChest = async (chestId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este baú? Todos os itens serão removidos.')) {
+    console.log('handleDeleteChest chamado com ID:', chestId);
+    
+    if (!confirm('Tem certeza que deseja excluir este baú? Todos os itens e pedidos relacionados serão removidos permanentemente.')) {
+      console.log('Exclusão cancelada pelo usuário');
       return;
     }
 
+    console.log('Usuário confirmou a exclusão, iniciando processo...');
+    
     try {
       setLoading(prev => ({ ...prev, deleteChest: true }));
-      await supabaseServices.chests.remove(chestId);
-      toast({ title: 'Baú removido com sucesso!' });
+      
+      // Primeiro, buscar todos os itens do baú
+      console.log('Buscando itens do baú...');
+      const { data: items, error: itemsError } = await supabase
+        .from('items')
+        .select('id')
+        .eq('chest_id', chestId);
+      
+      if (itemsError) {
+        throw itemsError;
+      }
+      
+      console.log('Itens encontrados:', items?.length || 0);
+      
+      // Se existem itens, excluir order_items relacionados primeiro
+      if (items && items.length > 0) {
+        const itemIds = items.map(item => item.id);
+        console.log('Excluindo order_items relacionados...');
+        
+        const { error: orderItemsError } = await supabase
+          .from('order_items')
+          .delete()
+          .in('item_id', itemIds);
+        
+        if (orderItemsError) {
+          throw orderItemsError;
+        }
+        
+        console.log('Order_items excluídos com sucesso');
+      }
+      
+      // Agora excluir o baú (que excluirá os itens em cascata)
+      console.log('Excluindo baú...');
+      const result = await supabaseServices.chests.remove(chestId);
+      console.log('Resultado da exclusão:', result);
+      
+      toast({ title: 'Baú e todos os dados relacionados removidos com sucesso!' });
       
       // Se o baú removido for o que estamos visualizando, limpar seleção
       if (chestId === selectedChestForView) {
         setSelectedChestForView('');
       }
       
+      console.log('Recarregando lista de baús...');
       await loadChests();
+      console.log('Lista de baús recarregada com sucesso');
     } catch (error) {
       console.error(`Erro ao remover baú ${chestId}:`, error);
-      toast({ title: 'Erro ao remover baú', variant: 'destructive' });
+      toast({ 
+        title: 'Erro ao remover baú', 
+        description: 'Verifique se não há pedidos pendentes relacionados a este baú.',
+        variant: 'destructive' 
+      });
     } finally {
       setLoading(prev => ({ ...prev, deleteChest: false }));
     }
@@ -307,6 +357,39 @@ const SupabaseStockControl: React.FC = () => {
       const newPrice = Math.max(0, currentPrice + change);
       return { ...prev, [itemId]: newPrice };
     });
+  };
+
+  const handleStockChange = async (itemId: string, change: number) => {
+    try {
+      const item = items.find(i => i.id === itemId);
+      if (!item) return;
+
+      const currentStock = itemStocks[itemId] ?? item.current_stock ?? item.initial_stock ?? 0;
+      const newStock = Math.max(0, currentStock + change);
+
+      // Atualizar no banco de dados
+      await supabaseServices.items.update(itemId, { current_stock: newStock });
+
+      // Atualizar estado local
+      setItemStocks(prev => ({ ...prev, [itemId]: newStock }));
+
+      // Atualizar a lista de itens para refletir a mudança
+      setItems(prev => prev.map(i => 
+        i.id === itemId ? { ...i, current_stock: newStock } : i
+      ));
+
+      toast({
+        title: "Estoque atualizado",
+        description: `Estoque do item alterado para ${newStock}`,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar estoque:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o estoque",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDiscountChange = (itemId: string, discount: number) => {
@@ -660,7 +743,29 @@ const SupabaseStockControl: React.FC = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{item.initial_stock}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStockChange(item.id, -1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="min-w-[60px] text-center font-medium">
+                            {itemStocks[item.id] ?? item.current_stock ?? item.initial_stock}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStockChange(item.id, 1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button 
                           variant="destructive" 

@@ -98,7 +98,7 @@ const Orders: React.FC<OrdersProps> = () => {
     { label: '5 dias', days: 5 },
     { label: '10 dias', days: 10 },
     { label: '15 dias', days: 15 },
-    { label: '30 dias', days: 30 }
+    { label: '31 dias', days: 31 }
   ];
 
   const { toast } = useToast();
@@ -229,10 +229,13 @@ const Orders: React.FC<OrdersProps> = () => {
   };
 
   const calculateAvailableStock = (item: Item) => {
+    // Usar current_stock se disponível, senão usar initial_stock
+    const currentStock = item.current_stock ?? item.initial_stock ?? 0;
+    
     const usedInOrders = orders
       .filter(order => order.status === 'pending')
       .reduce((total, order) => {
-        const orderItem = order.items.find(oi => oi.itemId === item.id);
+        const orderItem = order.order_items?.find(oi => oi.items.id === item.id);
         return total + (orderItem ? orderItem.quantity : 0);
       }, 0);
     
@@ -240,7 +243,7 @@ const Orders: React.FC<OrdersProps> = () => {
       .filter(cartItem => cartItem.itemId === item.id)
       .reduce((total, cartItem) => total + cartItem.quantity, 0);
     
-    return Math.max(0, item.initial_stock - usedInOrders - usedInCart);
+    return Math.max(0, currentStock - usedInOrders - usedInCart);
   };
 
   const availableItems = items.filter(item => 
@@ -253,6 +256,17 @@ const Orders: React.FC<OrdersProps> = () => {
   const addToCart = () => {
     if (!selectedItem || !selectedItemData || quantity <= 0 || quantity > maxQuantity) {
       toast({ title: 'Selecione um item válido e quantidade', variant: 'destructive' });
+      return;
+    }
+
+    // Verificar estoque disponível
+    const currentStock = selectedItemData.current_stock ?? selectedItemData.initial_stock ?? 0;
+    if (quantity > currentStock) {
+      toast({ 
+        title: 'Estoque insuficiente', 
+        description: `Apenas ${currentStock} unidades disponíveis em estoque.`,
+        variant: 'destructive' 
+      });
       return;
     }
 
@@ -295,6 +309,22 @@ const Orders: React.FC<OrdersProps> = () => {
         }],
         delivery_days: selectedTime
       });
+      
+      // Atualizar estoque do item
+      const selectedItemData = items.find(item => item.id === pendingItem.itemId);
+      if (selectedItemData) {
+        const currentStock = selectedItemData.current_stock ?? selectedItemData.initial_stock ?? 0;
+        const newStock = currentStock - pendingItem.quantity;
+        
+        await itemsService.update(pendingItem.itemId, { current_stock: newStock });
+        
+        // Atualizar estado local dos itens
+        setItems(prev => prev.map(item => 
+          item.id === pendingItem.itemId 
+            ? { ...item, current_stock: newStock } 
+            : item
+        ));
+      }
       
       // Reset form
        clearCustomerSelection();
