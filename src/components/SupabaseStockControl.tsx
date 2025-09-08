@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Minus, Trash2, Package, Loader2, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus, Minus, Trash2, Package, Loader2, Users, Edit } from 'lucide-react';
 import { Rarity } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
 import { supabaseServices, Chest, Item, Customer } from '@/integrations/supabase/services';
@@ -41,6 +42,7 @@ const SupabaseStockControl: React.FC = () => {
     addItem: false,
     deleteChest: false,
     deleteItem: false,
+    editItem: false,
     createCustomer: false
   });
 
@@ -65,6 +67,27 @@ const SupabaseStockControl: React.FC = () => {
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
   const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
   const [itemStocks, setItemStocks] = useState<Record<string, number>>({});
+  
+  // Estados para modal de edição
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    hero_name: '',
+    rarity: 'comum' as Rarity,
+    price: 0,
+    initial_stock: 0,
+    current_stock: 0,
+    image_url: ''
+  });
+
+  // Estados para modal de confirmação de exclusão
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [chestToDelete, setChestToDelete] = useState<string | null>(null);
+
+  // Estado para filtro de busca
+  const [searchFilter, setSearchFilter] = useState('');
 
   // Carregar baús e clientes ao iniciar
   useEffect(() => {
@@ -200,6 +223,7 @@ const SupabaseStockControl: React.FC = () => {
         rarity: newItem.rarity,
         price: newItem.price,
         initial_stock: newItem.initial_stock,
+        current_stock: newItem.initial_stock,
         chest_id: selectedChestForAdd,
         image_url: newItem.image_url.trim() || null
       };
@@ -295,24 +319,79 @@ const SupabaseStockControl: React.FC = () => {
     }
   };
 
-  const handleDeleteItem = async (itemId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este item?')) {
-      return;
-    }
+  const handleDeleteItem = (itemId: string) => {
+    setItemToDelete(itemId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteItem = async () => {
+    if (!itemToDelete) return;
 
     try {
       setLoading(prev => ({ ...prev, deleteItem: true }));
-      await supabaseServices.items.remove(itemId);
+      await supabaseServices.items.remove(itemToDelete);
       toast({ title: 'Item removido com sucesso!' });
       
       if (selectedChestForView) {
         await loadItemsByChestId(selectedChestForView);
       }
     } catch (error) {
-      console.error(`Erro ao remover item ${itemId}:`, error);
+      console.error(`Erro ao remover item ${itemToDelete}:`, error);
       toast({ title: 'Erro ao remover item', variant: 'destructive' });
     } finally {
       setLoading(prev => ({ ...prev, deleteItem: false }));
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+    }
+  };
+
+  const cancelDeleteItem = () => {
+    setIsDeleteModalOpen(false);
+    setItemToDelete(null);
+  };
+
+  const handleEditItem = (item: Item) => {
+    setEditingItem(item);
+    setEditForm({
+      name: item.name,
+      hero_name: item.hero_name,
+      rarity: item.rarity,
+      price: item.price,
+      initial_stock: item.initial_stock,
+      current_stock: item.current_stock || item.initial_stock,
+      image_url: item.image_url || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+
+    try {
+      setLoading(prev => ({ ...prev, editItem: true }));
+      
+      await supabaseServices.items.update(editingItem.id, {
+        name: editForm.name,
+        hero_name: editForm.hero_name,
+        rarity: editForm.rarity,
+        price: editForm.price,
+        initial_stock: editForm.initial_stock,
+        current_stock: editForm.current_stock,
+        image_url: editForm.image_url
+      });
+      
+      toast({ title: 'Item atualizado com sucesso!' });
+      setIsEditModalOpen(false);
+      setEditingItem(null);
+      
+      if (selectedChestForView) {
+        await loadItemsByChestId(selectedChestForView);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar item:', error);
+      toast({ title: 'Erro ao atualizar item', variant: 'destructive' });
+    } finally {
+      setLoading(prev => ({ ...prev, editItem: false }));
     }
   };
 
@@ -673,12 +752,26 @@ const SupabaseStockControl: React.FC = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : viewingChest ? (
-            items.length > 0 ? (
+            <>
+              {/* Caixa de busca */}
+              <div className="mb-4">
+                <Input
+                  placeholder="Buscar por nome do herói ou nome do item..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  className="max-w-md"
+                />
+              </div>
+              
+              {items.filter(item => 
+                item.hero_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                item.name.toLowerCase().includes(searchFilter.toLowerCase())
+              ).length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome do Item</TableHead>
                     <TableHead>Herói</TableHead>
+                    <TableHead>Nome do Item</TableHead>
                     <TableHead>Raridade</TableHead>
                     <TableHead>Preço</TableHead>
                     <TableHead>Estoque</TableHead>
@@ -686,10 +779,13 @@ const SupabaseStockControl: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
+                  {items.filter(item => 
+                    item.hero_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+                    item.name.toLowerCase().includes(searchFilter.toLowerCase())
+                  ).map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.hero_name}</TableCell>
+                      <TableCell className="font-medium">{item.hero_name}</TableCell>
+                      <TableCell>{item.name}</TableCell>
                       <TableCell>
                         <Badge className={getRarityColor(item.rarity as Rarity)}>
                           {item.rarity}
@@ -767,14 +863,24 @@ const SupabaseStockControl: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => handleDeleteItem(item.id)}
-                          disabled={loading.deleteItem}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2 justify-end">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditItem(item)}
+                            disabled={loading.editItem}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleDeleteItem(item.id)}
+                            disabled={loading.deleteItem}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -782,9 +888,13 @@ const SupabaseStockControl: React.FC = () => {
               </Table>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhum item encontrado neste baú.
+                {searchFilter ? 
+                  `Nenhum item encontrado para "${searchFilter}".` : 
+                  'Nenhum item encontrado neste baú.'
+                }
               </div>
-            )
+            )}
+            </>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               Selecione um baú para visualizar seus itens.
@@ -792,6 +902,169 @@ const SupabaseStockControl: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Edição */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Item</DialogTitle>
+            <DialogDescription>
+              Faça as alterações necessárias no item selecionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-name" className="text-right">
+                Nome do Item
+              </Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-hero" className="text-right">
+                Herói
+              </Label>
+              <Input
+                id="edit-hero"
+                value={editForm.hero_name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, hero_name: e.target.value }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-rarity" className="text-right">
+                Raridade
+              </Label>
+              <Select
+                value={editForm.rarity}
+                onValueChange={(value: Rarity) => setEditForm(prev => ({ ...prev, rarity: value }))}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {rarities.map(rarity => (
+                    <SelectItem key={rarity} value={rarity}>
+                      {rarity}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-price" className="text-right">
+                Preço
+              </Label>
+              <Input
+                id="edit-price"
+                type="number"
+                value={editForm.price}
+                onChange={(e) => setEditForm(prev => ({ ...prev, price: Number(e.target.value) }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-initial-stock" className="text-right">
+                Estoque Inicial
+              </Label>
+              <Input
+                id="edit-initial-stock"
+                type="number"
+                value={editForm.initial_stock}
+                onChange={(e) => setEditForm(prev => ({ ...prev, initial_stock: Number(e.target.value) }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-current-stock" className="text-right">
+                Estoque Atual
+              </Label>
+              <Input
+                id="edit-current-stock"
+                type="number"
+                value={editForm.current_stock}
+                onChange={(e) => setEditForm(prev => ({ ...prev, current_stock: Number(e.target.value) }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-image" className="text-right">
+                URL da Imagem
+              </Label>
+              <Input
+                id="edit-image"
+                value={editForm.image_url}
+                onChange={(e) => setEditForm(prev => ({ ...prev, image_url: e.target.value }))}
+                className="col-span-3"
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveEdit}
+              disabled={loading.editItem}
+            >
+              {loading.editItem ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Alterações'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={cancelDeleteItem}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDeleteItem}
+              disabled={loading.deleteItem}
+            >
+              {loading.deleteItem ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir Item'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
