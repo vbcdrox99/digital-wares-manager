@@ -58,6 +58,8 @@ const SupabaseStockControl: React.FC = () => {
     initial_stock: 0,
     image_url: ''
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
   const [newCustomer, setNewCustomer] = useState({
     name: '',
     steam_id: ''
@@ -80,6 +82,8 @@ const SupabaseStockControl: React.FC = () => {
     current_stock: 0,
     image_url: ''
   });
+  const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string>('');
 
   // Estados para modal de confirmação de exclusão
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -115,6 +119,96 @@ const SupabaseStockControl: React.FC = () => {
     setItemPrices(initialPrices);
     setItemDiscounts(initialDiscounts);
   }, [items]);
+
+  // Função para manipular upload de imagem
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Verificar tamanho do arquivo (máx. 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Erro",
+        description: "A imagem deve ter no máximo 5MB.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verificar tipo do arquivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Erro",
+        description: "Formato de imagem não suportado. Use JPG, PNG, GIF, WebP ou SVG.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedImage(file);
+
+    // Criar preview da imagem
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setImagePreview(result);
+      setNewItem({ ...newItem, image_url: result });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Função para limpar imagem selecionada
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImagePreview('');
+    setNewItem({ ...newItem, image_url: '' });
+  };
+
+  // Função para manipular upload de imagem no modal de edição
+  const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Verificar tamanho do arquivo (máx. 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Erro",
+        description: "A imagem deve ter no máximo 5MB.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verificar tipo do arquivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Erro",
+        description: "Formato de imagem não suportado. Use JPG, PNG, GIF, WebP ou SVG.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setEditSelectedImage(file);
+
+    // Criar preview da imagem
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      setEditImagePreview(result);
+      setEditForm({ ...editForm, image_url: result });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Função para limpar imagem selecionada no modal de edição
+  const clearEditImage = () => {
+    setEditSelectedImage(null);
+    setEditImagePreview('');
+    setEditForm({ ...editForm, image_url: '' });
+  };
 
   // Funções para carregar dados
   const loadChests = async () => {
@@ -235,6 +329,8 @@ const SupabaseStockControl: React.FC = () => {
       console.log('✅ Item criado com sucesso:', createdItem);
       
       setNewItem({ name: '', hero_name: '', rarity: 'comum', price: 0, initial_stock: 0, image_url: '' });
+      setSelectedImage(null);
+      setImagePreview('');
       toast({ title: 'Item adicionado com sucesso!' });
       
       // Se o baú atual for o mesmo que estamos visualizando, recarregar itens
@@ -361,6 +457,9 @@ const SupabaseStockControl: React.FC = () => {
       current_stock: item.current_stock || item.initial_stock,
       image_url: item.image_url || ''
     });
+    // Resetar estados de imagem do modal de edição
+    setEditSelectedImage(null);
+    setEditImagePreview(item.image_url || '');
     setIsEditModalOpen(true);
   };
 
@@ -624,13 +723,36 @@ const SupabaseStockControl: React.FC = () => {
             </div>
             
             <div>
-              <Label>URL da Imagem (opcional)</Label>
-              <Input
-                value={newItem.image_url}
-                onChange={(e) => setNewItem({ ...newItem, image_url: e.target.value })}
-                placeholder="https://exemplo.com/imagem.jpg"
-                className="bg-secondary/50"
-              />
+              <Label>Imagem do Item (opcional)</Label>
+              <div className="space-y-3">
+                <Input
+                  type="file"
+                  accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.svg"
+                  onChange={handleImageUpload}
+                  className="bg-secondary/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                />
+                {imagePreview && (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-32 h-32 object-cover rounded-lg border-2 border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      onClick={clearImage}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  Formatos aceitos: JPG, JPEG, PNG, GIF, WebP, SVG (máx. 5MB)
+                </div>
+              </div>
             </div>
             
             <div>
@@ -993,15 +1115,38 @@ const SupabaseStockControl: React.FC = () => {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-image" className="text-right">
-                URL da Imagem
+                Imagem do Item
               </Label>
-              <Input
-                id="edit-image"
-                value={editForm.image_url}
-                onChange={(e) => setEditForm(prev => ({ ...prev, image_url: e.target.value }))}
-                className="col-span-3"
-                placeholder="https://..."
-              />
+              <div className="col-span-3 space-y-2">
+                <Input
+                  id="edit-image"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
+                  onChange={handleEditImageUpload}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Formatos aceitos: JPG, PNG, GIF, WebP, SVG (máx. 5MB)
+                </p>
+                {editImagePreview && (
+                  <div className="relative">
+                    <img
+                      src={editImagePreview}
+                      alt="Preview"
+                      className="w-20 h-20 object-cover rounded border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      onClick={clearEditImage}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <DialogFooter>
