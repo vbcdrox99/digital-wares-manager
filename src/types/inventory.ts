@@ -10,6 +10,7 @@ export interface Item {
   current_stock?: number;
   chestId: string;
   imageUrl?: string;
+  highlighted?: boolean;
 }
 
 export interface Chest {

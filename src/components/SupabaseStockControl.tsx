@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Minus, Trash2, Package, Loader2, Users, Edit } from 'lucide-react';
+import { Plus, Minus, Trash2, Package, Loader2, Users, Edit, Star } from 'lucide-react';
 import { Rarity } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
 import { supabaseServices, Chest, Item, Customer } from '@/integrations/supabase/services';
@@ -570,6 +570,35 @@ const SupabaseStockControl: React.FC = () => {
     }
   };
 
+  const handleToggleHighlight = async (itemId: string) => {
+    try {
+      const item = items.find(i => i.id === itemId);
+      if (!item) return;
+
+      const newHighlightedState = !item.highlighted;
+
+      // Atualizar no banco de dados
+      await supabaseServices.items.update(itemId, { highlighted: newHighlightedState });
+
+      // Atualizar estado local
+      setItems(prev => prev.map(i => 
+        i.id === itemId ? { ...i, highlighted: newHighlightedState } : i
+      ));
+
+      toast({
+        title: "Destaque atualizado",
+        description: `Item ${newHighlightedState ? 'destacado' : 'removido do destaque'}`,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar destaque:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o destaque",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDiscountChange = (itemId: string, discount: number) => {
     setItemDiscounts(prev => ({ ...prev, [itemId]: discount }));
   };
@@ -892,6 +921,7 @@ const SupabaseStockControl: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Destaque</TableHead>
                     <TableHead>Herói</TableHead>
                     <TableHead>Nome do Item</TableHead>
                     <TableHead>Raridade</TableHead>
@@ -906,6 +936,18 @@ const SupabaseStockControl: React.FC = () => {
                     item.name.toLowerCase().includes(searchFilter.toLowerCase())
                   ).map((item) => (
                     <TableRow key={item.id}>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleHighlight(item.id)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Star 
+                            className={`h-4 w-4 ${item.highlighted ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`}
+                          />
+                        </Button>
+                      </TableCell>
                       <TableCell className="font-medium">{item.hero_name}</TableCell>
                       <TableCell>{item.name}</TableCell>
                       <TableCell>
