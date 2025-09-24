@@ -1,16 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
-export interface Item {
-  id: string;
-  name: string;
-  hero_name: string;
-  rarity: 'comum' | 'persona' | 'arcana' | 'immortal';
-  price: number;
-  current_stock: number;
-  image_url: string | null;
-  created_at: string;
-}
+import { Item } from '@/types/inventory';
 
 export const useItems = () => {
   const [items, setItems] = useState<Item[]>([]);

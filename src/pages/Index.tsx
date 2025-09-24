@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Loading } from "@/components/ui/loading";
+import ErrorBoundary from "../components/ErrorBoundary";
 import SupabaseStockControl from "@/components/SupabaseStockControl";
 import Orders from "@/components/Orders";
 import ShippingQueue from "@/components/ShippingQueue";
@@ -131,19 +133,35 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="stock" className="space-y-6">
-            <SupabaseStockControl />
+            <ErrorBoundary>
+              <Suspense fallback={<Loading text="Carregando controle de estoque..." />}>
+                <SupabaseStockControl />
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">
-            <Orders />
+            <ErrorBoundary>
+              <Suspense fallback={<Loading text="Carregando pedidos..." />}>
+                <Orders />
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="queue" className="space-y-6">
-            <ShippingQueue />
+            <ErrorBoundary>
+              <Suspense fallback={<Loading text="Carregando fila de envio..." />}>
+                <ShippingQueue />
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="customers" className="space-y-6">
-            <Customers />
+            <ErrorBoundary>
+              <Suspense fallback={<Loading text="Carregando clientes..." />}>
+                <Customers />
+              </Suspense>
+            </ErrorBoundary>
           </TabsContent>
         </Tabs>
       </div>

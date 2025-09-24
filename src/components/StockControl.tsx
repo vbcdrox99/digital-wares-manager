@@ -21,16 +21,14 @@ interface StockControlProps {
   onDeleteChest: (chestId: string) => void;
 }
 
-const rarities: Rarity[] = ['common', 'uncommon', 'rare', 'legendary', 'immortal', 'mythic'];
+const rarities: Rarity[] = ['comum', 'persona', 'arcana', 'immortal'];
 
 const getRarityColor = (rarity: Rarity) => {
   const colors = {
-    common: 'bg-common/20 text-common border-common/30',
-    uncommon: 'bg-uncommon/20 text-uncommon border-uncommon/30',
-    rare: 'bg-rare/20 text-rare border-rare/30',
-    legendary: 'bg-legendary/20 text-legendary border-legendary/30',
-    immortal: 'bg-immortal/20 text-immortal border-immortal/30',
-    mythic: 'bg-mythic/20 text-mythic border-mythic/30 shadow-glow-mythic'
+    comum: 'bg-gray-500/20 text-gray-700 border-gray-500/30',
+    persona: 'bg-blue-500/20 text-blue-700 border-blue-500/30',
+    arcana: 'bg-purple-500/20 text-purple-700 border-purple-500/30',
+    immortal: 'bg-orange-500/20 text-orange-700 border-orange-500/30'
   };
   return colors[rarity];
 };
@@ -49,10 +47,12 @@ const StockControl: React.FC<StockControlProps> = ({
   const [selectedChestForAdd, setSelectedChestForAdd] = useState('');
   const [selectedChestForView, setSelectedChestForView] = useState('');
   const [newItem, setNewItem] = useState({
-    heroName: '',
-    rarity: 'common' as Rarity,
+    name: '',
+    hero_name: '',
+    rarity: 'comum' as Rarity,
     price: 0,
-    initialStock: 0
+    initial_stock: 0,
+    current_stock: 0
   });
 
   const handleCreateChest = () => {
@@ -66,18 +66,20 @@ const StockControl: React.FC<StockControlProps> = ({
   };
 
   const handleAddItem = () => {
-    if (!selectedChestForAdd || !newItem.heroName.trim() || newItem.price <= 0 || newItem.initialStock <= 0) {
+    if (!selectedChestForAdd || !newItem.name.trim() || !newItem.hero_name.trim() || newItem.price <= 0 || newItem.initial_stock <= 0) {
       toast({ title: 'Preencha todos os campos corretamente', variant: 'destructive' });
       return;
     }
     
     onAddItem({
       ...newItem,
-      chestId: selectedChestForAdd,
-      heroName: newItem.heroName.trim()
+      chest_id: selectedChestForAdd,
+      name: newItem.name.trim(),
+      hero_name: newItem.hero_name.trim(),
+      current_stock: newItem.initial_stock
     });
     
-    setNewItem({ heroName: '', rarity: 'common', price: 0, initialStock: 0 });
+    setNewItem({ name: '', hero_name: '', rarity: 'comum', price: 0, initial_stock: 0, current_stock: 0 });
     toast({ title: 'Item adicionado com sucesso!' });
   };
 
@@ -85,15 +87,15 @@ const StockControl: React.FC<StockControlProps> = ({
     const usedInOrders = orders
       .filter(order => order.status === 'pending')
       .reduce((total, order) => {
-        const orderItem = order.items.find(oi => oi.itemId === item.id);
+        const orderItem = order.items.find(oi => oi.item_id === item.id);
         return total + (orderItem ? orderItem.quantity : 0);
       }, 0);
     
-    return Math.max(0, item.initialStock - usedInOrders);
+    return Math.max(0, item.initial_stock - usedInOrders);
   };
 
   const viewingChest = chests.find(c => c.id === selectedChestForView);
-  const chestItems = items.filter(item => item.chestId === selectedChestForView);
+  const chestItems = items.filter(item => item.chest_id === selectedChestForView);
 
   return (
     <div className="space-y-6">
@@ -152,10 +154,20 @@ const StockControl: React.FC<StockControlProps> = ({
             </div>
             
             <div>
+              <Label>Nome do Item</Label>
+              <Input
+                value={newItem.name}
+                onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                placeholder="Ex: Dragonclaw Hook"
+                className="bg-secondary/50"
+              />
+            </div>
+            
+            <div>
               <Label>Nome do Herói</Label>
               <Input
-                value={newItem.heroName}
-                onChange={(e) => setNewItem({ ...newItem, heroName: e.target.value })}
+                value={newItem.hero_name}
+                onChange={(e) => setNewItem({ ...newItem, hero_name: e.target.value })}
                 placeholder="Ex: Pudge"
                 className="bg-secondary/50"
               />
@@ -178,8 +190,8 @@ const StockControl: React.FC<StockControlProps> = ({
               <Label>Estoque Inicial</Label>
               <Input
                 type="number"
-                value={newItem.initialStock || ''}
-                onChange={(e) => setNewItem({ ...newItem, initialStock: Number(e.target.value) })}
+                value={newItem.initial_stock || ''}
+                onChange={(e) => setNewItem({ ...newItem, initial_stock: Number(e.target.value) })}
                 placeholder="0"
                 className="bg-secondary/50"
                 min="0"
@@ -267,7 +279,7 @@ const StockControl: React.FC<StockControlProps> = ({
                     const availableStock = calculateAvailableStock(item);
                     return (
                       <TableRow key={item.id} className="hover:bg-secondary/20">
-                        <TableCell className="font-medium">{item.heroName}</TableCell>
+                        <TableCell className="font-medium">{item.hero_name}</TableCell>
                         <TableCell>
                           <Select
                             value={item.rarity}
@@ -313,18 +325,18 @@ const StockControl: React.FC<StockControlProps> = ({
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => onUpdateItem(item.id, { initialStock: Math.max(0, item.initialStock - 1) })}
+                              onClick={() => onUpdateItem(item.id, { initial_stock: Math.max(0, item.initial_stock - 1) })}
                               className="h-6 w-6 p-0"
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
                             <span className={`w-16 text-center text-sm ${availableStock === 0 ? 'text-destructive' : ''}`}>
-                              {availableStock}/{item.initialStock}
+                              {availableStock}/{item.initial_stock}
                             </span>
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => onUpdateItem(item.id, { initialStock: item.initialStock + 1 })}
+                              onClick={() => onUpdateItem(item.id, { initial_stock: item.initial_stock + 1 })}
                               className="h-6 w-6 p-0"
                             >
                               <Plus className="h-3 w-3" />

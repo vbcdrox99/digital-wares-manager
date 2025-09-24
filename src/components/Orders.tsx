@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,7 @@ interface OrderWithItems {
   order_items: {
     id: string;
     quantity: number;
-    unit_price: number;
+    price: number; // Corrigido: era unit_price, mas o Supabase usa 'price'
     items: {
       id: string;
       hero_name: string;
@@ -52,12 +53,10 @@ type OrderStatus = 'pending' | 'sent' | 'cancelled';
 
 const getRarityColor = (rarity: Rarity) => {
   const colors = {
-    common: 'bg-common/20 text-common border-common/30',
-    uncommon: 'bg-uncommon/20 text-uncommon border-uncommon/30',
-    rare: 'bg-rare/20 text-rare border-rare/30',
-    legendary: 'bg-legendary/20 text-legendary border-legendary/30',
-    immortal: 'bg-immortal/20 text-immortal border-immortal/30',
-    mythic: 'bg-mythic/20 text-mythic border-mythic/30 shadow-glow-mythic'
+    comum: 'bg-gray-500/20 text-gray-700 border-gray-500/30',
+    persona: 'bg-blue-500/20 text-blue-700 border-blue-500/30',
+    arcana: 'bg-purple-500/20 text-purple-700 border-purple-500/30',
+    immortal: 'bg-orange-500/20 text-orange-700 border-orange-500/30'
   };
   return colors[rarity];
 };
@@ -105,9 +104,40 @@ const Orders: React.FC<OrdersProps> = () => {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadOrders, 60000); // Atualiza a cada minuto para o cronômetro
-    return () => clearInterval(interval);
-  }, []);
+    
+    // Sistema de recarregamento otimizado
+    let interval: NodeJS.Timeout;
+    
+    const startPolling = () => {
+      // Só recarrega se há pedidos pendentes
+      if (orders.some(order => order.status === 'pending')) {
+        interval = setInterval(loadOrders, 120000); // Aumentado para 2 minutos
+      }
+    };
+    
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Pausa o polling quando a aba não está visível
+        if (interval) clearInterval(interval);
+      } else {
+        // Retoma o polling quando a aba fica visível
+        startPolling();
+        // Recarrega imediatamente quando volta à aba
+        loadOrders();
+      }
+    };
+    
+    // Inicia o polling
+    startPolling();
+    
+    // Adiciona listener para mudança de visibilidade
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [orders]);
 
   const loadData = async () => {
     try {
@@ -130,17 +160,17 @@ const Orders: React.FC<OrdersProps> = () => {
     }
   };
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       const ordersData = await getOrdersWithItems();
       setOrders(ordersData);
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
     }
-  };
+  }, []);
 
-  // Funções de autocomplete para clientes
-  const searchCustomers = (searchTerm: string, searchBy: 'name' | 'steam_id') => {
+  // Funções de autocomplete para clientes memoizadas
+  const searchCustomers = useCallback((searchTerm: string, searchBy: 'name' | 'steam_id') => {
     if (!searchTerm.trim()) {
       setCustomerSuggestions([]);
       return;
@@ -155,31 +185,50 @@ const Orders: React.FC<OrdersProps> = () => {
     });
 
     setCustomerSuggestions(filtered.slice(0, 5)); // Limita a 5 sugestões
-  };
+  }, [customers]);
 
-  const handleCustomerNameChange = (value: string) => {
+  // Debounce para as buscas de clientes
+  const debouncedCustomerName = useDebounce(customerName, 300);
+  const debouncedSteamId = useDebounce(steamId, 300);
+
+  // Efeito para buscar clientes quando os valores debounced mudarem
+  useEffect(() => {
+    if (debouncedCustomerName && !selectedCustomer) {
+      searchCustomers(debouncedCustomerName, 'name');
+      setShowCustomerSuggestions(true);
+      setShowSteamSuggestions(false);
+    } else if (!debouncedCustomerName) {
+      setShowCustomerSuggestions(false);
+    }
+  }, [debouncedCustomerName, selectedCustomer, searchCustomers]);
+
+  useEffect(() => {
+    if (debouncedSteamId && !selectedCustomer) {
+      searchCustomers(debouncedSteamId, 'steam_id');
+      setShowSteamSuggestions(true);
+      setShowCustomerSuggestions(false);
+    } else if (!debouncedSteamId) {
+      setShowSteamSuggestions(false);
+    }
+  }, [debouncedSteamId, selectedCustomer, searchCustomers]);
+
+  const handleCustomerNameChange = useCallback((value: string) => {
     setCustomerName(value);
     setSelectedCustomer(null);
-    searchCustomers(value, 'name');
-    setShowCustomerSuggestions(true);
-    setShowSteamSuggestions(false);
-  };
+  }, []);
 
-  const handleSteamIdChange = (value: string) => {
+  const handleSteamIdChange = useCallback((value: string) => {
     setSteamId(value);
     setSelectedCustomer(null);
-    searchCustomers(value, 'steam_id');
-    setShowSteamSuggestions(true);
-    setShowCustomerSuggestions(false);
-  };
+  }, []);
 
-  const selectCustomer = (customer: Customer) => {
+  const selectCustomer = useCallback((customer: Customer) => {
     setSelectedCustomer(customer);
     setCustomerName(customer.name);
     setSteamId(customer.steam_id);
     setShowCustomerSuggestions(false);
     setShowSteamSuggestions(false);
-  };
+  }, []);
 
   const clearCustomerSelection = () => {
     setSelectedCustomer(null);
@@ -240,18 +289,26 @@ const Orders: React.FC<OrdersProps> = () => {
       }, 0);
     
     const usedInCart = cart
-      .filter(cartItem => cartItem.itemId === item.id)
+      .filter(cartItem => cartItem.item_id === item.id)
       .reduce((total, cartItem) => total + cartItem.quantity, 0);
     
     return Math.max(0, currentStock - usedInOrders - usedInCart);
   };
 
-  const availableItems = items.filter(item => 
-    item.chest_id === selectedChest && calculateAvailableStock(item) > 0
+  const availableItems = useMemo(() => 
+    items.filter(item => 
+      item.chest_id === selectedChest && calculateAvailableStock(item) > 0
+    ), [items, selectedChest, orders, cart]
   );
 
-  const selectedItemData = items.find(item => item.id === selectedItem);
-  const maxQuantity = selectedItemData ? calculateAvailableStock(selectedItemData) : 0;
+  const selectedItemData = useMemo(() => 
+    items.find(item => item.id === selectedItem), [items, selectedItem]
+  );
+  
+  const maxQuantity = useMemo(() => 
+    selectedItemData ? calculateAvailableStock(selectedItemData) : 0, 
+    [selectedItemData, orders, cart]
+  );
 
   const addToCart = () => {
     if (!selectedItem || !selectedItemData || quantity <= 0 || quantity > maxQuantity) {
@@ -272,10 +329,10 @@ const Orders: React.FC<OrdersProps> = () => {
 
     const chest = chests.find(c => c.id === selectedItemData.chest_id);
     const cartItem: CartItem = {
-      itemId: selectedItem,
+      item_id: selectedItem,
       quantity,
       name: selectedItemData.name,
-      heroName: selectedItemData.hero_name,
+      hero_name: selectedItemData.hero_name,
       rarity: selectedItemData.rarity,
       price: selectedItemData.price,
       chestName: chest?.name || ''
@@ -303,7 +360,7 @@ const Orders: React.FC<OrdersProps> = () => {
         steam_id: customer.steam_id,
         order_type: orderType,
         items: [{
-          item_id: pendingItem.itemId,
+          item_id: pendingItem.item_id,
           quantity: pendingItem.quantity,
           price: pendingItem.price
         }],
@@ -311,16 +368,16 @@ const Orders: React.FC<OrdersProps> = () => {
       });
       
       // Atualizar estoque do item
-      const selectedItemData = items.find(item => item.id === pendingItem.itemId);
+      const selectedItemData = items.find(item => item.id === pendingItem.item_id);
       if (selectedItemData) {
         const currentStock = selectedItemData.current_stock ?? selectedItemData.initial_stock ?? 0;
         const newStock = currentStock - pendingItem.quantity;
         
-        await itemsService.update(pendingItem.itemId, { current_stock: newStock });
+        await itemsService.update(pendingItem.item_id, { current_stock: newStock });
         
         // Atualizar estado local dos itens
         setItems(prev => prev.map(item => 
-          item.id === pendingItem.itemId 
+          item.id === pendingItem.item_id 
             ? { ...item, current_stock: newStock } 
             : item
         ));
@@ -356,16 +413,16 @@ const Orders: React.FC<OrdersProps> = () => {
      setQuantity(1);
    };
 
-  const removeFromCart = (index: number) => {
+  const removeFromCart = useCallback((index: number) => {
     setCart(prev => prev.filter((_, i) => i !== index));
     toast({ title: 'Item removido do carrinho!' });
-  };
+  }, [toast]);
 
-  const calculateTotal = () => {
+  const calculateTotal = useMemo(() => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
+  }, [cart]);
 
-  const handleCreateOrder = async () => {
+  const handleCreateOrder = useCallback(async () => {
     if (cart.length === 0) {
       toast({ title: 'Adicione itens ao carrinho', variant: 'destructive' });
       return;
@@ -386,7 +443,7 @@ const Orders: React.FC<OrdersProps> = () => {
         steam_id: customer.steam_id,
         order_type: orderType,
         items: cart.map(item => ({
-          item_id: item.itemId,
+          item_id: item.item_id,
           quantity: item.quantity,
           price: item.price
         })),
@@ -409,9 +466,9 @@ const Orders: React.FC<OrdersProps> = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cart, getOrCreateCustomer, orderType, selectedTime, loadOrders, toast]);
 
-  const markAsSent = async (orderId: string) => {
+  const markAsSent = useCallback(async (orderId: string) => {
     try {
       await updateOrderStatus(orderId, 'sent');
       await loadOrders();
@@ -420,9 +477,9 @@ const Orders: React.FC<OrdersProps> = () => {
       console.error('Erro ao atualizar pedido:', error);
       toast({ title: 'Erro ao atualizar pedido', variant: 'destructive' });
     }
-  };
+  }, [loadOrders, toast]);
 
-  const cancelOrder = async (orderId: string) => {
+  const cancelOrder = useCallback(async (orderId: string) => {
     try {
       await updateOrderStatus(orderId, 'cancelled');
       await loadOrders();
@@ -431,9 +488,9 @@ const Orders: React.FC<OrdersProps> = () => {
       console.error('Erro ao cancelar pedido:', error);
       toast({ title: 'Erro ao cancelar pedido', variant: 'destructive' });
     }
-  };
+  }, [loadOrders, toast]);
 
-  const handleDeleteOrder = async (orderId: string) => {
+  const handleDeleteOrder = useCallback(async (orderId: string) => {
     try {
       await deleteOrder(orderId);
       await loadOrders();
@@ -442,12 +499,12 @@ const Orders: React.FC<OrdersProps> = () => {
       console.error('Erro ao excluir pedido:', error);
       toast({ title: 'Erro ao excluir pedido', variant: 'destructive' });
     }
-  };
+  }, [loadOrders, toast]);
 
   const formatTimeRemaining = (deadline: string) => {
     const timeRemaining = calculateTimeRemaining(deadline);
     
-    if (timeRemaining.expired) {
+    if (timeRemaining.isExpired) {
       return <span className="text-red-500 font-semibold">Expirado</span>;
     }
     

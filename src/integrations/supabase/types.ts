@@ -16,130 +16,243 @@ export type Database = {
     Tables: {
       chests: {
         Row: {
+          created_at: string | null
           id: string
           name: string
-          created_at: string
         }
         Insert: {
+          created_at?: string | null
           id?: string
           name: string
-          created_at?: string
         }
         Update: {
+          created_at?: string | null
           id?: string
           name?: string
-          created_at?: string
         }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          steam_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          steam_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          steam_id?: string
+        }
+        Relationships: []
       }
       items: {
         Row: {
-          id: string
-          hero_name: string
-          rarity: Database['public']['Enums']['rarity']
-          price: number
-          initial_stock: number
           chest_id: string
-          created_at: string
+          created_at: string | null
+          current_stock: number
+          hero_name: string
+          highlighted: boolean | null
+          id: string
+          image_url: string | null
+          initial_stock: number
+          name: string | null
+          price: number
+          rarity: Database["public"]["Enums"]["rarity"]
         }
         Insert: {
-          id?: string
-          hero_name: string
-          rarity: Database['public']['Enums']['rarity']
-          price: number
-          initial_stock: number
           chest_id: string
-          created_at?: string
+          created_at?: string | null
+          current_stock: number
+          hero_name: string
+          highlighted?: boolean | null
+          id?: string
+          image_url?: string | null
+          initial_stock: number
+          name?: string | null
+          price: number
+          rarity: Database["public"]["Enums"]["rarity"]
         }
         Update: {
-          id?: string
-          hero_name?: string
-          rarity?: Database['public']['Enums']['rarity']
-          price?: number
-          initial_stock?: number
           chest_id?: string
-          created_at?: string
-        }
-      }
-      orders: {
-        Row: {
-          id: string
-          customer_name: string
-          steam_id: string
-          order_type: Database['public']['Enums']['order_type']
-          status: Database['public']['Enums']['order_status']
-          created_at: string
-          sent_at: string | null
-          total_value: number
-        }
-        Insert: {
+          created_at?: string | null
+          current_stock?: number
+          hero_name?: string
+          highlighted?: boolean | null
           id?: string
-          customer_name: string
-          steam_id: string
-          order_type: Database['public']['Enums']['order_type']
-          status?: Database['public']['Enums']['order_status']
-          created_at?: string
-          sent_at?: string | null
-          total_value: number
+          image_url?: string | null
+          initial_stock?: number
+          name?: string | null
+          price?: number
+          rarity?: Database["public"]["Enums"]["rarity"]
         }
-        Update: {
-          id?: string
-          customer_name?: string
-          steam_id?: string
-          order_type?: Database['public']['Enums']['order_type']
-          status?: Database['public']['Enums']['order_status']
-          created_at?: string
-          sent_at?: string | null
-          total_value?: number
-        }
+        Relationships: [
+          {
+            foreignKeyName: "items_chest_id_fkey"
+            columns: ["chest_id"]
+            isOneToOne: false
+            referencedRelation: "chests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
+          created_at: string | null
           id: string
-          order_id: string
           item_id: string
-          quantity: number
+          order_id: string
           price: number
-          created_at: string
+          quantity: number
         }
         Insert: {
+          created_at?: string | null
           id?: string
-          order_id: string
           item_id: string
-          quantity: number
+          order_id: string
           price: number
-          created_at?: string
+          quantity: number
         }
         Update: {
+          created_at?: string | null
           id?: string
-          order_id?: string
           item_id?: string
-          quantity?: number
+          order_id?: string
           price?: number
-          created_at?: string
+          quantity?: number
         }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          customer_name: string
+          deadline: string | null
+          id: string
+          order_type: Database["public"]["Enums"]["order_type"]
+          sent_at: string | null
+          status: Database["public"]["Enums"]["order_status"]
+          steam_id: string
+          total_value: number
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          customer_name: string
+          deadline?: string | null
+          id?: string
+          order_type: Database["public"]["Enums"]["order_type"]
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          steam_id: string
+          total_value: number
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          deadline?: string | null
+          id?: string
+          order_type?: Database["public"]["Enums"]["order_type"]
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["order_status"]
+          steam_id?: string
+          total_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipping_queue: {
         Row: {
+          created_at: string | null
+          deadline: string
           id: string
           order_id: string
-          deadline: string
-          status: Database['public']['Enums']['shipping_status']
-          created_at: string
+          status: Database["public"]["Enums"]["shipping_status"]
         }
         Insert: {
+          created_at?: string | null
+          deadline: string
           id?: string
           order_id: string
-          deadline: string
-          status?: Database['public']['Enums']['shipping_status']
-          created_at?: string
+          status?: Database["public"]["Enums"]["shipping_status"]
         }
         Update: {
+          created_at?: string | null
+          deadline?: string
           id?: string
           order_id?: string
-          deadline?: string
-          status?: Database['public']['Enums']['shipping_status']
-          created_at?: string
+          status?: Database["public"]["Enums"]["shipping_status"]
         }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_queue_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          steam_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          steam_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          steam_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -149,10 +262,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      rarity: 'common' | 'uncommon' | 'rare' | 'legendary' | 'immortal' | 'mythic'
-      order_type: 'sale' | 'giveaway'
-      order_status: 'pending' | 'sent' | 'cancelled'
-      shipping_status: 'awaiting' | 'overdue'
+      order_status: "pending" | "sent" | "cancelled"
+      order_type: "sale" | "giveaway"
+      rarity: "comum" | "persona" | "arcana" | "immortal"
+      shipping_status: "awaiting" | "overdue"
+      user_role: "admin" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -279,6 +393,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: ["pending", "sent", "cancelled"],
+      order_type: ["sale", "giveaway"],
+      rarity: ["comum", "persona", "arcana", "immortal"],
+      shipping_status: ["awaiting", "overdue"],
+      user_role: ["admin", "customer"],
+    },
   },
 } as const

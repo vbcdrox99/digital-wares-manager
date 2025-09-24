@@ -1,32 +1,33 @@
-export type Rarity = 'comum' | 'persona' | 'arcana' | 'immortal' | 'raro' | 'ultra raro';
+export type Rarity = 'comum' | 'persona' | 'arcana' | 'immortal';
 
 export interface Item {
   id: string;
-  name: string;
-  heroName: string;
+  name: string | null;
+  hero_name: string;
   rarity: Rarity;
   price: number;
-  initialStock: number;
-  current_stock?: number;
-  chestId: string;
-  imageUrl?: string;
-  highlighted?: boolean;
+  initial_stock: number;
+  current_stock: number;
+  chest_id: string;
+  image_url?: string | null;
+  highlighted?: boolean | null;
+  created_at?: string | null;
 }
 
 export interface Chest {
   id: string;
   name: string;
-  createdAt: string;
+  created_at: string | null;
 }
 
 export type OrderType = 'sale' | 'giveaway';
 export type OrderStatus = 'pending' | 'sent' | 'cancelled';
 
 export interface CartItem {
-  itemId: string;
+  item_id: string;
   quantity: number;
   name: string;
-  heroName: string;
+  hero_name: string;
   rarity: Rarity;
   price: number;
   chestName: string;
@@ -34,14 +35,16 @@ export interface CartItem {
 
 export interface Order {
   id: string;
-  customerName: string;
-  steamId: string;
-  orderType: OrderType;
+  customer_name: string;
+  steam_id: string;
+  order_type: OrderType;
   items: CartItem[];
   status: OrderStatus;
-  createdAt: string;
-  sentAt?: string;
-  totalValue: number;
+  created_at: string | null;
+  sent_at?: string | null;
+  total_value: number;
+  deadline?: string | null;
+  customer_id?: string | null;
 }
 
 export interface ShippingItem {

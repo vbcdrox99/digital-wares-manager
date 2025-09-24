@@ -13,16 +13,14 @@ import { toast } from '@/hooks/use-toast';
 import { supabaseServices, Chest, Item, Customer } from '@/integrations/supabase/services';
 import { supabase } from '@/integrations/supabase/client';
 
-const rarities: Rarity[] = ['comum', 'persona', 'arcana', 'immortal', 'raro', 'ultra raro'];
+const rarities: Rarity[] = ['comum', 'persona', 'arcana', 'immortal'];
 
 const getRarityColor = (rarity: Rarity) => {
   const colors = {
-    comum: 'bg-common/20 text-common border-common/30',
-    persona: 'bg-uncommon/20 text-uncommon border-uncommon/30',
-    arcana: 'bg-rare/20 text-rare border-rare/30',
-    immortal: 'bg-immortal/20 text-immortal border-immortal/30',
-    raro: 'bg-purple-500/20 text-purple-500 border-purple-500/30',
-    'ultra raro': 'bg-orange-500/20 text-orange-500 border-orange-500/30'
+    comum: 'bg-gray-500/20 text-gray-700 border-gray-500/30',
+    persona: 'bg-blue-500/20 text-blue-700 border-blue-500/30',
+    arcana: 'bg-purple-500/20 text-purple-700 border-purple-500/30',
+    immortal: 'bg-orange-500/20 text-orange-700 border-orange-500/30'
   };
   return colors[rarity];
 };
@@ -210,13 +208,19 @@ const SupabaseStockControl: React.FC = () => {
     setEditForm({ ...editForm, image_url: '' });
   };
 
-  // Funções para carregar dados
+  // Funções para carregar dados com timeout
   const loadChests = async () => {
     try {
       setLoading(prev => ({ ...prev, chests: true }));
       console.log('🔍 Carregando baús...');
       
-      const chestsData = await supabaseServices.chests.getAll();
+      // Implementar timeout de 15 segundos
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout ao carregar baús')), 15000);
+      });
+
+      const chestsPromise = supabaseServices.chests.getAll();
+      const chestsData = await Promise.race([chestsPromise, timeoutPromise]);
       
       console.log('📦 Baús carregados:', chestsData);
       
@@ -228,7 +232,11 @@ const SupabaseStockControl: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Erro ao carregar baús:', error);
-      toast({ title: 'Erro ao carregar baús', variant: 'destructive' });
+      toast({ 
+        title: 'Erro ao carregar baús', 
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive' 
+      });
     } finally {
       setLoading(prev => ({ ...prev, chests: false }));
     }
@@ -239,14 +247,24 @@ const SupabaseStockControl: React.FC = () => {
       setLoading(prev => ({ ...prev, items: true }));
       console.log('🔍 Carregando itens do baú:', chestId);
       
-      const itemsData = await supabaseServices.items.getByChestId(chestId);
+      // Implementar timeout de 15 segundos
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout ao carregar itens')), 15000);
+      });
+
+      const itemsPromise = supabaseServices.items.getByChestId(chestId);
+      const itemsData = await Promise.race([itemsPromise, timeoutPromise]);
       
       console.log('🎮 Itens carregados:', itemsData);
       
       setItems(itemsData);
     } catch (error) {
       console.error(`❌ Erro ao carregar itens do baú ${chestId}:`, error);
-      toast({ title: 'Erro ao carregar itens', variant: 'destructive' });
+      toast({ 
+        title: 'Erro ao carregar itens', 
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive' 
+      });
     } finally {
       setLoading(prev => ({ ...prev, items: false }));
     }
@@ -257,14 +275,24 @@ const SupabaseStockControl: React.FC = () => {
       setLoading(prev => ({ ...prev, customers: true }));
       console.log('🔍 Carregando clientes...');
       
-      const customersData = await supabaseServices.customers.getAll();
+      // Implementar timeout de 15 segundos
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout ao carregar clientes')), 15000);
+      });
+
+      const customersPromise = supabaseServices.customers.getAll();
+      const customersData = await Promise.race([customersPromise, timeoutPromise]);
       
       console.log('👥 Clientes carregados:', customersData);
       
       setCustomers(customersData);
     } catch (error) {
       console.error('❌ Erro ao carregar clientes:', error);
-      toast({ title: 'Erro ao carregar clientes', variant: 'destructive' });
+      toast({ 
+        title: 'Erro ao carregar clientes', 
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        variant: 'destructive' 
+      });
     } finally {
       setLoading(prev => ({ ...prev, customers: false }));
     }

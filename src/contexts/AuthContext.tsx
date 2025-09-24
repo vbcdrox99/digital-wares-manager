@@ -35,14 +35,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Função para buscar dados do usuário
+  // Função para buscar dados do usuário com timeout
   const fetchUserData = async (userId: string): Promise<User | null> => {
     try {
-      const { data, error } = await supabase
+      // Implementar timeout de 10 segundos
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na busca de dados do usuário')), 10000);
+      });
+
+      const dataPromise = supabase
         .from('users')
         .select('id, email, role')
         .eq('id', userId)
         .single();
+
+      const { data, error } = await Promise.race([dataPromise, timeoutPromise]);
 
       if (error) {
         console.error('Erro ao buscar dados do usuário:', error);
@@ -151,7 +158,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const getSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Timeout para verificação de sessão
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout na verificação de sessão')), 8000);
+        });
+
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
         
         if (session?.user) {
           const userData = await fetchUserData(session.user.id);
@@ -161,6 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Erro ao recuperar sessão:', error);
+        // Em caso de timeout ou erro, definir loading como false para não travar a interface
       } finally {
         setLoading(false);
       }

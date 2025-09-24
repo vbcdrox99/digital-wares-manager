@@ -32,7 +32,7 @@ interface OrderWithItems {
   order_items: Array<{
     id: string;
     quantity: number;
-    unit_price: number;
+    price: number;
     items: {
       id: string;
       name: string;
@@ -278,7 +278,7 @@ const Customers: React.FC = () => {
                           <span>
                             {item.quantity}x {item.items.name} ({item.items.hero_name})
                           </span>
-                          <span>{formatCurrency(item.unit_price * item.quantity)}</span>
+                          <span>{formatCurrency(item.price * item.quantity)}</span>
                         </div>
                       ))}
                     </div>

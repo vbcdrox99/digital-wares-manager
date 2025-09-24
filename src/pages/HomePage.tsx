@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingCart, Zap, Gift, TrendingUp, Users, Package, Award, Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useItems } from '@/hooks/useItems';
-import { supabaseServices, Item } from '@/integrations/supabase/services';
+import { supabaseServices } from '@/integrations/supabase/services';
+import { Item } from '@/types/inventory';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '../components/Navigation';
 

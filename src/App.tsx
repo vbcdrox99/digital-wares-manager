@@ -14,7 +14,21 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutos - dados considerados frescos por 5 min
+      gcTime: 10 * 60 * 1000, // 10 minutos - dados mantidos em cache por 10 min
+      refetchOnWindowFocus: false, // Não recarregar ao focar na janela
+      refetchOnMount: false, // Não recarregar ao montar se dados estão frescos
+      retry: 2, // Tentar novamente 2 vezes em caso de erro
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Delay exponencial
+    },
+    mutations: {
+      retry: 1, // Tentar novamente 1 vez para mutations
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

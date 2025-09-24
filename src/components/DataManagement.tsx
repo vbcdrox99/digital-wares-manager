@@ -30,56 +30,55 @@ const DataManagement: React.FC<DataManagementProps> = ({
         const usedInOrders = orders
           .filter(order => order.status === 'pending')
           .reduce((total, order) => {
-            const orderItem = order.items.find(oi => oi.itemId === item.id);
+            const orderItem = order.items.find(oi => oi.item_id === item.id);
             return total + (orderItem ? orderItem.quantity : 0);
           }, 0);
-        return Math.max(0, item.initialStock - usedInOrders);
+        return Math.max(0, item.initial_stock - usedInOrders);
       };
 
       // User-friendly views
       const stockView = items.map(item => {
-        const chest = chests.find(c => c.id === item.chestId);
+        const chest = chests.find(c => c.id === item.chest_id);
         return {
           'Baú': chest?.name || 'Desconhecido',
-          'Herói': item.heroName,
+          'Herói': item.hero_name,
           'Raridade': item.rarity,
           'Preço (R$)': item.price,
-          'Estoque Inicial': item.initialStock,
+          'Estoque Inicial': item.initial_stock,
           'Estoque Disponível': calculateAvailableStock(item),
-          'Em Pedidos': item.initialStock - calculateAvailableStock(item)
+          'Em Pedidos': item.initial_stock - calculateAvailableStock(item)
         };
       });
 
       const ordersView = orders.map(order => ({
-        'Cliente': order.customerName,
-        'Steam ID': order.steamId,
-        'Tipo': order.orderType === 'sale' ? 'Venda' : 'Sorteio',
+        'Cliente': order.customer_name,
+        'Steam ID': order.steam_id,
+        'Tipo': order.order_type === 'sale' ? 'Venda' : 'Sorteio',
         'Status': order.status === 'pending' ? 'Pendente' : 
                  order.status === 'sent' ? 'Enviado' : 'Cancelado',
-        'Data do Pedido': new Date(order.createdAt).toLocaleDateString('pt-BR'),
-        'Data de Envio': order.sentAt ? new Date(order.sentAt).toLocaleDateString('pt-BR') : '',
-        'Valor Total (R$)': order.totalValue,
-        'Itens': order.items.map(item => `${item.heroName} (${item.rarity}) x${item.quantity}`).join('; ')
+        'Data do Pedido': order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : '',
+        'Data de Envio': order.sent_at ? new Date(order.sent_at).toLocaleDateString('pt-BR') : '',
+        'Valor Total (R$)': order.total_value,
+        'Itens': order.items.map(item => `${item.hero_name} (${item.rarity}) x${item.quantity}`).join('; ')
       }));
 
       const shippingView = orders
         .filter(order => order.status === 'pending')
         .map(order => {
-          const createdDate = new Date(order.createdAt);
-          const deadline = new Date(createdDate);
-          deadline.setDate(deadline.getDate() + 31);
+          const createdDate = order.created_at ? new Date(order.created_at) : new Date();
+          const deadline = order.deadline ? new Date(order.deadline) : new Date(createdDate.getTime() + 31 * 24 * 60 * 60 * 1000);
           const now = new Date();
           const isOverdue = now > deadline;
           const daysLeft = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
           return {
-            'Cliente': order.customerName,
-            'Steam ID': order.steamId,
+            'Cliente': order.customer_name,
+            'Steam ID': order.steam_id,
             'Prazo de Envio': deadline.toLocaleDateString('pt-BR'),
             'Status': isOverdue ? 'Atrasado' : 'Aguardando',
             'Dias Restantes': isOverdue ? `${Math.abs(daysLeft)} dias em atraso` : `${daysLeft} dias`,
-            'Valor Total (R$)': order.totalValue,
-            'Itens': order.items.map(item => `${item.heroName} (${item.rarity}) x${item.quantity}`).join('; ')
+            'Valor Total (R$)': order.total_value,
+            'Itens': order.items.map(item => `${item.hero_name} (${item.rarity}) x${item.quantity}`).join('; ')
           };
         })
         .sort((a, b) => new Date(a['Prazo de Envio']).getTime() - new Date(b['Prazo de Envio']).getTime());

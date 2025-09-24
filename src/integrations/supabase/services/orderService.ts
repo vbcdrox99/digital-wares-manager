@@ -105,7 +105,98 @@ export async function createOrder(orderData: CreateOrderData) {
   }
 }
 
-// Listar todos os pedidos com itens
+// Interface para parâmetros de paginação
+export interface OrdersPaginationParams {
+  page?: number;
+  limit?: number;
+  status?: 'pending' | 'sent' | 'cancelled';
+  orderType?: 'sale' | 'giveaway';
+}
+
+// Interface para resposta paginada
+export interface PaginatedOrdersResponse {
+  data: OrderWithItems[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+// Listar pedidos com paginação
+export async function getOrdersWithItemsPaginated(params: OrdersPaginationParams = {}): Promise<PaginatedOrdersResponse> {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      status,
+      orderType
+    } = params;
+
+    const offset = (page - 1) * limit;
+
+    // Construir query base
+    let query = supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (
+          *,
+          items (
+            id,
+            hero_name,
+            rarity,
+            price,
+            chest_id,
+            chests (
+              name
+            )
+          )
+        ),
+        shipping_queue (
+          deadline
+        )
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    // Aplicar filtros se fornecidos
+    if (status) {
+      query = query.eq('status', status);
+    }
+    if (orderType) {
+      query = query.eq('order_type', orderType);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    const totalCount = count || 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return {
+      data: data as OrderWithItems[],
+      totalCount,
+      currentPage: page,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1
+    };
+  } catch (error) {
+    console.error('Erro ao buscar pedidos paginados:', error);
+    return {
+      data: [],
+      totalCount: 0,
+      currentPage: 1,
+      totalPages: 0,
+      hasNextPage: false,
+      hasPreviousPage: false
+    };
+  }
+}
+
+// Listar todos os pedidos com itens (mantido para compatibilidade)
 export async function getOrdersWithItems(): Promise<OrderWithItems[]> {
   try {
     const { data, error } = await supabase
@@ -129,7 +220,8 @@ export async function getOrdersWithItems(): Promise<OrderWithItems[]> {
           deadline
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50); // Limitar a 50 registros para performance
 
     if (error) throw error;
     return data as OrderWithItems[];

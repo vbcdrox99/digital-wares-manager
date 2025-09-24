@@ -9,7 +9,7 @@ import { getOrdersWithItems, updateOrderStatus } from '@/integrations/supabase/s
 interface OrderItem {
   id: string;
   quantity: number;
-  unit_price: number;
+  price: number;
   items: {
     id: string;
     hero_name: string;
@@ -42,13 +42,10 @@ interface ShippingQueueProps {}
 
 const getRarityColor = (rarity: string) => {
   const colors = {
-    'Common': 'bg-gray-100 text-gray-800 border-gray-300',
-    'Uncommon': 'bg-green-100 text-green-800 border-green-300',
-    'Rare': 'bg-blue-100 text-blue-800 border-blue-300',
-    'Mythical': 'bg-purple-100 text-purple-800 border-purple-300',
-    'Legendary': 'bg-orange-100 text-orange-800 border-orange-300',
-    'Ancient': 'bg-red-100 text-red-800 border-red-300',
-    'Immortal': 'bg-yellow-100 text-yellow-800 border-yellow-300'
+    'comum': 'bg-gray-100 text-gray-800 border-gray-300',
+    'persona': 'bg-blue-100 text-blue-800 border-blue-300',
+    'arcana': 'bg-purple-100 text-purple-800 border-purple-300',
+    'immortal': 'bg-orange-100 text-orange-800 border-orange-300'
   };
   return colors[rarity as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-300';
 };

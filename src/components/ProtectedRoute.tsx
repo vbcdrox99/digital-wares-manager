@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, Lock } from 'lucide-react';
+import { Loading } from '@/components/ui/loading';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,23 +12,25 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
   const { user, loading, isAdmin } = useAuth();
+  const [timeoutReached, setTimeoutReached] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimeoutReached(true);
+    }, 10000); // 10 segundos timeout
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Mostrar loading enquanto verifica autenticação
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300 text-lg">Verificando autenticação...</p>
-        </motion.div>
-      </div>
-    );
-  }
+   if (loading && !timeoutReached) {
+     return <Loading text="Verificando autenticação..." />;
+   }
+ 
+   // Se timeout foi atingido, redirecionar para login
+   if (timeoutReached && loading) {
+     return <Navigate to="/login" replace />;
+   }
 
   // Redirecionar para login se não estiver autenticado
   if (!user) {
