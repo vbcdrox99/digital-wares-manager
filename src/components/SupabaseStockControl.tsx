@@ -780,20 +780,21 @@ const SupabaseStockControl: React.FC = () => {
             </div>
             
             <div>
-              <Label>Imagem do Item (opcional)</Label>
+              <Label>Imagem do Item (link externo, opcional)</Label>
               <div className="space-y-3">
                 <Input
-                  type="file"
-                  accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.svg"
-                  onChange={handleImageUpload}
-                  className="bg-secondary/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  type="url"
+                  placeholder="https://exemplo.com/imagem.png"
+                  value={newItem.image_url || ''}
+                  onChange={(e) => setNewItem({ ...newItem, image_url: e.target.value })}
+                  className="bg-secondary/50"
                 />
-                {imagePreview && (
-                  <div className="relative">
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      className="w-32 h-32 object-cover rounded-lg border-2 border-border"
+                {newItem.image_url && (
+                  <div className="relative w-64 aspect-[2/1]">
+                    <img
+                      src={newItem.image_url}
+                      alt="Preview"
+                      className="w-full h-full object-cover rounded-lg border-2 border-border"
                     />
                     <Button
                       type="button"
@@ -807,7 +808,7 @@ const SupabaseStockControl: React.FC = () => {
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground">
-                  Formatos aceitos: JPG, JPEG, PNG, GIF, WebP, SVG (máx. 5MB)
+                  Informe a URL completa da imagem (https://...).
                 </div>
               </div>
             </div>
@@ -1184,26 +1185,24 @@ const SupabaseStockControl: React.FC = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-image" className="text-right">
-                Imagem do Item
+              <Label htmlFor="edit-image-url" className="text-right">
+                Imagem do Item (link externo)
               </Label>
               <div className="col-span-3 space-y-2">
                 <Input
-                  id="edit-image"
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/svg+xml"
-                  onChange={handleEditImageUpload}
-                  className="cursor-pointer"
+                  id="edit-image-url"
+                  type="url"
+                  placeholder="https://exemplo.com/imagem.png"
+                  value={editForm.image_url || ''}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, image_url: e.target.value }))}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Formatos aceitos: JPG, PNG, GIF, WebP, SVG (máx. 5MB)
-                </p>
-                {editImagePreview && (
-                  <div className="relative">
+                <p className="text-xs text-muted-foreground">Informe a URL completa da imagem (https://...).</p>
+                {editForm.image_url && (
+                  <div className="relative w-40 aspect-[2/1]">
                     <img
-                      src={editImagePreview}
+                      src={editForm.image_url}
                       alt="Preview"
-                      className="w-20 h-20 object-cover rounded border"
+                      className="w-full h-full object-cover rounded border"
                     />
                     <Button
                       type="button"

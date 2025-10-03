@@ -125,12 +125,15 @@ const ItemDetailPage: React.FC = () => {
           >
             <Card className="bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 overflow-hidden group">
               <CardContent className="p-0">
-                <div className="relative aspect-square overflow-hidden">
+                <div className="relative aspect-[2/1] overflow-hidden">
                   {item.image_url ? (
                     <motion.img
                       src={item.image_url}
                       alt={item.name}
                       className="w-full h-full object-cover"
+                      decoding="async"
+                      fetchpriority="high"
+                      loading="eager"
                       whileHover={{ scale: 1.05 }}
                       transition={{ duration: 0.3 }}
                     />
@@ -161,6 +164,69 @@ const ItemDetailPage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Blocos auxiliares abaixo da imagem para preencher a coluna e evitar espaço vazio */}
+            <div className="mt-6 space-y-6">
+              {/* Estoque */}
+              <Card className="bg-white/5 border-white/20 backdrop-blur-sm">
+                <CardHeader>
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <Package className="w-5 h-5" />
+                    Disponibilidade
+                  </h3>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/80">Em estoque:</span>
+                    <span className="text-white font-semibold">
+                      {item.current_stock} / {item.initial_stock}
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2 mt-2">
+                    <div
+                      className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(item.current_stock / item.initial_stock) * 100}%`
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Seletor de Quantidade */}
+              <Card className="bg-white/5 border-white/20 backdrop-blur-sm">
+                <CardHeader>
+                  <h3 className="text-lg font-semibold text-white">Quantidade</h3>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      variant="outline"
+                      size="sm"
+                      className="border-white/20 text-white hover:bg-white/10"
+                    >
+                      -
+                    </Button>
+                    <span className="text-white font-semibold text-xl w-12 text-center">
+                      {quantity}
+                    </span>
+                    <Button
+                      onClick={() => setQuantity(Math.min(item.current_stock, quantity + 1))}
+                      variant="outline"
+                      size="sm"
+                      className="border-white/20 text-white hover:bg-white/10"
+                      disabled={quantity >= item.current_stock}
+                    >
+                      +
+                    </Button>
+                  </div>
+                  <p className="text-white/60 text-sm mt-2">
+                    Total: ${(item.price * quantity).toFixed(2)}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </motion.div>
 
           {/* Informações do Item */}
@@ -188,66 +254,6 @@ const ItemDetailPage: React.FC = () => {
                 </Badge>
               </div>
             </div>
-
-            {/* Estoque */}
-            <Card className="bg-white/5 border-white/20 backdrop-blur-sm">
-              <CardHeader>
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Package className="w-5 h-5" />
-                  Disponibilidade
-                </h3>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center">
-                  <span className="text-white/80">Em estoque:</span>
-                  <span className="text-white font-semibold">
-                    {item.current_stock} / {item.initial_stock}
-                  </span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-2 mt-2">
-                  <div
-                    className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${(item.current_stock / item.initial_stock) * 100}%`
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Seletor de Quantidade */}
-            <Card className="bg-white/5 border-white/20 backdrop-blur-sm">
-              <CardHeader>
-                <h3 className="text-lg font-semibold text-white">Quantidade</h3>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    variant="outline"
-                    size="sm"
-                    className="border-white/20 text-white hover:bg-white/10"
-                  >
-                    -
-                  </Button>
-                  <span className="text-white font-semibold text-xl w-12 text-center">
-                    {quantity}
-                  </span>
-                  <Button
-                    onClick={() => setQuantity(Math.min(item.current_stock, quantity + 1))}
-                    variant="outline"
-                    size="sm"
-                    className="border-white/20 text-white hover:bg-white/10"
-                    disabled={quantity >= item.current_stock}
-                  >
-                    +
-                  </Button>
-                </div>
-                <p className="text-white/60 text-sm mt-2">
-                  Total: ${(item.price * quantity).toFixed(2)}
-                </p>
-              </CardContent>
-            </Card>
 
             {/* Botão de Compra */}
             <motion.div
@@ -316,20 +322,24 @@ const ItemDetailPage: React.FC = () => {
                     <Card className="group bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 overflow-hidden cursor-pointer">
                       <CardHeader className="pb-3">
                         <div className="relative overflow-hidden rounded-lg">
-                          {relatedItem.image_url ? (
-                            <motion.img 
-                              src={relatedItem.image_url} 
-                              alt={relatedItem.name}
-                              className="w-full h-48 object-cover bg-muted"
-                              whileHover={{ scale: 1.1 }}
-                              transition={{ duration: 0.3 }}
-                            />
-                          ) : (
-                            <div className="w-full h-48 bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center group-hover:border-gray-400/50 transition-colors">
-                              <Package className="h-8 w-8 text-gray-400 group-hover:text-gray-300 transition-colors mb-2" />
-                              <span className="text-gray-400 text-sm">Sem imagem</span>
-                            </div>
-                          )}
+                          <div className="aspect-[2/1] relative overflow-hidden rounded-lg">
+                            {relatedItem.image_url ? (
+                              <motion.img 
+                                src={relatedItem.image_url} 
+                                alt={relatedItem.name}
+                                className="w-full h-full object-cover bg-muted"
+                                loading="lazy"
+                                decoding="async"
+                                whileHover={{ scale: 1.1 }}
+                                transition={{ duration: 0.3 }}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center group-hover:border-gray-400/50 transition-colors">
+                                <Package className="h-8 w-8 text-gray-400 group-hover:text-gray-300 transition-colors mb-2" />
+                                <span className="text-gray-400 text-sm">Sem imagem</span>
+                              </div>
+                            )}
+                          </div>
                           <motion.div
                             className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                           />

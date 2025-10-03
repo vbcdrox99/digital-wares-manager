@@ -313,21 +313,20 @@ const CatalogPage: React.FC = () => {
                        viewMode === 'list' ? 'flex flex-row' : ''
                      }`}>
                     <CardHeader className={`${viewMode === 'list' ? 'w-48 flex-shrink-0' : ''} pb-3`}>
-                      <div className="relative overflow-hidden rounded-lg">
+                      <div className={`relative overflow-hidden rounded-lg aspect-[2/1]`}>
                         {item.image_url ? (
                           <motion.img 
                             src={item.image_url} 
                             alt={item.name}
-                            className={`w-full object-cover bg-muted ${
-                              viewMode === 'list' ? 'h-32' : 'h-64'
-                            }`}
+                            className={`w-full h-full object-cover bg-muted`}
+                            loading="lazy"
+                            decoding="async"
+                            fetchpriority="low"
                             whileHover={{ scale: 1.1 }}
                             transition={{ duration: 0.3 }}
                           />
                         ) : (
-                          <div className={`w-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center group-hover:border-gray-400/50 transition-colors ${
-                            viewMode === 'list' ? 'h-32' : 'h-64'
-                          }`}>
+                          <div className={`w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center group-hover:border-gray-400/50 transition-colors`}>
                             <Package className="h-8 w-8 text-gray-400 group-hover:text-gray-300 transition-colors mb-2" />
                             <span className="text-gray-400 text-sm">Sem imagem</span>
                           </div>

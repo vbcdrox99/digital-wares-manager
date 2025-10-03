@@ -27,6 +27,25 @@ export const itemsService = {
   },
 
   /**
+   * Busca itens destacados com limite opcional
+   */
+  async getHighlighted(limit = 10) {
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('highlighted', true)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Erro ao buscar itens destacados:', error);
+      throw error;
+    }
+
+    return data;
+  },
+
+  /**
    * Busca itens por ID do baú
    */
   async getByChestId(chestId: string) {

@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingCart, Zap, Gift, TrendingUp, Users, Package, Award, Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useItems } from '@/hooks/useItems';
 import { supabaseServices } from '@/integrations/supabase/services';
 import { Item } from '@/types/inventory';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,12 +27,13 @@ const getRarityColor = (rarity: string) => {
 };
 
 const HomePage: React.FC = () => {
-  const { items, loading, error } = useItems();
+  // Removido carregamento global de itens para otimizar primeira visita
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [highlightedItems, setHighlightedItems] = useState<Item[]>([]);
   const [currentHighlightedIndex, setCurrentHighlightedIndex] = useState(0);
   const [loadingHighlighted, setLoadingHighlighted] = useState(true);
+  const [highlightedError, setHighlightedError] = useState<string | null>(null);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
 
   // Função para lidar com logout
@@ -57,20 +57,20 @@ const HomePage: React.FC = () => {
     setShowWhatsAppModal(false);
   };
   
-  // Pegar apenas os primeiros 3 itens para exibir como destaque
-  const featuredItems = items.slice(0, 3);
+  // Pegar apenas os primeiros 3 itens destacados para exibir
+  const featuredItems = highlightedItems.slice(0, 3);
 
   // Buscar itens destacados
   useEffect(() => {
     const fetchHighlightedItems = async () => {
       try {
         setLoadingHighlighted(true);
-        const allItems = await supabaseServices.items.getAll();
-        const highlighted = allItems.filter(item => item.highlighted);
+        const highlighted = await supabaseServices.items.getHighlighted(12);
         setHighlightedItems(highlighted);
         setCurrentHighlightedIndex(0);
       } catch (error) {
         console.error('Erro ao buscar itens destacados:', error);
+        setHighlightedError('Erro ao buscar itens destacados');
       } finally {
         setLoadingHighlighted(false);
       }
@@ -205,6 +205,9 @@ const HomePage: React.FC = () => {
                                src={currentHighlightedItem.image_url} 
                                alt={currentHighlightedItem.name}
                                className="w-full h-64 object-cover rounded-xl border-2 border-white/30 shadow-2xl transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-3xl"
+                               decoding="async"
+                               fetchpriority="high"
+                               loading="eager"
                              />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-xl" />
                             <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -370,41 +373,7 @@ const HomePage: React.FC = () => {
         </div>
       </motion.section>
 
-      {/* Stats Section */}
-      <motion.section 
-        className="py-16 bg-muted/30"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        viewport={{ once: true }}
-      >
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <motion.div 
-                   key={index} 
-                   className="text-center space-y-4 bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 p-6"
-                   initial={{ opacity: 0, y: 30 }}
-                   whileInView={{ opacity: 1, y: 0 }}
-                   transition={{ duration: 0.6, delay: index * 0.2, ease: "easeOut" }}
-                   viewport={{ once: true }}
-                   whileHover={{ scale: 1.05, y: -5 }}
-                 >
-                  <div className="mx-auto w-16 h-16 bg-gradient-gaming rounded-full flex items-center justify-center">
-                    <Icon className="h-8 w-8 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                    <div className="text-muted-foreground">{stat.label}</div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </motion.section>
+      
 
       {/* Featured Items */}
       <motion.section 
@@ -431,14 +400,14 @@ const HomePage: React.FC = () => {
             </p>
           </motion.div>
 
-          {loading ? (
+          {loadingHighlighted ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-2">Carregando itens...</span>
             </div>
-          ) : error ? (
+          ) : highlightedError ? (
             <div className="text-center py-12">
-              <p className="text-red-500">Erro ao carregar itens: {error}</p>
+              <p className="text-red-500">{highlightedError}</p>
             </div>
           ) : (
             <motion.div 
@@ -468,11 +437,14 @@ const HomePage: React.FC = () => {
                 >
                   <Card className="group bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 overflow-hidden cursor-pointer" onClick={() => navigate(`/item/${item.id}`)}>
                   <CardHeader className="pb-3">
-                    <div className="relative overflow-hidden rounded-lg">
+                    <div className="relative overflow-hidden rounded-lg aspect-[2/1]">
                       <motion.img 
                          src={item.image_url || "/placeholder.svg"} 
                          alt={item.name}
-                         className="w-full h-48 object-cover bg-muted cursor-pointer"
+                         className="w-full h-full object-cover bg-muted cursor-pointer"
+                         decoding="async"
+                         fetchpriority="high"
+                         loading="eager"
                          whileHover={{ scale: 1.1 }}
                          transition={{ duration: 0.3 }}
                          onClick={() => navigate(`/item/${item.id}`)}
