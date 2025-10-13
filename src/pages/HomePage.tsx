@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, ShoppingCart, Zap, Gift, TrendingUp, Users, Package, Award, Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Star, ShoppingCart, Zap, Gift, TrendingUp, Users, Package, Award, Loader2, ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabaseServices } from '@/integrations/supabase/services';
 import { Item } from '@/types/inventory';
@@ -582,14 +582,14 @@ const HomePage: React.FC = () => {
               transition={{ duration: 0.6, ease: "easeOut" }}
               whileHover={{ scale: 1.02, rotateY: 2 }}
             >
-              <Card className="bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 bg-gradient-to-br from-red-500/20 to-orange-500/20 border-red-500/30">
+              <Card className="bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Gift className="h-6 w-6 text-red-500" />
-                    Flash Sale
+                    <ExternalLink className="h-6 w-6 text-emerald-500" />
+                    Linktr.ee
                   </CardTitle>
                   <CardDescription>
-                    Até 50% de desconto em itens selecionados
+                    Acesse todas as nossas redes e links
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -597,11 +597,13 @@ const HomePage: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Button className="w-full bg-red-500 hover:bg-red-600 bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300">
-                      <motion.span whileHover={{ x: 2 }}>
-                        Ver Ofertas
-                      </motion.span>
-                    </Button>
+                    <a href="https://linktr.ee/dotaplaybrasil" target="_blank" rel="noopener noreferrer">
+                      <Button className="w-full bg-emerald-500 hover:bg-emerald-600 bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300">
+                        <motion.span whileHover={{ x: 2 }}>
+                          Abrir Linktr.ee
+                        </motion.span>
+                      </Button>
+                    </a>
                   </motion.div>
                 </CardContent>
               </Card>
@@ -684,8 +686,8 @@ const HomePage: React.FC = () => {
             <div className="space-y-4">
               <h4 className="font-semibold">Contato</h4>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <div>suporte@dotaplay.com.br</div>
-                <div>WhatsApp: (11) 99999-9999</div>
+                <div>Dotaplaybrasil@gmail.com</div>
+                <div>WhatsApp: 11 99609-8995</div>
                 <div>Discord: DotaPlay#1234</div>
               </div>
             </div>

@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Package, User, LogOut } from 'lucide-react';
+import { Package, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useIsMobile } from '../hooks/use-mobile';
 
 interface NavigationProps {
   className?: string;
@@ -10,6 +11,8 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   const location = useLocation();
   const { user, logout, isAdmin } = useAuth();
+  const isMobile = useIsMobile();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -19,18 +22,28 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
     await logout();
   };
 
+  React.useEffect(() => {
+    // Fechar o menu mobile ao navegar para outra rota
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   return (
     <header className={`relative z-20 border-b border-white/10 bg-black/20 backdrop-blur-sm ${className}`}>
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <Link
+            to="/"
+            aria-label="Ir para página inicial"
+            className="flex items-center space-x-2 hover:opacity-90 transition-opacity"
+          >
             <div className="w-8 h-8 bg-gradient-gaming rounded-lg flex items-center justify-center">
               <Package className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white drop-shadow-lg">
               Dota Play Brasil
             </h1>
-          </div>
+          </Link>
+          {/* Navegação Desktop */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link 
               to="/" 
@@ -51,6 +64,16 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
               }`}
             >
               Catálogo
+            </Link>
+            <Link 
+              to="/sorteio" 
+              className={`transition-colors ${
+                isActive('/sorteio') 
+                  ? 'text-foreground hover:text-primary' 
+                  : 'text-muted-foreground hover:text-primary'
+              }`}
+            >
+              Sorteio
             </Link>
             <Link 
               to="/sobre" 
@@ -117,7 +140,96 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
               )}
             </div>
           </nav>
+
+          {/* Controles Mobile (hamburger + auth) */}
+          <div className="flex md:hidden items-center space-x-3">
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-1 text-gray-300 hover:text-red-400 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="text-sm">Sair</span>
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center space-x-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-1.5 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all text-sm"
+              >
+                <User className="w-4 h-4" />
+                <span className="font-medium">Login</span>
+              </Link>
+            )}
+            <button
+              aria-label="Abrir menu"
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-menu"
+              onClick={() => setMobileOpen((v) => !v)}
+              className="p-2 rounded-md border border-white/10 text-white hover:bg-white/10"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
+
+        {/* Menu Mobile Dropdown */}
+        {mobileOpen && (
+          <div
+            id="mobile-menu"
+            className="md:hidden mt-4 grid grid-cols-1 gap-2 bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg p-4"
+          >
+            <Link
+              to="/"
+              className={`block px-2 py-2 rounded-md transition-colors ${
+                isActive('/') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+              }`}
+            >
+              Início
+            </Link>
+            <Link
+              to="/catalog"
+              className={`block px-2 py-2 rounded-md transition-colors ${
+                isActive('/catalog') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+              }`}
+            >
+              Catálogo
+            </Link>
+            <Link
+              to="/sorteio"
+              className={`block px-2 py-2 rounded-md transition-colors ${
+                isActive('/sorteio') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+              }`}
+            >
+              Sorteio
+            </Link>
+            <Link
+              to="/sobre"
+              className={`block px-2 py-2 rounded-md transition-colors ${
+                isActive('/sobre') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+              }`}
+            >
+              Sobre
+            </Link>
+            <Link
+              to="/faq"
+              className={`block px-2 py-2 rounded-md transition-colors ${
+                isActive('/faq') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+              }`}
+            >
+              FAQ
+            </Link>
+            {isAdmin() && (
+              <Link
+                to="/admin"
+                className={`block px-2 py-2 rounded-md transition-colors ${
+                  isActive('/admin') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+                }`}
+              >
+                Admin
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

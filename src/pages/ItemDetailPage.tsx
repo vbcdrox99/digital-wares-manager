@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, Star, Package, Shield, Truck, Eye, X } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Star, Package, Eye, X } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -275,24 +275,7 @@ const ItemDetailPage: React.FC = () => {
               </Button>
             </motion.div>
 
-            {/* Informações Adicionais */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-white/5 border-white/20 backdrop-blur-sm">
-                <CardContent className="p-4 text-center">
-                  <Shield className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                  <p className="text-white/80 text-sm">Garantia</p>
-                  <p className="text-white font-semibold">30 dias</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white/5 border-white/20 backdrop-blur-sm">
-                <CardContent className="p-4 text-center">
-                  <Truck className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                  <p className="text-white/80 text-sm">Entrega</p>
-                  <p className="text-white font-semibold">Imediata</p>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Bloco de garantias/entrega removido conforme solicitação */}
           </motion.div>
         </div>
         
@@ -308,7 +291,7 @@ const ItemDetailPage: React.FC = () => {
               Itens Relacionados
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {getRelatedItems().map((relatedItem, index) => (
                 <motion.div
                   key={relatedItem.id}

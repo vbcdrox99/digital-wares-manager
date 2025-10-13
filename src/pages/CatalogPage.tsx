@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useItems } from '@/hooks/useItems';
+// Removido lógica de Sorteio Premium do Catálogo
 import Navigation from '@/components/Navigation';
 
 // Função para cores de raridade (mesma da HomePage)
@@ -44,6 +45,7 @@ const CatalogPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [priceRange, setPriceRange] = useState<string>('all');
+  // Lógica de Sorteio Premium movida para página de Admin
 
   // Filtrar e ordenar itens
   useEffect(() => {
@@ -210,6 +212,9 @@ const CatalogPage: React.FC = () => {
                 </SelectContent>
               </Select>
 
+              {/* Comando: Sorteio Premium */}
+              {/* Comando de Sorteio Premium removido do Catálogo (agora no Admin) */}
+
               {/* Modo de visualização */}
               <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
                 <Button
@@ -246,6 +251,8 @@ const CatalogPage: React.FC = () => {
               {filteredItems.length} {filteredItems.length === 1 ? 'item encontrado' : 'itens encontrados'}
             </span>
           </div>
+
+          {/* Painel de seleção de Itens Premium removido (agora no Admin) */}
         </div>
       </motion.section>
 
@@ -367,23 +374,26 @@ const CatalogPage: React.FC = () => {
                           whileTap={{ scale: 0.95 }}
                           onClick={(e) => e.preventDefault()}
                         >
-                          <Button 
-                            size="sm" 
-                            className="bg-gradient-gaming shadow-gaming-glow"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // Aqui você pode adicionar lógica de compra rápida se desejar
-                            }}
-                          >
-                            <motion.div
-                              className="flex items-center"
-                              whileHover={{ x: 2 }}
+                          <div className="flex items-center gap-2">
+                            {/* Botão Premium removido dos cards no Catálogo */}
+                            <Button 
+                              size="sm" 
+                              className="bg-gradient-gaming shadow-gaming-glow"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Aqui você pode adicionar lógica de compra rápida se desejar
+                              }}
                             >
-                              <Package className="h-4 w-4 mr-1" />
-                              Ver Detalhes
-                            </motion.div>
-                          </Button>
+                              <motion.div
+                                className="flex items-center"
+                                whileHover={{ x: 2 }}
+                              >
+                                <Package className="h-4 w-4 mr-1" />
+                                Ver Detalhes
+                              </motion.div>
+                            </Button>
+                          </div>
                         </motion.div>
                       </div>
                     </CardContent>
@@ -437,15 +447,15 @@ const CatalogPage: React.FC = () => {
             <div className="space-y-4">
               <h4 className="font-semibold">Contato</h4>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <div>suporte@dotaplay.com.br</div>
-                <div>WhatsApp: (11) 99999-9999</div>
+                <div>Dotaplaybrasil@gmail.com</div>
+                <div>WhatsApp: 11 99609-8995</div>
                 <div>Discord: DotaPlay#1234</div>
               </div>
             </div>
           </div>
           
           <div className="border-t border-border/50 mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 Dota Play Brasil. Todos os direitos reservados.</p>
+            <p>&copy; 2025 Dota Play Brasil. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

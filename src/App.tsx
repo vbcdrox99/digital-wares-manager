@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RafflePage from "./pages/RafflePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +42,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/catalog" element={<CatalogPage />} />
+              <Route path="/sorteio" element={<RafflePage />} />
               <Route path="/item/:id" element={<ItemDetailPage />} />
               <Route path="/sobre" element={<AboutPage />} />
               <Route path="/faq" element={<FAQPage />} />
