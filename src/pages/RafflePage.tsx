@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,7 @@ const RafflePage: React.FC = () => {
   const [dailyItems, setDailyItems] = React.useState<Item[]>([]);
   const [loadingDaily, setLoadingDaily] = React.useState(false);
   const [dailyError, setDailyError] = React.useState<string | null>(null);
+  const [featuredItem, setFeaturedItem] = React.useState<Item | null>(null);
 
   React.useEffect(() => {
     const fetchPremiumItems = async () => {
@@ -61,11 +62,38 @@ const RafflePage: React.FC = () => {
 
   // Área de live removida conforme solicitação
 
-  const featuredItem = useMemo(() => {
-    return premiumSelectedItems && premiumSelectedItems.length > 0
-      ? premiumSelectedItems[0]
-      : null;
-  }, [premiumSelectedItems]);
+  // Carregar Item Raro do Dia para todos (independente de login ou seleção no Admin)
+  React.useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        // Primeiro tenta pegar um item destacado
+        const { data, error } = await supabase
+          .from('items')
+          .select('*')
+          .eq('highlighted', true)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setFeaturedItem(data[0] as Item);
+        } else {
+          // Fallback: pegar um item de maior raridade
+          const { data: fallback, error: fallbackError } = await supabase
+            .from('items')
+            .select('*')
+            .in('rarity', ['immortal', 'arcana'])
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (fallbackError) throw fallbackError;
+          setFeaturedItem(fallback && fallback.length > 0 ? (fallback[0] as Item) : null);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar Item Raro do Dia:', err);
+        setFeaturedItem(null);
+      }
+    };
+    fetchFeatured();
+  }, []);
 
   // Buscar itens com preço menor que R$30 para o sorteio diário
   React.useEffect(() => {
@@ -149,54 +177,104 @@ const RafflePage: React.FC = () => {
         transition={{ duration: 0.6, delay: 0.3 }}
       >
         <div className="container mx-auto px-6">
+          {/* Item Raro do Dia visível para todos */}
+          {featuredItem && (
+            <Card className="border border-white/10 bg-black/30 backdrop-blur-md rounded-2xl overflow-hidden">
+              <CardHeader>
+                <div className="relative overflow-hidden rounded-xl aspect-[2/1] ring-1 ring-white/10">
+                  {featuredItem.image_url ? (
+                    <motion.img
+                      src={featuredItem.image_url || ''}
+                      alt={featuredItem.name || ''}
+                      className="w-full h-full object-cover object-center"
+                      loading="lazy"
+                      decoding="async"
+                      fetchpriority="low"
+                      whileHover={{ scale: 1.03 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-xl border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
+                      <Package className="h-10 w-10 text-gray-400 mb-2" />
+                      <span className="text-gray-400 text-sm">Sem imagem</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                  <div className="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-sm font-bold shadow-lg ring-1 ring-amber-400/60">
+                    <Info className="w-4 h-4" /> Item Raro do Dia
+                  </div>
+                  <div className="absolute top-3 right-3 px-3 py-1 rounded-md bg-black/70 text-white text-sm font-semibold shadow">
+                    R$ {parseFloat(featuredItem.price.toString()).toFixed(2)}
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                      <h3 className="text-white text-2xl md:text-3xl font-extrabold line-clamp-1">{featuredItem.name}</h3>
+                      <p className="text-gray-300 text-sm md:text-base">{featuredItem.hero_name}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`px-2 py-1 rounded ${getRarityColor(featuredItem.rarity)} text-white text-xs font-semibold uppercase`}>
+                        {featuredItem.rarity}
+                      </div>
+                      <Link
+                        to={`/item/${featuredItem.id}`}
+                        className="inline-flex items-center gap-2 bg-gradient-gaming shadow-gaming-glow text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition"
+                      >
+                        <Ticket className="w-4 h-4" /> Ver detalhes
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          )}
+
+          {/* Grid de itens premium (se houver mais de um selecionado no Admin) */}
           {loading ? (
-            <div className="text-center text-muted-foreground">Carregando itens do Sorteio Premium...</div>
-          ) : premiumSelectedItems.length === 0 ? (
-            <div className="text-center text-muted-foreground">
-              Nenhum item premium selecionado no Admin.
-              </div>
-          ) : (
-            <>
-              {featuredItem && (
-                <Card className="border border-white/10 bg-black/30 backdrop-blur-md rounded-2xl overflow-hidden">
+            <div className="text-center text-muted-foreground mt-6">Carregando itens do Sorteio Premium...</div>
+          ) : premiumSelectedItems.length > 1 ? (
+            <div className="grid grid-cols-1 gap-6 mt-6">
+              {premiumSelectedItems.slice(1).map((item) => (
+                <Card key={item.id} className="border border-white/10 bg-black/20 backdrop-blur-md rounded-xl overflow-hidden">
                   <CardHeader>
-                    <div className="relative overflow-hidden rounded-xl aspect-[2/1] ring-1 ring-white/10">
-                      {featuredItem.image_url ? (
+                    <div className="relative overflow-hidden rounded-lg aspect-[2/1] group ring-1 ring-white/10">
+                      {item.image_url ? (
                         <motion.img
-                          src={featuredItem.image_url || ''}
-                          alt={featuredItem.name || ''}
+                          src={item.image_url || ''}
+                          alt={item.name || ''}
                           className="w-full h-full object-cover object-center"
                           loading="lazy"
                           decoding="async"
                           fetchpriority="low"
-                          whileHover={{ scale: 1.03 }}
+                          whileHover={{ scale: 1.05 }}
                           transition={{ duration: 0.3 }}
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-xl border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
-                          <Package className="h-10 w-10 text-gray-400 mb-2" />
+                        <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
+                          <Package className="h-8 w-8 text-gray-400 mb-2" />
                           <span className="text-gray-400 text-sm">Sem imagem</span>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                      <div className="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-sm font-bold shadow-lg ring-1 ring-amber-400/60">
-                        <Info className="w-4 h-4" /> Item Raro do Dia
-                      </div>
-                      <div className="absolute top-3 right-3 px-3 py-1 rounded-md bg-black/70 text-white text-sm font-semibold shadow">
-                        R$ {parseFloat(featuredItem.price.toString()).toFixed(2)}
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                          <h3 className="text-white text-2xl md:text-3xl font-extrabold line-clamp-1">{featuredItem.name}</h3>
-                          <p className="text-gray-300 text-sm md:text-base">{featuredItem.hero_name}</p>
+                      <div className="absolute top-2 left-2">
+                        <div className="px-2 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold shadow-md">
+                          Premium
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className={`px-2 py-1 rounded ${getRarityColor(featuredItem.rarity)} text-white text-xs font-semibold uppercase`}>
-                            {featuredItem.rarity}
+                      </div>
+                      <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/60 text-white text-sm font-semibold shadow">
+                        R$ {parseFloat(item.price.toString()).toFixed(2)}
+                      </div>
+                      <motion.div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duração-300" />
+                      <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                          <h3 className="text-white text-xl md:text-2xl font-bold line-clamp-1">{item.name}</h3>
+                          <p className="text-gray-300 text-sm md:text-base">{item.hero_name}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`px-2 py-1 rounded ${getRarityColor(item.rarity)} text-white text-xs font-semibold uppercase`}>
+                            {item.rarity}
                           </div>
                           <Link
-                            to={`/item/${featuredItem.id}`}
-                            className="inline-flex items-center gap-2 bg-gradient-gaming shadow-gaming-glow text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition"
+                            to={`/item/${item.id}`}
+                            className="inline-flex items-center gap-2 bg-gradient-gaming shadow-gaming-glow text-white px-3 py-2 rounded-md text-sm hover:opacity-90 transition"
                           >
                             <Ticket className="w-4 h-4" /> Ver detalhes
                           </Link>
@@ -205,65 +283,9 @@ const RafflePage: React.FC = () => {
                     </div>
                   </CardHeader>
                 </Card>
-              )}
-
-              {premiumSelectedItems.length > 1 && (
-                <div className="grid grid-cols-1 gap-6 mt-6">
-                  {premiumSelectedItems.slice(1).map((item) => (
-                    <Card key={item.id} className="border border-white/10 bg-black/20 backdrop-blur-md rounded-xl overflow-hidden">
-                      <CardHeader>
-                        <div className="relative overflow-hidden rounded-lg aspect-[2/1] group ring-1 ring-white/10">
-                          {item.image_url ? (
-                            <motion.img
-                              src={item.image_url || ''}
-                              alt={item.name || ''}
-                              className="w-full h-full object-cover object-center"
-                              loading="lazy"
-                              decoding="async"
-                              fetchpriority="low"
-                              whileHover={{ scale: 1.05 }}
-                              transition={{ duration: 0.3 }}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
-                              <Package className="h-8 w-8 text-gray-400 mb-2" />
-                              <span className="text-gray-400 text-sm">Sem imagem</span>
-                            </div>
-                          )}
-                          <div className="absolute top-2 left-2">
-                            <div className="px-2 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold shadow-md">
-                              Premium
-                            </div>
-                          </div>
-                          <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/60 text-white text-sm font-semibold shadow">
-                            R$ {parseFloat(item.price.toString()).toFixed(2)}
-                          </div>
-                          <motion.div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                          <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                            <div>
-                              <h3 className="text-white text-xl md:text-2xl font-bold line-clamp-1">{item.name}</h3>
-                              <p className="text-gray-300 text-sm md:text-base">{item.hero_name}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className={`px-2 py-1 rounded ${getRarityColor(item.rarity)} text-white text-xs font-semibold uppercase`}>
-                                {item.rarity}
-                              </div>
-                              <Link
-                                to={`/item/${item.id}`}
-                                className="inline-flex items-center gap-2 bg-gradient-gaming shadow-gaming-glow text-white px-3 py-2 rounded-md text-sm hover:opacity-90 transition"
-                              >
-                                <Ticket className="w-4 h-4" /> Ver detalhes
-                              </Link>
-                            </div>
-                          </div>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+              ))}
+            </div>
+          ) : null}
         </div>
       </motion.section>
 
@@ -394,9 +416,11 @@ const RafflePage: React.FC = () => {
                               </div>
                               <Link
                                 to={`/item/${item.id}`}
-                                className="inline-flex items-center gap-2 bg-gradient-gaming shadow-gaming-glow text-white px-3 py-2 rounded-md text-sm hover:opacity-90 transition"
+                                className="inline-flex items-center justify-center bg-gradient-gaming shadow-gaming-glow text-white p-2 rounded-md hover:opacity-90 transition"
+                                aria-label="Ver detalhes"
+                                title="Ver detalhes"
                               >
-                                <Ticket className="w-4 h-4" /> Ver detalhes
+                                <Ticket className="w-4 h-4" />
                               </Link>
                             </div>
                           </div>

@@ -9,6 +9,7 @@ import { supabaseServices } from '@/integrations/supabase/services';
 import { Item } from '@/types/inventory';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '../components/Navigation';
+import { useToast } from '@/hooks/use-toast';
 
 // Função para mapear raridade para cor do badge
 const getRarityColor = (rarity: string) => {
@@ -30,6 +31,7 @@ const HomePage: React.FC = () => {
   // Removido carregamento global de itens para otimizar primeira visita
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [highlightedItems, setHighlightedItems] = useState<Item[]>([]);
   const [currentHighlightedIndex, setCurrentHighlightedIndex] = useState(0);
   const [loadingHighlighted, setLoadingHighlighted] = useState(true);
@@ -149,7 +151,20 @@ const HomePage: React.FC = () => {
                    </Link>
                  </motion.div>
                  <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
-                   <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-white/20 text-white hover:bg-white/10 glass-card">
+                   <Button
+                     size="lg"
+                     variant="outline"
+                     className="text-lg px-8 py-6 border-white/20 text-white hover:bg-white/10 glass-card"
+                     aria-label="Em breve: Vender Itens"
+                     title="Em breve"
+                     onClick={() =>
+                       toast({
+                         title: 'Em breve',
+                         description:
+                           'A página de venda de itens ainda está em desenvolvimento. Obrigado pela paciência!',
+                       })
+                     }
+                   >
                      <Zap className="mr-2 h-5 w-5" />
                      Vender Itens
                    </Button>
@@ -621,10 +636,10 @@ const HomePage: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Zap className="h-6 w-6 text-blue-500" />
-                    Novidades
+                    Sobre
                   </CardTitle>
                   <CardDescription>
-                    Últimos itens adicionados ao catálogo
+                    Saiba mais sobre a nossa comunidade e o projeto
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -632,11 +647,13 @@ const HomePage: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Button className="w-full bg-blue-500 hover:bg-blue-600 bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300">
-                      <motion.span whileHover={{ x: 2 }}>
-                        Explorar
-                      </motion.span>
-                    </Button>
+                    <Link to="/sobre">
+                      <Button className="w-full bg-blue-500 hover:bg-blue-600 bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300">
+                        <motion.span whileHover={{ x: 2 }}>
+                          Abrir página Sobre
+                        </motion.span>
+                      </Button>
+                    </Link>
                   </motion.div>
                 </CardContent>
               </Card>
@@ -654,8 +671,8 @@ const HomePage: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-gaming rounded-lg flex items-center justify-center">
                   <Package className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-xl font-bold bg-gradient-gaming bg-clip-text text-transparent">
-                  DOTA PLAY
+                <h3 className="text-xl font-bold text-white drop-shadow-lg">
+                  Dota Play Brasil
                 </h3>
               </div>
               <p className="text-muted-foreground">
@@ -694,7 +711,7 @@ const HomePage: React.FC = () => {
           </div>
           
           <div className="border-t border-border/50 mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 Dota Play Brasil. Todos os direitos reservados.</p>
+            <p>&copy; 2025 Dota Play Brasil. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

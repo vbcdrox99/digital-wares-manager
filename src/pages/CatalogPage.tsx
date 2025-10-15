@@ -415,8 +415,8 @@ const CatalogPage: React.FC = () => {
                 <div className="w-8 h-8 bg-gradient-gaming rounded-lg flex items-center justify-center">
                   <Package className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-xl font-bold bg-gradient-gaming bg-clip-text text-transparent">
-                  DOTA PLAY
+                <h3 className="text-xl font-bold text-white drop-shadow-lg">
+                  Dota Play Brasil
                 </h3>
               </div>
               <p className="text-muted-foreground">
