@@ -104,17 +104,19 @@ const Orders: React.FC<OrdersProps> = () => {
 
   useEffect(() => {
     loadData();
-    
+  }, []);
+
+  useEffect(() => {
     // Sistema de recarregamento otimizado
-    let interval: NodeJS.Timeout;
-    
+    let interval: NodeJS.Timeout | undefined;
+  
     const startPolling = () => {
       // Só recarrega se há pedidos pendentes
       if (orders.some(order => order.status === 'pending')) {
         interval = setInterval(loadOrders, 120000); // Aumentado para 2 minutos
       }
     };
-    
+  
     const handleVisibilityChange = () => {
       if (document.hidden) {
         // Pausa o polling quando a aba não está visível
@@ -126,13 +128,13 @@ const Orders: React.FC<OrdersProps> = () => {
         loadOrders();
       }
     };
-    
+  
     // Inicia o polling
     startPolling();
-    
+  
     // Adiciona listener para mudança de visibilidade
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+  
     return () => {
       if (interval) clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
