@@ -13,16 +13,16 @@ import { toast } from '@/hooks/use-toast';
 import { supabaseServices, Chest, Item, Customer } from '@/integrations/supabase/services';
 import { supabase } from '@/integrations/supabase/client';
 
-const rarities: Rarity[] = ['comum', 'persona', 'arcana', 'immortal'];
+const DEFAULT_RARITIES = ['comum', 'persona', 'arcana', 'immortal'];
 
-const getRarityColor = (rarity: Rarity) => {
-  const colors = {
-    comum: 'bg-gray-500/20 text-gray-700 border-gray-500/30',
-    persona: 'bg-blue-500/20 text-blue-700 border-blue-500/30',
-    arcana: 'bg-purple-500/20 text-purple-700 border-purple-500/30',
-    immortal: 'bg-orange-500/20 text-orange-700 border-orange-500/30'
+const getRarityColor = (rarity: string) => {
+  const colors: Record<string, string> = {
+    comum: 'bg-gray-700 text-white border-gray-800',
+    persona: 'bg-blue-600 text-white border-blue-700',
+    arcana: 'bg-purple-600 text-white border-purple-700',
+    immortal: 'bg-orange-600 text-white border-orange-700'
   };
-  return colors[rarity];
+  return colors[rarity] || 'bg-gray-700 text-white border-gray-800';
 };
 
 const SupabaseStockControl: React.FC = () => {
@@ -90,6 +90,9 @@ const SupabaseStockControl: React.FC = () => {
 
   // Estado para filtro de busca
   const [searchFilter, setSearchFilter] = useState('');
+  const [rarities, setRarities] = useState<string[]>(DEFAULT_RARITIES);
+  const [showAddRarity, setShowAddRarity] = useState(false);
+  const [newRarity, setNewRarity] = useState('');
 
   // Carregar baús e clientes ao iniciar
   useEffect(() => {
@@ -117,6 +120,42 @@ const SupabaseStockControl: React.FC = () => {
     setItemPrices(initialPrices);
     setItemDiscounts(initialDiscounts);
   }, [items]);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('custom_rarities') || '[]');
+      if (Array.isArray(saved)) {
+        const merged = Array.from(new Set([
+          ...DEFAULT_RARITIES,
+          ...saved.map((s: any) => String(s).toLowerCase())
+        ]));
+        setRarities(merged);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleAddRarity = () => {
+    const name = newRarity.trim().toLowerCase();
+    if (!name) {
+      toast({ title: 'Nome inválido', description: 'Digite um nome de raridade.', variant: 'destructive' });
+      return;
+    }
+    if (rarities.includes(name)) {
+      toast({ title: 'Já existe', description: 'Essa raridade já está na lista.' });
+      return;
+    }
+    const updated = [...rarities, name];
+    setRarities(updated);
+    try {
+      const custom = updated.filter(r => !DEFAULT_RARITIES.includes(r));
+      localStorage.setItem('custom_rarities', JSON.stringify(custom));
+    } catch {}
+    setShowAddRarity(false);
+    setNewRarity('');
+    toast({ title: 'Raridade adicionada', description: `"${name}" disponível na lista.` });
+  };
 
   // Função para manipular upload de imagem
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -320,7 +359,7 @@ const SupabaseStockControl: React.FC = () => {
       setNewChestName('');
       toast({ title: 'Baú criado com sucesso!' });
       
-      // Recarregar a lista para garantir sincronização
+      // Recarregar a lista de baús para garantir sincronização
       await loadChests();
     } catch (error) {
       console.error('❌ Erro ao criar baú:', error);
@@ -840,23 +879,28 @@ const SupabaseStockControl: React.FC = () => {
             
             <div>
               <Label>Raridade</Label>
-              <Select 
-                value={newItem.rarity} 
-                onValueChange={(value: Rarity) => setNewItem({ ...newItem, rarity: value })}
-              >
-                <SelectTrigger className="bg-secondary/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {rarities.map((rarity) => (
-                    <SelectItem key={rarity} value={rarity}>
-                      <Badge className={getRarityColor(rarity)}>
-                        {rarity}
-                      </Badge>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Select 
+                  value={newItem.rarity} 
+                  onValueChange={(value: string) => setNewItem({ ...newItem, rarity: value })}
+                >
+                  <SelectTrigger className="bg-secondary/50 flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rarities.map((rarity) => (
+                      <SelectItem key={rarity} value={rarity}>
+                        <Badge className={getRarityColor(rarity)}>
+                          {rarity}
+                        </Badge>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" onClick={() => setShowAddRarity(true)}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
           
@@ -1129,24 +1173,29 @@ const SupabaseStockControl: React.FC = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-rarity" className="text-right">
-                Raridade
-              </Label>
-              <Select
-                value={editForm.rarity}
-                onValueChange={(value: Rarity) => setEditForm(prev => ({ ...prev, rarity: value }))}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {rarities.map(rarity => (
-                    <SelectItem key={rarity} value={rarity}>
-                      {rarity}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="edit-rarity" className="text-right">Raridade</Label>
+              <div className="col-span-3 flex items-center gap-2">
+                <Select
+                  value={editForm.rarity}
+                  onValueChange={(value: string) => setEditForm(prev => ({ ...prev, rarity: value }))}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rarities.map(rarity => (
+                      <SelectItem key={rarity} value={rarity}>
+                        <Badge className={getRarityColor(rarity)}>
+                          {rarity}
+                        </Badge>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" onClick={() => setShowAddRarity(true)}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-price" className="text-right">
@@ -1279,8 +1328,26 @@ const SupabaseStockControl: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showAddRarity} onOpenChange={setShowAddRarity}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar nova raridade</DialogTitle>
+            <DialogDescription>Informe o nome para adicionar à lista de raridades.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Label>Nome da raridade</Label>
+            <Input value={newRarity} onChange={(e) => setNewRarity(e.target.value)} placeholder="Ex.: lendária" />
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setShowAddRarity(false)}>Cancelar</Button>
+            <Button onClick={handleAddRarity} className="bg-gradient-gaming">Adicionar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
 
 export default SupabaseStockControl;
