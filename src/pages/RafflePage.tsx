@@ -48,7 +48,11 @@ const RafflePage: React.FC = () => {
           .select('*')
           .in('id', premiumItemIds);
         if (supabaseError) throw supabaseError;
-        setPremiumSelectedItems((data || []) as Item[]);
+        const fetched = (data || []) as Item[];
+        // Deduplicar e ordenar conforme a ordem escolhida no Admin
+        const uniqueById = Array.from(new Map(fetched.map((i) => [i.id, i])).values());
+        uniqueById.sort((a, b) => premiumItemIds.indexOf(a.id) - premiumItemIds.indexOf(b.id));
+        setPremiumSelectedItems(uniqueById);
       } catch (err) {
         console.error('Erro ao carregar itens do sorteio premium:', err);
         setError(err instanceof Error ? err.message : 'Erro ao carregar itens do sorteio premium');
@@ -62,38 +66,14 @@ const RafflePage: React.FC = () => {
 
   // Área de live removida conforme solicitação
 
-  // Carregar Item Raro do Dia para todos (independente de login ou seleção no Admin)
+  // Definir Item Raro do Dia a partir do 1º premium selecionado
   React.useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        // Primeiro tenta pegar um item destacado
-        const { data, error } = await supabase
-          .from('items')
-          .select('*')
-          .eq('highlighted', true)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        if (error) throw error;
-        if (data && data.length > 0) {
-          setFeaturedItem(data[0] as Item);
-        } else {
-          // Fallback: pegar um item de maior raridade
-          const { data: fallback, error: fallbackError } = await supabase
-            .from('items')
-            .select('*')
-            .in('rarity', ['immortal', 'arcana'])
-            .order('created_at', { ascending: false })
-            .limit(1);
-          if (fallbackError) throw fallbackError;
-          setFeaturedItem(fallback && fallback.length > 0 ? (fallback[0] as Item) : null);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar Item Raro do Dia:', err);
-        setFeaturedItem(null);
-      }
-    };
-    fetchFeatured();
-  }, []);
+    if (premiumSelectedItems.length > 0) {
+      setFeaturedItem(premiumSelectedItems[0]);
+    } else {
+      setFeaturedItem(null);
+    }
+  }, [premiumSelectedItems]);
 
   // Buscar itens com preço menor que R$30 para o sorteio diário
   React.useEffect(() => {
@@ -118,6 +98,14 @@ const RafflePage: React.FC = () => {
     };
     fetchDailyItems();
   }, []);
+
+  // Fallback: garantir que o "Item Raro do Dia" apareça mesmo sem seleção premium
+  // Se nenhum premium foi selecionado, usa o primeiro item do sorteio diário como destaque
+  React.useEffect(() => {
+    if (!featuredItem && !loadingDaily && dailyItems.length > 0) {
+      setFeaturedItem(dailyItems[0]);
+    }
+  }, [featuredItem, loadingDaily, dailyItems]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -233,7 +221,7 @@ const RafflePage: React.FC = () => {
             <div className="text-center text-muted-foreground mt-6">Carregando itens do Sorteio Premium...</div>
           ) : premiumSelectedItems.length > 1 ? (
             <div className="grid grid-cols-1 gap-6 mt-6">
-              {premiumSelectedItems.slice(1).map((item) => (
+              {premiumSelectedItems.slice(1, 2).map((item) => (
                 <Card key={item.id} className="border border-white/10 bg-black/20 backdrop-blur-md rounded-xl overflow-hidden">
                   <CardHeader>
                     <div className="relative overflow-hidden rounded-lg aspect-[2/1] group ring-1 ring-white/10">
@@ -244,25 +232,13 @@ const RafflePage: React.FC = () => {
                           className="w-full h-full object-cover object-center"
                           loading="lazy"
                           decoding="async"
-                          fetchpriority="low"
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.3 }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
-                          <Package className="h-8 w-8 text-gray-400 mb-2" />
+                          <Package className="h-10 w-10 text-gray-400 mb-2" />
                           <span className="text-gray-400 text-sm">Sem imagem</span>
                         </div>
                       )}
-                      <div className="absolute top-2 left-2">
-                        <div className="px-2 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold shadow-md">
-                          Premium
-                        </div>
-                      </div>
-                      <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/60 text-white text-sm font-semibold shadow">
-                        R$ {parseFloat(item.price.toString()).toFixed(2)}
-                      </div>
-                      <motion.div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duração-300" />
                       <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div>
                           <h3 className="text-white text-xl md:text-2xl font-bold line-clamp-1">{item.name}</h3>
@@ -274,7 +250,7 @@ const RafflePage: React.FC = () => {
                           </div>
                           <Link
                             to={`/item/${item.id}`}
-                            className="inline-flex items-center gap-2 bg-gradient-gaming shadow-gaming-glow text-white px-3 py-2 rounded-md text-sm hover:opacity-90 transition"
+                            className="inline-flex items-center gap-2 bg-gradient-gaming text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition"
                           >
                             <Ticket className="w-4 h-4" /> Ver detalhes
                           </Link>
