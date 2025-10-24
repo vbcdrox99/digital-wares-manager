@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Package, Star, Info, Ticket, Zap, Target, Users, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ImageWithFallback from '@/components/ui/image-with-fallback';
 
 const getRarityColor = (rarity: string) => {
   switch (rarity) {
@@ -25,34 +26,38 @@ const getRarityColor = (rarity: string) => {
 };
 
 const RafflePage: React.FC = () => {
-  const [premiumItemIds] = useLocalStorage<string[]>('premiumRaffleItemIds', []);
+  // const [premiumItemIds] = useLocalStorage<string[]>('premiumRaffleItemIds', []);
   const [premiumSelectedItems, setPremiumSelectedItems] = React.useState<Item[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [dailyItems, setDailyItems] = React.useState<Item[]>([]);
   const [loadingDaily, setLoadingDaily] = React.useState(false);
   const [dailyError, setDailyError] = React.useState<string | null>(null);
-  const [featuredItem, setFeaturedItem] = React.useState<Item | null>(null);
 
   React.useEffect(() => {
     const fetchPremiumItems = async () => {
       try {
         setLoading(true);
         setError(null);
-        if (!premiumItemIds || premiumItemIds.length === 0) {
+        const { data: featured, error: featuredError } = await supabase
+          .from('premium_featured')
+          .select('item_id, position')
+          .order('position', { ascending: true });
+        if (featuredError) throw featuredError;
+        const ids = (featured || []).map((row: { item_id: string }) => row.item_id);
+        if (!ids || ids.length === 0) {
           setPremiumSelectedItems([]);
           return;
         }
-        const { data, error: supabaseError } = await supabase
+        const { data: itemsData, error: itemsError } = await supabase
           .from('items')
           .select('*')
-          .in('id', premiumItemIds);
-        if (supabaseError) throw supabaseError;
-        const fetched = (data || []) as Item[];
-        // Deduplicar e ordenar conforme a ordem escolhida no Admin
-        const uniqueById = Array.from(new Map(fetched.map((i) => [i.id, i])).values());
-        uniqueById.sort((a, b) => premiumItemIds.indexOf(a.id) - premiumItemIds.indexOf(b.id));
-        setPremiumSelectedItems(uniqueById);
+          .in('id', ids);
+        if (itemsError) throw itemsError;
+        const fetched = (itemsData || []) as Item[];
+        const positionMap = new Map((featured || []).map((row: { item_id: string; position: number }) => [row.item_id, row.position]));
+        fetched.sort((a, b) => (positionMap.get(a.id) ?? 999) - (positionMap.get(b.id) ?? 999));
+        setPremiumSelectedItems(fetched);
       } catch (err) {
         console.error('Erro ao carregar itens do sorteio premium:', err);
         setError(err instanceof Error ? err.message : 'Erro ao carregar itens do sorteio premium');
@@ -62,18 +67,9 @@ const RafflePage: React.FC = () => {
       }
     };
     fetchPremiumItems();
-  }, [premiumItemIds]);
+  }, []);
 
   // Área de live removida conforme solicitação
-
-  // Definir Item Raro do Dia a partir do 1º premium selecionado
-  React.useEffect(() => {
-    if (premiumSelectedItems.length > 0) {
-      setFeaturedItem(premiumSelectedItems[0]);
-    } else {
-      setFeaturedItem(null);
-    }
-  }, [premiumSelectedItems]);
 
   // Buscar itens com preço menor que R$30 para o sorteio diário
   React.useEffect(() => {
@@ -98,14 +94,6 @@ const RafflePage: React.FC = () => {
     };
     fetchDailyItems();
   }, []);
-
-  // Fallback: garantir que o "Item Raro do Dia" apareça mesmo sem seleção premium
-  // Se nenhum premium foi selecionado, usa o primeiro item do sorteio diário como destaque
-  React.useEffect(() => {
-    if (!featuredItem && !loadingDaily && dailyItems.length > 0) {
-      setFeaturedItem(dailyItems[0]);
-    }
-  }, [featuredItem, loadingDaily, dailyItems]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,125 +153,103 @@ const RafflePage: React.FC = () => {
         transition={{ duration: 0.6, delay: 0.3 }}
       >
         <div className="container mx-auto px-6">
-          {/* Item Raro do Dia visível para todos */}
-          {featuredItem && (
-            <Card className="border border-white/10 bg-black/30 backdrop-blur-md rounded-2xl overflow-hidden">
-              <CardHeader>
-                <div className="relative overflow-hidden rounded-xl aspect-[2/1] ring-1 ring-white/10">
-                  {featuredItem.image_url ? (
-                    <motion.img
-                      src={featuredItem.image_url || ''}
-                      alt={featuredItem.name || ''}
-                      className="w-full h-full object-cover object-center"
-                      loading="lazy"
-                      decoding="async"
-                      fetchpriority="low"
-                      whileHover={{ scale: 1.03 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-xl border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
-                      <Package className="h-10 w-10 text-gray-400 mb-2" />
-                      <span className="text-gray-400 text-sm">Sem imagem</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                  <div className="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-sm font-bold shadow-lg ring-1 ring-amber-400/60">
-                    <Info className="w-4 h-4" /> Item Raro do Dia
-                  </div>
-                  <div className="absolute top-3 right-3 px-3 py-1 rounded-md bg-black/70 text-white text-sm font-semibold shadow">
-                    R$ {parseFloat(featuredItem.price.toString()).toFixed(2)}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                      <h3 className="text-white text-2xl md:text-3xl font-extrabold line-clamp-1">{featuredItem.name}</h3>
-                      <p className="text-gray-300 text-sm md:text-base">{featuredItem.hero_name}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`px-2 py-1 rounded ${getRarityColor(featuredItem.rarity)} text-white text-xs font-semibold uppercase`}>
-                        {featuredItem.rarity}
-                      </div>
-                      <Link
-                        to={`/item/${featuredItem.id}`}
-                        className="inline-flex items-center gap-2 bg-gradient-gaming shadow-gaming-glow text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition"
-                      >
-                        <Ticket className="w-4 h-4" /> Ver detalhes
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          )}
-
-          {/* Grid de itens premium (mostrar todos além do destaque) */}
+          {/* Grid de itens premium com tamanho uniforme */}
           {loading ? (
             <div className="text-center text-muted-foreground mt-6">Carregando itens do Sorteio Premium...</div>
-          ) : premiumSelectedItems.length > 1 ? (
--            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-+            <div className="grid grid-cols-1 gap-6 mt-6">
-               {premiumSelectedItems.slice(1).map((item) => (
--                <Card key={item.id} className="border border-white/10 bg-black/20 backdrop-blur-md rounded-xl overflow-hidden">
-+                <Card key={item.id} className="border border-white/10 bg-black/30 backdrop-blur-md rounded-2xl overflow-hidden">
-                   <CardHeader>
--                    <div className="relative overflow-hidden rounded-lg aspect-[2/1] group ring-1 ring-white/10">
-+                    <div className="relative overflow-hidden rounded-xl aspect-[2/1] ring-1 ring-white/10">
-                       {item.image_url ? (
-                         <motion.img
-                           src={item.image_url || ''}
-                           alt={item.name || ''}
-                           className="w-full h-full object-cover object-center"
-                           loading="lazy"
-                           decoding="async"
-+                          whileHover={{ scale: 1.03 }}
-+                          transition={{ duration: 0.3 }}
-                         />
-                       ) : (
-                         <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
-                           <Package className="h-10 w-10 text-gray-400 mb-2" />
-                           <span className="text-gray-400 text-sm">Sem imagem</span>
-                         </div>
-                       )}
--                      <div className="absolute top-2 left-2 inline-flex items-center gap-2 px-2 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-xs font-bold shadow-md">
--                        <Info className="w-4 h-4" /> Item Raro do Dia
--                      </div>
--                      <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/60 text-white text-sm font-semibold shadow">
--                        R$ {parseFloat(item.price.toString()).toFixed(2)}
--                      </div>
--                      <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-+                      <div className="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-sm font-bold shadow-lg ring-1 ring-amber-400/60">
-+                        <Info className="w-4 h-4" /> Item Raro do Dia
-+                      </div>
-+                      <div className="absolute top-3 right-3 px-3 py-1 rounded-md bg-black/70 text-white text-sm font-semibold shadow">
-+                        R$ {parseFloat(item.price.toString()).toFixed(2)}
-+                      </div>
-+                      <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                         <div>
--                          <h3 className="text-white text-xl md:text-2xl font-bold line-clamp-1">{item.name}</h3>
-+                          <h3 className="text-white text-2xl md:text-3xl font-extrabold line-clamp-1">{item.name}</h3>
-                           <p className="text-gray-300 text-sm md:text-base">{item.hero_name}</p>
-                         </div>
--                        <div className="flex items-center gap-2">
-+                        <div className="flex items-center gap-3">
-                           <div className={`px-2 py-1 rounded ${getRarityColor(item.rarity)} text-white text-xs font-semibold uppercase`}>
-                             {item.rarity}
-                           </div>
-                           <Link
-                             to={`/item/${item.id}`}
--                            className="inline-flex items-center gap-2 bg-gradient-gaming text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition"
-+                            className="inline-flex items-center gap-2 bg-gradient-gaming shadow-gaming-glow text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition"
-                           >
-                             <Ticket className="w-4 h-4" /> Ver detalhes
-                           </Link>
-                         </div>
-                       </div>
-                     </div>
-                   </CardHeader>
-                 </Card>
-               ))}
-             </div>
-           ) : null}
+          ) : premiumSelectedItems.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {premiumSelectedItems.map((item) => (
+                <Card key={item.id} className="border border-white/10 bg-black/20 backdrop-blur-md rounded-xl overflow-hidden">
+                  <CardHeader>
+                    <div className="relative overflow-hidden rounded-lg aspect-[2/1] group ring-1 ring-white/10">
+                      {item.image_url ? (
+                        <ImageWithFallback
+                          src={item.image_url || ''}
+                          alt={item.name || ''}
+                          className="w-full h-full object-cover object-center"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
+                          <Package className="h-10 w-10 text-gray-400 mb-2" />
+                          <span className="text-gray-400 text-sm">Sem imagem</span>
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2 inline-flex items-center gap-2 px-2 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-xs font-bold shadow-md">
+                        <Info className="w-4 h-4" /> Item Raro do Dia
+                      </div>
+                      <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/60 text-white text-sm font-semibold shadow">
+                        R$ {parseFloat(item.price.toString()).toFixed(2)}
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                          <h3 className="text-white text-xl md:text-2xl font-bold line-clamp-1">{item.name}</h3>
+                          <p className="text-gray-300 text-sm md:text-base">{item.hero_name}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`px-2 py-1 rounded ${getRarityColor(item.rarity)} text-white text-xs font-semibold uppercase`}>
+                            {item.rarity}
+                          </div>
+                          <Link
+                            to={`/item/${item.id}`}
+                            className="inline-flex items-center gap-2 bg-gradient-gaming text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition"
+                          >
+                            <Ticket className="w-4 h-4" /> Ver detalhes
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : !loadingDaily && dailyItems.length > 0 ? (
+            // Fallback: mostrar um item do diário com o mesmo tamanho de card
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              {[dailyItems[0]].map((item) => (
+                <Card key={item.id} className="border border-white/10 bg-black/20 backdrop-blur-md rounded-xl overflow-hidden">
+                  <CardHeader>
+                    <div className="relative overflow-hidden rounded-lg aspect-[2/1] group ring-1 ring-white/10">
+                      {item.image_url ? (
+                        <ImageWithFallback
+                          src={item.image_url || ''}
+                          alt={item.name || ''}
+                          className="w-full h-full object-cover object-center"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
+                          <Package className="h-10 w-10 text-gray-400 mb-2" />
+                          <span className="text-gray-400 text-sm">Sem imagem</span>
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2 inline-flex items-center gap-2 px-2 py-1 rounded-md bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-xs font-bold shadow-md">
+                        <Info className="w-4 h-4" /> Item Raro do Dia
+                      </div>
+                      <div className="absolute top-2 right-2 px-2 py-1 rounded-md bg-black/60 text-white text-sm font-semibold shadow">
+                        R$ {parseFloat(item.price.toString()).toFixed(2)}
+                      </div>
+                      <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                          <h3 className="text-white text-xl md:text-2xl font-bold line-clamp-1">{item.name}</h3>
+                          <p className="text-gray-300 text-sm md:text-base">{item.hero_name}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`px-2 py-1 rounded ${getRarityColor(item.rarity)} text-white text-xs font-semibold uppercase`}>
+                            {item.rarity}
+                          </div>
+                          <Link
+                            to={`/item/${item.id}`}
+                            className="inline-flex items-center gap-2 bg-gradient-gaming text-white px-4 py-2 rounded-md text-sm hover:opacity-90 transition"
+                          >
+                            <Ticket className="w-4 h-4" /> Ver detalhes
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : null}
         </div>
       </motion.section>
 
@@ -383,14 +349,12 @@ const RafflePage: React.FC = () => {
                       <CardHeader>
                         <div className="relative overflow-hidden rounded-lg aspect-[2/1] group ring-1 ring-white/10">
                           {item.image_url ? (
-                            <motion.img
-                              src={item.image_url || ''}
-                              alt={item.name || ''}
-                              className="w-full h-full object-cover object-center"
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : (
+                             <ImageWithFallback
+                               src={item.image_url || ''}
+                               alt={item.name || ''}
+                               className="w-full h-full object-cover object-center"
+                             />
+                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center">
                               <Package className="h-10 w-10 text-gray-400 mb-2" />
                               <span className="text-gray-400 text-sm">Sem imagem</span>

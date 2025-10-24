@@ -77,7 +77,7 @@ const Orders: React.FC<OrdersProps> = () => {
   const [selectedChest, setSelectedChest] = useState('');
   const [selectedItem, setSelectedItem] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedTime, setSelectedTime] = useState<number>(5);
+  const [selectedTime, setSelectedTime] = useState<number>(30);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingItem, setPendingItem] = useState<CartItem | null>(null);
@@ -93,12 +93,10 @@ const Orders: React.FC<OrdersProps> = () => {
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [showSteamSuggestions, setShowSteamSuggestions] = useState(false);
   
-  const timeOptions: TimeOption[] = [
-    { label: '5 dias', days: 5 },
-    { label: '10 dias', days: 10 },
-    { label: '15 dias', days: 15 },
-    { label: '31 dias', days: 31 }
-  ];
+  const timeOptions: TimeOption[] = Array.from({ length: 31 }, (_, i) => {
+    const day = i + 1;
+    return { label: `${day} ${day === 1 ? 'dia' : 'dias'}`, days: day };
+  });
 
   const { toast } = useToast();
 
@@ -388,7 +386,7 @@ const Orders: React.FC<OrdersProps> = () => {
       // Reset form
        clearCustomerSelection();
        setOrderType('sale');
-       setSelectedTime(5);
+       setSelectedTime(30);
        setSelectedChest('');
        setSelectedItem(null);
        setQuantity(1);
@@ -455,7 +453,7 @@ const Orders: React.FC<OrdersProps> = () => {
       // Reset form
       clearCustomerSelection();
       setOrderType('sale');
-      setSelectedTime(5);
+      setSelectedTime(30);
       setCart([]);
       
       // Reload orders

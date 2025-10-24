@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useItems } from '@/hooks/useItems';
+import ImageWithFallback from '@/components/ui/image-with-fallback';
 // Removido lógica de Sorteio Premium do Catálogo
 import Navigation from '@/components/Navigation';
 
@@ -322,15 +323,10 @@ const CatalogPage: React.FC = () => {
                     <CardHeader className={`${viewMode === 'list' ? 'w-48 flex-shrink-0' : ''} pb-3`}>
                       <div className={`relative overflow-hidden rounded-lg aspect-[2/1]`}>
                         {item.image_url ? (
-                          <motion.img 
-                            src={item.image_url} 
+                          <ImageWithFallback 
+                            src={item.image_url}
                             alt={item.name}
                             className={`w-full h-full object-cover bg-muted`}
-                            loading="lazy"
-                            decoding="async"
-                            fetchpriority="low"
-                            whileHover={{ scale: 1.1 }}
-                            transition={{ duration: 0.3 }}
                           />
                         ) : (
                           <div className={`w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center group-hover:border-gray-400/50 transition-colors`}>

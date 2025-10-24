@@ -10,6 +10,7 @@ import { Item } from '@/types/inventory';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '../components/Navigation';
 import { useToast } from '@/hooks/use-toast';
+import ImageWithFallback from '@/components/ui/image-with-fallback';
 
 // Função para mapear raridade para cor do badge
 const getRarityColor = (rarity: string) => {
@@ -216,17 +217,14 @@ const HomePage: React.FC = () => {
                       <div className="relative group">
                         {currentHighlightedItem.image_url ? (
                           <div className="relative">
-                            <img 
-                               src={currentHighlightedItem.image_url} 
-                               alt={currentHighlightedItem.name}
-                               className="w-full h-64 object-cover rounded-xl border-2 border-white/30 shadow-2xl transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-3xl"
-                               decoding="async"
-                               fetchpriority="high"
-                               loading="eager"
-                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-xl" />
-                            <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            
+                            <ImageWithFallback
+                              src={currentHighlightedItem.image_url}
+                              alt={currentHighlightedItem.name}
+                              className="w-full h-64 object-cover rounded-xl border-2 border-white/30 shadow-2xl transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-3xl"
+                              imgProps={{ decoding: 'async', loading: 'eager', fetchpriority: 'high' }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-xl pointer-events-none" />
+                            <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             {/* Header com badge e estrela sobreposto na imagem */}
                             <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
                               <Badge className={`${getRarityColor(currentHighlightedItem.rarity)} text-white text-xs px-2 py-1 shadow-lg backdrop-blur-sm`}>
@@ -237,7 +235,6 @@ const HomePage: React.FC = () => {
                                 <span className="text-xs text-yellow-400 font-medium">Destaque</span>
                               </div>
                             </div>
-                            
                             {/* Botões de navegação - apenas se houver mais de 1 item */}
                             {highlightedItems.length > 1 && (
                               <>
@@ -453,25 +450,28 @@ const HomePage: React.FC = () => {
                   <Card className="group bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 overflow-hidden cursor-pointer" onClick={() => navigate(`/item/${item.id}`)}>
                   <CardHeader className="pb-3">
                     <div className="relative overflow-hidden rounded-lg aspect-[2/1]">
-                      <motion.img 
-                         src={item.image_url || "/placeholder.svg"} 
-                         alt={item.name}
-                         className="w-full h-full object-cover bg-muted cursor-pointer"
-                         decoding="async"
-                         fetchpriority="high"
-                         loading="eager"
-                         whileHover={{ scale: 1.1 }}
-                         transition={{ duration: 0.3 }}
-                         onClick={() => navigate(`/item/${item.id}`)}
-                       />
-                       <motion.div
-                         className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                       />
-                       <Badge 
-                         className={`absolute bottom-2 left-2 ${getRarityColor(item.rarity)} text-white`}
-                       >
-                         {item.rarity}
-                       </Badge>
+                      <motion.div 
+                        whileHover={{ scale: 1.1 }} 
+                        transition={{ duration: 0.3 }} 
+                        onClick={() => navigate(`/item/${item.id}`)}
+                        className="w-full h-full"
+                      >
+                        <ImageWithFallback 
+                          src={item.image_url || ''} 
+                          alt={item.name} 
+                          className="w-full h-full object-cover bg-muted cursor-pointer" 
+                          fallbackSrc="/placeholder.svg"
+                          imgProps={{ decoding: 'async', loading: 'eager', fetchpriority: 'high' }}
+                        />
+                      </motion.div>
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      />
+                      <Badge 
+                        className={`absolute bottom-2 left-2 ${getRarityColor(item.rarity)} text-white`}
+                      >
+                        {item.rarity}
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">

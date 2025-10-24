@@ -9,6 +9,7 @@ import { useItems } from '../hooks/useItems';
 import { Item } from '../types/inventory';
 import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
+import ImageWithFallback from '@/components/ui/image-with-fallback';
 
 const ItemDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -127,15 +128,10 @@ const ItemDetailPage: React.FC = () => {
               <CardContent className="p-0">
                 <div className="relative aspect-[2/1] overflow-hidden">
                   {item.image_url ? (
-                    <motion.img
+                    <ImageWithFallback
                       src={item.image_url}
                       alt={item.name}
                       className="w-full h-full object-cover"
-                      decoding="async"
-                      fetchpriority="high"
-                      loading="eager"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.3 }}
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center group-hover:border-gray-400/50 transition-colors">
@@ -307,14 +303,10 @@ const ItemDetailPage: React.FC = () => {
                         <div className="relative overflow-hidden rounded-lg">
                           <div className="aspect-[2/1] relative overflow-hidden rounded-lg">
                             {relatedItem.image_url ? (
-                              <motion.img 
+                              <ImageWithFallback 
                                 src={relatedItem.image_url} 
                                 alt={relatedItem.name}
                                 className="w-full h-full object-cover bg-muted"
-                                loading="lazy"
-                                decoding="async"
-                                whileHover={{ scale: 1.1 }}
-                                transition={{ duration: 0.3 }}
                               />
                             ) : (
                               <div className="w-full h-full bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg border-2 border-dashed border-gray-500/50 flex flex-col items-center justify-center group-hover:border-gray-400/50 transition-colors">
