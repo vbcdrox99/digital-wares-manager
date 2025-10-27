@@ -86,6 +86,16 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
               Sobre
             </Link>
             <Link 
+              to="/quero-vender" 
+              className={`transition-colors ${
+                isActive('/quero-vender') 
+                  ? 'text-foreground hover:text-primary' 
+                  : 'text-muted-foreground hover:text-primary'
+              }`}
+            >
+              Quero Vender
+            </Link>
+            <Link 
               to="/faq" 
               className={`transition-colors ${
                 isActive('/faq') 
@@ -209,6 +219,14 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
               }`}
             >
               Sobre
+            </Link>
+            <Link
+              to="/quero-vender"
+              className={`block px-2 py-2 rounded-md transition-colors ${
+                isActive('/quero-vender') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+              }`}
+            >
+              Quero Vender
             </Link>
             <Link
               to="/faq"

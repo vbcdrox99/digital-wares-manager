@@ -247,6 +247,39 @@ export async function updateOrderStatus(orderId: string, status: 'pending' | 'se
       .eq('id', orderId);
 
     if (error) throw error;
+
+    // Ao cancelar, devolver os itens ao estoque
+    if (status === 'cancelled') {
+      // Buscar itens do pedido
+      const { data: orderItems, error: orderItemsError } = await supabase
+        .from('order_items')
+        .select('item_id, quantity')
+        .eq('order_id', orderId);
+
+      if (orderItemsError) throw orderItemsError;
+
+      // Para cada item do pedido, somar a quantidade de volta ao estoque atual
+      for (const oi of (orderItems || [])) {
+        // Buscar estoque atual do item
+        const { data: item, error: itemError } = await supabase
+          .from('items')
+          .select('id, current_stock, initial_stock')
+          .eq('id', oi.item_id)
+          .single();
+
+        if (itemError) throw itemError;
+
+        const currentStock = (item?.current_stock ?? item?.initial_stock ?? 0);
+        const newStock = currentStock + (oi?.quantity ?? 0);
+
+        const { error: updateItemError } = await supabase
+          .from('items')
+          .update({ current_stock: newStock })
+          .eq('id', oi.item_id);
+
+        if (updateItemError) throw updateItemError;
+      }
+    }
     return { success: true };
   } catch (error) {
     console.error('Erro ao atualizar status do pedido:', error);

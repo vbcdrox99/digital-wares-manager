@@ -149,27 +149,22 @@ const HomePage: React.FC = () => {
                        <ShoppingCart className="mr-2 h-5 w-5" />
                        Explorar Catálogo
                      </Button>
-                   </Link>
-                 </motion.div>
-                 <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
-                   <Button
-                     size="lg"
-                     variant="outline"
-                     className="text-lg px-8 py-6 border-white/20 text-white hover:bg-white/10 glass-card"
-                     aria-label="Em breve: Vender Itens"
-                     title="Em breve"
-                     onClick={() =>
-                       toast({
-                         title: 'Em breve',
-                         description:
-                           'A página de venda de itens ainda está em desenvolvimento. Obrigado pela paciência!',
-                       })
-                     }
-                   >
-                     <Zap className="mr-2 h-5 w-5" />
-                     Vender Itens
-                   </Button>
-                 </motion.div>
+                 </Link>
+               </motion.div>
+               <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.95 }}>
+                  <Link to="/quero-vender">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="text-lg px-8 py-6 border-white/20 text-white hover:bg-white/10 glass-card"
+                      aria-label="Ir para Quero Vender"
+                      title="Quero Vender"
+                    >
+                      <Zap className="mr-2 h-5 w-5" />
+                      Vender Itens
+                    </Button>
+                  </Link>
+                </motion.div>
               </motion.div>
 
               {/* Subscriber Benefits */}

@@ -14,6 +14,7 @@ import { createOrder, getOrdersWithItems, updateOrderStatus, deleteOrder, calcul
 import { chestsService } from '@/integrations/supabase/services/chests';
 import { itemsService } from '@/integrations/supabase/services/items';
 import { customersService, Customer } from '@/integrations/supabase/services/customers';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface OrdersProps {}
 
@@ -99,6 +100,7 @@ const Orders: React.FC<OrdersProps> = () => {
   });
 
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     loadData();
@@ -311,8 +313,26 @@ const Orders: React.FC<OrdersProps> = () => {
   );
 
   const addToCart = () => {
-    if (!selectedItem || !selectedItemData || quantity <= 0 || quantity > maxQuantity) {
-      toast({ title: 'Selecione um item válido e quantidade', variant: 'destructive' });
+    // Permissões ADMIN
+    if (!isAdmin()) {
+      toast({ title: 'Ação restrita', description: 'Apenas ADMIN pode adicionar itens ao pedido.', variant: 'destructive' });
+      return;
+    }
+
+    // Validações
+    if (!selectedChest || !selectedItem || !selectedItemData) {
+      toast({ title: 'Seleção inválida', description: 'Selecione um baú e um item.', variant: 'destructive' });
+      return;
+    }
+    if (quantity < 1 || quantity > maxQuantity) {
+      toast({ title: 'Quantidade inválida', description: `Quantidade deve ser entre 1 e ${maxQuantity}.`, variant: 'destructive' });
+      return;
+    }
+
+    // Tipos de itens permitidos
+    const allowedRarities: Rarity[] = ['comum', 'persona', 'arcana', 'immortal'];
+    if (!allowedRarities.includes(selectedItemData.rarity)) {
+      toast({ title: 'Item não permitido', description: 'Tipo de item não permitido para pedido.', variant: 'destructive' });
       return;
     }
 
@@ -331,15 +351,19 @@ const Orders: React.FC<OrdersProps> = () => {
     const cartItem: CartItem = {
       item_id: selectedItem,
       quantity,
-      name: selectedItemData.name,
+      name: selectedItemData.name ?? '',
       hero_name: selectedItemData.hero_name,
       rarity: selectedItemData.rarity,
       price: selectedItemData.price,
       chestName: chest?.name || ''
     };
 
-    setPendingItem(cartItem);
-    setShowConfirmation(true);
+    // Adicionar sem substituir
+    setCart(prev => [...prev, cartItem]);
+    // Reset parcial para adicionar outro item
+    setSelectedItem('');
+    setQuantity(1);
+    toast({ title: 'Item adicionado ao pedido!' });
   };
 
   const confirmOrder = async () => {
@@ -430,6 +454,10 @@ const Orders: React.FC<OrdersProps> = () => {
 
     try {
       setLoading(true);
+      if (!isAdmin()) {
+        toast({ title: 'Ação restrita', description: 'Apenas ADMIN pode registrar pedidos.', variant: 'destructive' });
+        return;
+      }
       
       // Obter ou criar cliente
       const customer = await getOrCreateCustomer();
@@ -450,6 +478,21 @@ const Orders: React.FC<OrdersProps> = () => {
         delivery_days: selectedTime
       });
       
+      // Atualizar estoque dos itens
+      for (const cartItem of cart) {
+        const itemData = items.find(i => i.id === cartItem.item_id);
+        if (itemData) {
+          const currentStock = itemData.current_stock ?? itemData.initial_stock ?? 0;
+          const newStock = Math.max(0, currentStock - cartItem.quantity);
+          try {
+            await itemsService.update(cartItem.item_id, { current_stock: newStock });
+            setItems(prev => prev.map(it => it.id === cartItem.item_id ? { ...it, current_stock: newStock } : it));
+          } catch (e) {
+            console.error('Erro ao atualizar estoque do item', cartItem.item_id, e);
+          }
+        }
+      }
+
       // Reset form
       clearCustomerSelection();
       setOrderType('sale');
@@ -645,7 +688,12 @@ const Orders: React.FC<OrdersProps> = () => {
 
           {/* Shopping Cart System */}
           <div className="border border-border/50 rounded-lg p-4 space-y-4">
-            <h4 className="font-semibold">Sistema de Carrinho</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold">Sistema de Carrinho</h4>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">Itens no pedido: {cart.length}</Badge>
+              </div>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
@@ -707,58 +755,58 @@ const Orders: React.FC<OrdersProps> = () => {
                 )}
               </div>
               
-              <div className="flex items-end">
+              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:justify-end">
                 <Button 
                   onClick={addToCart}
                   disabled={!selectedItem || quantity <= 0 || quantity > maxQuantity}
-                  className="bg-gradient-gaming"
+                  variant="outline"
+                  className="w-full sm:w-auto"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar
+                  Adicionar outro item
                 </Button>
               </div>
             </div>
 
-            {/* Confirmation Dialog */}
-            {showConfirmation && pendingItem && (
-              <div className="mt-4">
-                <div className="bg-secondary/30 p-4 rounded-lg border border-border/50">
-                  <h5 className="font-medium mb-3 text-center">Deseja finalizar esse pedido?</h5>
-                  
-                  <div className="bg-secondary/50 p-3 rounded-lg mb-4">
-                    <div className="flex items-center gap-3">
-                      <Badge className={getRarityColor(pendingItem.rarity)}>
-                        {pendingItem.rarity}
-                      </Badge>
-                      <span className="font-medium">{pendingItem.name}</span>
-                      <span className="text-muted-foreground">({pendingItem.hero_name})</span>
-                      <span className="text-muted-foreground">({pendingItem.chestName})</span>
-                      <span>x{pendingItem.quantity}</span>
-                      <span className="font-medium">R$ {(pendingItem.price * pendingItem.quantity).toFixed(2)}</span>
+            {/* Itens adicionados ao pedido */}
+            {cart.length > 0 && (
+              <div className="space-y-3">
+                {cart.map((ci, idx) => (
+                  <div key={`${ci.item_id}-${idx}`} className="bg-secondary/30 p-3 rounded-lg border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Badge className={getRarityColor(ci.rarity)}>
+                          {ci.rarity}
+                        </Badge>
+                        <span className="font-medium">{ci.name}</span>
+                        <span className="text-muted-foreground">({ci.hero_name})</span>
+                        <span className="text-muted-foreground">({ci.chestName})</span>
+                        <span>x{ci.quantity}</span>
+                        <span className="font-medium">R$ {(ci.price * ci.quantity).toFixed(2)}</span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => removeFromCart(idx)}>
+                        <X className="h-4 w-4 mr-1" /> Remover
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="flex gap-3 justify-center">
-                    <Button 
-                      onClick={cancelOrderConfirmation}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Cancelar
-                    </Button>
-                    <Button 
-                      onClick={confirmOrder}
-                      className="bg-gradient-gaming flex-1"
-                      disabled={loading}
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      {loading ? 'Finalizando...' : 'Confirmar'}
-                    </Button>
-                  </div>
+                ))}
+                <div className="flex items-center justify-between pt-2">
+                  <div className="text-sm text-muted-foreground">Total: R$ {calculateTotal.toFixed(2)}</div>
                 </div>
               </div>
             )}
+            {/* Botão Finalizar no rodapé isolado */}
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <div className="flex justify-end">
+                <Button 
+                  onClick={handleCreateOrder}
+                  disabled={loading || cart.length === 0}
+                  className="bg-gradient-gaming w-full sm:w-auto"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Finalizar pedido
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

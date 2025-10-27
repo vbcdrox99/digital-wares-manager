@@ -32,6 +32,18 @@ const Index = () => {
     );
   }, [items, searchPremium]);
 
+  // Itens separados por preço para o painel de Sorteios Premium
+  const premiumExpensiveItems = useMemo(() => {
+    return filteredPremiumItems.filter(i => parseFloat(i.price.toString()) > 31);
+  }, [filteredPremiumItems]);
+
+  const premiumCheapItems = useMemo(() => {
+    return filteredPremiumItems.filter(i => parseFloat(i.price.toString()) <= 30);
+  }, [filteredPremiumItems]);
+
+  // Controla a exibição dos itens mais baratos (<= R$30)
+  const [showMoreCheap, setShowMoreCheap] = useState(false);
+
   const syncPremiumSelection = useCallback(async (ids: string[]) => {
     try {
       await supabase.from('premium_featured').delete().gte('position', 1);
@@ -227,8 +239,9 @@ const Index = () => {
                       className="pl-10"
                     />
                   </div>
+                  {/* Lista inicial: apenas itens acima de R$31 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredPremiumItems.map((item) => (
+                    {premiumExpensiveItems.map((item) => (
                       <div key={item.id} className="flex items-center gap-3 p-3 border border-white/10 rounded-lg">
                         <img src={item.image_url || ''} alt={item.name || ''} className="w-16 h-16 object-cover rounded-md border border-white/10" />
                         <div className="flex-1">
@@ -247,6 +260,37 @@ const Index = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Botão 'Mais itens' para revelar itens de R$30 ou menos */}
+                  {!showMoreCheap && premiumCheapItems.length > 0 && (
+                    <div className="mt-4 flex justify-center">
+                      <Button variant="outline" onClick={() => setShowMoreCheap(true)}>Mais itens</Button>
+                    </div>
+                  )}
+
+                  {/* Lista extra: itens de R$30 ou menos exibidos após clicar em 'Mais itens' */}
+                  {showMoreCheap && premiumCheapItems.length > 0 && (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {premiumCheapItems.map((item) => (
+                        <div key={item.id} className="flex items-center gap-3 p-3 border border-white/10 rounded-lg">
+                          <img src={item.image_url || ''} alt={item.name || ''} className="w-16 h-16 object-cover rounded-md border border-white/10" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">{item.name}</div>
+                            <div className="text-xs text-muted-foreground">{item.hero_name}</div>
+                          </div>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleSelectPremium(item.id)}
+                            disabled={premiumItemIds.length >= 2 || premiumItemIds.includes(item.id)}
+                            className="bg-gradient-gaming"
+                          >
+                            <Plus className="h-4 w-4" /> Premium
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
