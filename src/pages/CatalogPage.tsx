@@ -342,6 +342,13 @@ const CatalogPage: React.FC = () => {
                         >
                           {item.rarity}
                         </Badge>
+                        {item.is_partner && (
+                          <Badge
+                            className="absolute top-2 left-2 glass-card bg-blue-500/20 text-blue-300 border-blue-400/30"
+                          >
+                            Parceiro
+                          </Badge>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className={`space-y-4 ${viewMode === 'list' ? 'flex-1 flex flex-col justify-between' : ''}`}>

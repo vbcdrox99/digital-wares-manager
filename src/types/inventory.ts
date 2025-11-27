@@ -12,6 +12,10 @@ export interface Item {
   image_url?: string | null;
   highlighted?: boolean | null;
   created_at?: string | null;
+  // Novos campos para fluxo de parceiros
+  is_partner?: boolean;
+  seller_id?: string | null;
+  approved?: boolean; // aprovado pelo admin para aparecer no catálogo
 }
 
 export interface Chest {

@@ -15,6 +15,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RafflePage from "./pages/RafflePage";
 import SellPage from "./pages/SellPage";
+import SellerDemoPage from "./pages/SellerDemoPage";
+import SellerAreaPage from "./pages/SellerAreaPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +51,12 @@ const App = () => (
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/quero-vender" element={<SellPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/seller/:id" element={<SellerDemoPage />} />
+              <Route path="/area-do-vendedor" element={
+                <ProtectedRoute>
+                  <SellerAreaPage />
+                </ProtectedRoute>
+              } />
               <Route path="/admin" element={
                 <ProtectedRoute requireAdmin={true}>
                   <Index />

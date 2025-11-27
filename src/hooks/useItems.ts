@@ -15,6 +15,7 @@ export const useItems = () => {
       const { data, error: supabaseError } = await supabase
         .from('items')
         .select('*')
+        .eq('approved', true) // Apenas itens aprovados pelo admin
         .gt('current_stock', 0) // Apenas itens em estoque
         .order('created_at', { ascending: false });
 

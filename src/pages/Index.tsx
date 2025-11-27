@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home, Star, Plus, X, Search } from "lucide-react";
+import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home, Star, Plus, X, Search, Check, IdCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Loading } from "@/components/ui/loading";
@@ -124,7 +124,7 @@ const Index = () => {
 
       <div className="container mx-auto px-6 py-8">
         <Tabs defaultValue="inventory" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
             <TabsTrigger value="inventory" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Inventário
@@ -140,6 +140,10 @@ const Index = () => {
             <TabsTrigger value="customers" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Clientes
+            </TabsTrigger>
+            <TabsTrigger value="sellers" className="flex items-center gap-2">
+              <IdCard className="h-4 w-4" />
+              Vendedores
             </TabsTrigger>
             <TabsTrigger value="featured" className="flex items-center gap-2">
               <Star className="h-4 w-4" />
@@ -181,6 +185,40 @@ const Index = () => {
                 <Customers />
               </Suspense>
             </ErrorBoundary>
+          </TabsContent>
+
+          {/* Vendedores */}
+          <TabsContent value="sellers">
+            <Card className="bg-black/30 border border-white/10">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <IdCard className="h-5 w-5" />
+                    <CardTitle>Vendedores</CardTitle>
+                  </div>
+                  <CardDescription>Gerencie solicitações e aprovações de vendedores</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <SellersAdminSection />
+              </CardContent>
+            </Card>
+
+            {/* Itens Pendentes de Aprovação */}
+            <Card className="mt-6 bg-black/30 border border-white/10">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    <CardTitle>Itens pendentes</CardTitle>
+                  </div>
+                  <CardDescription>Itens cadastrados por vendedores aguardando aprovação</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ItemsPendingAdminSection />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="featured">
@@ -322,4 +360,236 @@ const Index = () => {
   );
 };
 
+type Seller = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  cpf: string | null;
+  steam_id: string | null;
+  status: 'pending' | 'approved' | 'rejected' | null;
+  approved: boolean | null;
+  approved_at: string | null;
+};
+
+const SellersAdminSection: React.FC = () => {
+  const [pending, setPending] = React.useState<Seller[]>([]);
+  const [approved, setApproved] = React.useState<Seller[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string>('');
+
+  const fetchSellers = React.useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error } = await supabase
+        .from('sellers')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const rows = (data || []) as Seller[];
+      setPending(rows.filter(r => r.status === 'pending'));
+      setApproved(rows.filter(r => r.status === 'approved'));
+    } catch (err: any) {
+      console.error('Erro ao carregar vendedores', err);
+      setError(err.message || 'Falha ao carregar vendedores');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchSellers();
+  }, [fetchSellers]);
+
+  const approveSeller = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('sellers')
+        .update({ status: 'approved', approved: true, approved_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      fetchSellers();
+    } catch (err) {
+      console.error('Erro ao aprovar vendedor', err);
+    }
+  };
+
+  const rejectSeller = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('sellers')
+        .update({ status: 'rejected', approved: false })
+        .eq('id', id);
+      if (error) throw error;
+      fetchSellers();
+    } catch (err) {
+      console.error('Erro ao rejeitar vendedor', err);
+    }
+  };
+
+  if (loading) {
+    return <Loading text="Carregando vendedores..." />;
+  }
+
+  return (
+    <div className="space-y-8">
+      {error && (
+        <div className="text-red-400 text-sm">{error}</div>
+      )}
+
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Aguardando Aprovação</h3>
+        {pending.length === 0 ? (
+          <div className="text-sm text-muted-foreground">Nenhuma solicitação pendente</div>
+        ) : (
+          <div className="space-y-3">
+            {pending.map((s) => (
+              <div key={s.id} className="flex items-center gap-4 p-3 border border-white/10 rounded-lg">
+                <div className="flex-1">
+                  <div className="font-medium">{s.name}</div>
+                  <div className="text-xs text-muted-foreground">Email: {s.email}</div>
+                  <div className="text-xs text-muted-foreground">CPF: {s.cpf}</div>
+                  <div className="text-xs text-muted-foreground">Steam: {s.steam_id}</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="default" onClick={() => approveSeller(s.id)} className="bg-green-600 hover:bg-green-700">
+                    <Check className="h-4 w-4" /> Aprovar
+                  </Button>
+                  <Button variant="secondary" onClick={() => rejectSeller(s.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                    <X className="h-4 w-4" /> Rejeitar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Aprovados</h3>
+        {approved.length === 0 ? (
+          <div className="text-sm text-muted-foreground">Nenhum vendedor aprovado</div>
+        ) : (
+          <div className="space-y-3">
+            {approved.map((s) => (
+              <div key={s.id} className="flex items-center gap-4 p-3 border border-white/10 rounded-lg">
+                <div className="flex-1">
+                  <div className="font-medium">{s.name}</div>
+                  <div className="text-xs text-muted-foreground">Email: {s.email}</div>
+                  <div className="text-xs text-muted-foreground">CPF: {s.cpf}</div>
+                  <div className="text-xs text-muted-foreground">Steam: {s.steam_id}</div>
+                </div>
+                <div className="flex gap-2">
+                  <Link to={`/seller/${s.id}`} className="text-sm text-cyan-400 hover:text-cyan-300">Abrir página pessoal</Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default Index;
+
+type PendingItem = Item & {
+  seller_id?: string | null;
+  is_partner?: boolean;
+  approved?: boolean;
+  seller?: { name: string | null; email?: string | null } | null;
+};
+
+const ItemsPendingAdminSection: React.FC = () => {
+  const [items, setItems] = React.useState<PendingItem[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string>("");
+
+  const fetchPendingItems = React.useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data, error } = await supabase
+        .from('items')
+        .select('*, seller:sellers(name, email)')
+        .eq('is_partner', true)
+        .eq('approved', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setItems((data || []) as PendingItem[]);
+    } catch (err: any) {
+      console.error('Erro ao carregar itens pendentes', err);
+      setError(err.message || 'Falha ao carregar itens pendentes');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchPendingItems();
+  }, [fetchPendingItems]);
+
+  const approveItem = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('items')
+        .update({ approved: true })
+        .eq('id', id);
+      if (error) throw error;
+      fetchPendingItems();
+    } catch (err) {
+      console.error('Erro ao aprovar item', err);
+    }
+  };
+
+  const rejectItem = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('items')
+        .update({ approved: false })
+        .eq('id', id);
+      if (error) throw error;
+      fetchPendingItems();
+    } catch (err) {
+      console.error('Erro ao reprovar item', err);
+    }
+  };
+
+  if (loading) {
+    return <Loading text="Carregando itens pendentes..." />;
+  }
+
+  return (
+    <div className="space-y-3">
+      {error && <div className="text-red-400 text-sm">{error}</div>}
+      {items.length === 0 ? (
+        <div className="text-sm text-muted-foreground">Nenhum item pendente</div>
+      ) : (
+        items.map((item) => (
+          <div key={item.id} className="flex items-center gap-3 p-3 border border-white/10 rounded-lg">
+            <img
+              src={item.image_url || ''}
+              alt={item.name || item.hero_name}
+              className="w-16 h-16 object-cover rounded-md border border-white/10"
+            />
+            <div className="flex-1">
+              <div className="text-sm font-medium">{item.name || item.hero_name}</div>
+              <div className="text-xs text-muted-foreground">
+                Herói: {item.hero_name} • Raridade: {item.rarity} • Estoque: {item.current_stock}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">Vendedor: {item.seller?.name || item.seller?.email || '—'}</div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="default" onClick={() => approveItem(item.id)} className="bg-green-600 hover:bg-green-700">
+                <Check className="h-4 w-4" /> Aprovar
+              </Button>
+              <Button variant="secondary" onClick={() => rejectItem(item.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                <X className="h-4 w-4" /> Reprovar
+              </Button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};

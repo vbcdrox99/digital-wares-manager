@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Package, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useIsMobile } from '../hooks/use-mobile';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NavigationProps {
   className?: string;
@@ -13,6 +14,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   const { user, logout, isAdmin } = useAuth();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [sellerApproved, setSellerApproved] = React.useState(false);
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -26,6 +28,30 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
     // Fechar o menu mobile ao navegar para outra rota
     setMobileOpen(false);
   }, [location.pathname]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const checkSeller = async () => {
+      if (!user?.email) {
+        setSellerApproved(false);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from('sellers')
+          .select('status')
+          .eq('email', user.email)
+          .maybeSingle();
+        if (!cancelled) {
+          setSellerApproved(!!data && (data as any).status === 'approved');
+        }
+      } catch (_) {
+        if (!cancelled) setSellerApproved(false);
+      }
+    };
+    checkSeller();
+    return () => { cancelled = true; };
+  }, [user?.email]);
 
   return (
     <header className={`relative z-20 border-b border-white/10 bg-black/20 backdrop-blur-sm ${className}`}>
@@ -105,6 +131,18 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
             >
               FAQ
             </Link>
+            {sellerApproved && (
+              <Link 
+                to="/area-do-vendedor" 
+                className={`transition-colors ${
+                  isActive('/area-do-vendedor') 
+                    ? 'text-foreground hover:text-primary' 
+                    : 'text-muted-foreground hover:text-primary'
+                }`}
+              >
+                Área do Vendedor
+              </Link>
+            )}
             {isAdmin() && (
               <Link 
                 to="/admin" 
@@ -236,6 +274,16 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
             >
               FAQ
             </Link>
+            {sellerApproved && (
+              <Link
+                to="/area-do-vendedor"
+                className={`block px-2 py-2 rounded-md transition-colors ${
+                  isActive('/area-do-vendedor') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+                }`}
+              >
+                Área do Vendedor
+              </Link>
+            )}
             {isAdmin() && (
               <Link
                 to="/admin"

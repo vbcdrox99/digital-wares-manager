@@ -91,7 +91,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        const msg = (error.message || '').toLowerCase();
+        const friendly = msg.includes('email not confirmed')
+          ? 'Confirme seu email por favor'
+          : error.message;
+        return { success: false, error: friendly };
       }
 
       if (data.user) {
