@@ -280,21 +280,15 @@ const Orders: React.FC<OrdersProps> = () => {
   };
 
   const calculateAvailableStock = (item: Item) => {
-    // Usar current_stock se disponível, senão usar initial_stock
-    const currentStock = item.current_stock ?? item.initial_stock ?? 0;
-    
-    const usedInOrders = orders
-      .filter(order => order.status === 'pending')
-      .reduce((total, order) => {
-        const orderItem = order.order_items?.find(oi => oi.items.id === item.id);
-        return total + (orderItem ? orderItem.quantity : 0);
-      }, 0);
+    // Estoque total inicial + ajustes manuais (se houver)
+    // Assumindo que item.current_stock é a fonte da verdade do estoque atual no banco
+    const currentStock = item.current_stock ?? item.initial_stock;
     
     const usedInCart = cart
       .filter(cartItem => cartItem.item_id === item.id)
       .reduce((total, cartItem) => total + cartItem.quantity, 0);
     
-    return Math.max(0, currentStock - usedInOrders - usedInCart);
+    return Math.max(0, currentStock - usedInCart);
   };
 
   const availableItems = useMemo(() => 
@@ -526,7 +520,9 @@ const Orders: React.FC<OrdersProps> = () => {
     try {
       await updateOrderStatus(orderId, 'cancelled');
       await loadOrders();
-      toast({ title: 'Pedido cancelado!' });
+      const updatedItems = await itemsService.getAll();
+      setItems(updatedItems);
+      toast({ title: 'Pedido cancelado e itens devolvidos ao estoque!' });
     } catch (error) {
       console.error('Erro ao cancelar pedido:', error);
       toast({ title: 'Erro ao cancelar pedido', variant: 'destructive' });
@@ -535,6 +531,15 @@ const Orders: React.FC<OrdersProps> = () => {
 
   const handleDeleteOrder = useCallback(async (orderId: string) => {
     try {
+      // Se o pedido estiver pendente, cancelar primeiro para devolver itens ao estoque
+      const orderToDelete = orders.find(o => o.id === orderId);
+      if (orderToDelete?.status === 'pending') {
+        await updateOrderStatus(orderId, 'cancelled');
+        // Atualizar itens locais pois o estoque mudou
+        const updatedItems = await itemsService.getAll();
+        setItems(updatedItems);
+      }
+
       await deleteOrder(orderId);
       await loadOrders();
       toast({ title: 'Pedido excluído com sucesso!' });
@@ -542,7 +547,7 @@ const Orders: React.FC<OrdersProps> = () => {
       console.error('Erro ao excluir pedido:', error);
       toast({ title: 'Erro ao excluir pedido', variant: 'destructive' });
     }
-  }, [loadOrders, toast]);
+  }, [orders, loadOrders, toast]);
 
   const formatTimeRemaining = (deadline: string) => {
     const timeRemaining = calculateTimeRemaining(deadline);

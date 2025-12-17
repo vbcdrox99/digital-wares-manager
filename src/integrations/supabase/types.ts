@@ -67,7 +67,7 @@ export type Database = {
           is_partner: boolean
           name: string | null
           price: number
-          rarity: Database["public"]["Enums"]["rarity"]
+          rarity: string
           seller_id: string | null
         }
         Insert: {
@@ -83,7 +83,7 @@ export type Database = {
           is_partner?: boolean
           name?: string | null
           price: number
-          rarity: Database["public"]["Enums"]["rarity"]
+          rarity: string
           seller_id?: string | null
         }
         Update: {
@@ -99,7 +99,7 @@ export type Database = {
           is_partner?: boolean
           name?: string | null
           price?: number
-          rarity?: Database["public"]["Enums"]["rarity"]
+          rarity?: string
           seller_id?: string | null
         }
         Relationships: [

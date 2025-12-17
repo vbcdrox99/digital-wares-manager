@@ -1,4 +1,4 @@
-export type Rarity = 'comum' | 'persona' | 'arcana' | 'immortal';
+export type Rarity = string;
 
 export interface Item {
   id: string;

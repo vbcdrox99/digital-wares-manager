@@ -7,22 +7,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Minus, Trash2, Package, Loader2, Users, Edit, Star } from 'lucide-react';
+import { Plus, Minus, Trash2, Package, Loader2, Users, Edit, Star, Settings, Palette, Check, X } from 'lucide-react';
 import { Rarity } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
 import { supabaseServices, Chest, Item, Customer } from '@/integrations/supabase/services';
 import { supabase } from '@/integrations/supabase/client';
 
-const DEFAULT_RARITIES = ['comum', 'persona', 'arcana', 'immortal'];
+interface RarityDefinition {
+  id: string;
+  name: string;
+  color: string;
+}
 
-const getRarityColor = (rarity: string) => {
-  const colors: Record<string, string> = {
-    comum: 'bg-gray-700 text-white border-gray-800',
-    persona: 'bg-blue-600 text-white border-blue-700',
-    arcana: 'bg-purple-600 text-white border-purple-700',
-    immortal: 'bg-orange-600 text-white border-orange-700'
-  };
-  return colors[rarity] || 'bg-gray-700 text-white border-gray-800';
+const getContrastColor = (hexColor: string) => {
+  if (!hexColor || !hexColor.startsWith('#')) return 'white';
+  const r = parseInt(hexColor.substr(1, 2), 16);
+  const g = parseInt(hexColor.substr(3, 2), 16);
+  const b = parseInt(hexColor.substr(5, 2), 16);
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return (yiq >= 128) ? 'black' : 'white';
+};
+
+const getBadgeStyleFromColor = (color: string) => {
+  if (!color) return {};
+  if (color.startsWith('#') || color.startsWith('rgb')) {
+    return {
+      style: {
+        backgroundColor: color,
+        color: getContrastColor(color),
+        borderColor: color
+      },
+      className: 'border'
+    };
+  }
+  return { className: color };
 };
 
 const SupabaseStockControl: React.FC = () => {
@@ -41,7 +59,9 @@ const SupabaseStockControl: React.FC = () => {
     deleteChest: false,
     deleteItem: false,
     editItem: false,
-    createCustomer: false
+    createCustomer: false,
+    rarities: false,
+    manageRarity: false
   });
 
   // Estados para formulários
@@ -90,14 +110,17 @@ const SupabaseStockControl: React.FC = () => {
 
   // Estado para filtro de busca
   const [searchFilter, setSearchFilter] = useState('');
-  const [rarities, setRarities] = useState<string[]>(DEFAULT_RARITIES);
-  const [showAddRarity, setShowAddRarity] = useState(false);
-  const [newRarity, setNewRarity] = useState('');
+  const [rarityDefinitions, setRarityDefinitions] = useState<RarityDefinition[]>([]);
+  const [showManageRarities, setShowManageRarities] = useState(false);
+  const [newRarity, setNewRarity] = useState({ name: '', color: '#000000' });
+  const [editingRarity, setEditingRarity] = useState<RarityDefinition | null>(null);
+  const [rarityToDelete, setRarityToDelete] = useState<RarityDefinition | null>(null);
 
   // Carregar baús e clientes ao iniciar
   useEffect(() => {
     loadChests();
     loadCustomers();
+    loadRarities();
   }, []);
 
   // Carregar itens quando um baú for selecionado para visualização
@@ -121,40 +144,133 @@ const SupabaseStockControl: React.FC = () => {
     setItemDiscounts(initialDiscounts);
   }, [items]);
 
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('custom_rarities') || '[]');
-      if (Array.isArray(saved)) {
-        const merged = Array.from(new Set([
-          ...DEFAULT_RARITIES,
-          ...saved.map((s: any) => String(s).toLowerCase())
-        ]));
-        setRarities(merged);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
 
-  const handleAddRarity = () => {
-    const name = newRarity.trim().toLowerCase();
+
+  const loadRarities = async () => {
+    try {
+      setLoading(prev => ({ ...prev, rarities: true }));
+      const { data, error } = await supabase
+        .from('rarities')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      
+      if (data) {
+        setRarityDefinitions(data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar raridades:', error);
+      toast({ title: 'Erro ao carregar raridades', variant: 'destructive' });
+    } finally {
+      setLoading(prev => ({ ...prev, rarities: false }));
+    }
+  };
+
+  const handleCreateRarity = async () => {
+    const name = newRarity.name.trim().toLowerCase();
     if (!name) {
       toast({ title: 'Nome inválido', description: 'Digite um nome de raridade.', variant: 'destructive' });
       return;
     }
-    if (rarities.includes(name)) {
+    
+    if (rarityDefinitions.some(r => r.name.toLowerCase() === name)) {
       toast({ title: 'Já existe', description: 'Essa raridade já está na lista.' });
       return;
     }
-    const updated = [...rarities, name];
-    setRarities(updated);
+
     try {
-      const custom = updated.filter(r => !DEFAULT_RARITIES.includes(r));
-      localStorage.setItem('custom_rarities', JSON.stringify(custom));
-    } catch {}
-    setShowAddRarity(false);
-    setNewRarity('');
-    toast({ title: 'Raridade adicionada', description: `"${name}" disponível na lista.` });
+      setLoading(prev => ({ ...prev, manageRarity: true }));
+      const { data, error } = await supabase
+        .from('rarities')
+        .insert({ name, color: newRarity.color })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setRarityDefinitions(prev => [...prev, data]);
+      setNewRarity({ name: '', color: '#000000' });
+      toast({ title: 'Raridade adicionada', description: `"${name}" disponível na lista.` });
+    } catch (error) {
+      console.error('Erro ao criar raridade:', error);
+      toast({ title: 'Erro ao criar raridade', variant: 'destructive' });
+    } finally {
+      setLoading(prev => ({ ...prev, manageRarity: false }));
+    }
+  };
+
+  const handleUpdateRarity = async () => {
+    if (!editingRarity) return;
+    
+    try {
+      setLoading(prev => ({ ...prev, manageRarity: true }));
+      
+      // Get original name to update items if changed
+      const originalRarity = rarityDefinitions.find(r => r.id === editingRarity.id);
+      
+      const { error } = await supabase
+        .from('rarities')
+        .update({ name: editingRarity.name, color: editingRarity.color })
+        .eq('id', editingRarity.id);
+
+      if (error) throw error;
+      
+      // If name changed, update all items
+      if (originalRarity && originalRarity.name !== editingRarity.name) {
+         const { error: itemsError } = await supabase
+           .from('items')
+           .update({ rarity: editingRarity.name })
+           .eq('rarity', originalRarity.name);
+           
+         if (itemsError) {
+            console.error('Erro ao atualizar itens com nova raridade:', itemsError);
+            toast({ title: 'Aviso: Itens podem não ter sido atualizados', variant: 'destructive' });
+         }
+      }
+
+      setRarityDefinitions(prev => prev.map(r => r.id === editingRarity.id ? editingRarity : r));
+      setEditingRarity(null);
+      toast({ title: 'Raridade atualizada com sucesso!' });
+      
+      // Reload items to reflect changes if necessary
+      if (selectedChestForView) {
+        loadItemsByChestId(selectedChestForView);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar raridade:', error);
+      toast({ title: 'Erro ao atualizar raridade', variant: 'destructive' });
+    } finally {
+      setLoading(prev => ({ ...prev, manageRarity: false }));
+    }
+  };
+
+  const confirmDeleteRarity = async () => {
+    if (!rarityToDelete) return;
+    
+    try {
+      setLoading(prev => ({ ...prev, manageRarity: true }));
+      const { error } = await supabase
+        .from('rarities')
+        .delete()
+        .eq('id', rarityToDelete.id);
+
+      if (error) throw error;
+
+      setRarityDefinitions(prev => prev.filter(r => r.id !== rarityToDelete.id));
+      setRarityToDelete(null);
+      toast({ title: 'Raridade excluída com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao excluir raridade:', error);
+      toast({ title: 'Erro ao excluir raridade', variant: 'destructive' });
+    } finally {
+      setLoading(prev => ({ ...prev, manageRarity: false }));
+    }
+  };
+
+  const getRarityColor = (rarityName: string) => {
+    const rarity = rarityDefinitions.find(r => r.name.toLowerCase() === rarityName.toLowerCase());
+    return rarity ? rarity.color : 'bg-gray-700 text-white border-gray-800';
   };
 
   // Função para manipular upload de imagem
@@ -888,17 +1004,17 @@ const SupabaseStockControl: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {rarities.map((rarity) => (
-                      <SelectItem key={rarity} value={rarity}>
-                        <Badge className={getRarityColor(rarity)}>
-                          {rarity}
+                    {rarityDefinitions.map((rarity) => (
+                      <SelectItem key={rarity.id} value={rarity.name}>
+                        <Badge {...getBadgeStyleFromColor(rarity.color)}>
+                          {rarity.name}
                         </Badge>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" onClick={() => setShowAddRarity(true)}>
-                  <Plus className="h-4 w-4" />
+                <Button variant="outline" size="icon" onClick={() => setShowManageRarities(true)}>
+                  <Settings className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -1024,7 +1140,7 @@ const SupabaseStockControl: React.FC = () => {
                       <TableCell className="font-medium">{item.hero_name}</TableCell>
                       <TableCell>{item.name}</TableCell>
                       <TableCell>
-                        <Badge className={getRarityColor(item.rarity as Rarity)}>
+                        <Badge {...getBadgeStyleFromColor(getRarityColor(item.rarity as Rarity))}>
                           {item.rarity}
                         </Badge>
                       </TableCell>
@@ -1183,17 +1299,17 @@ const SupabaseStockControl: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {rarities.map(rarity => (
-                      <SelectItem key={rarity} value={rarity}>
-                        <Badge className={getRarityColor(rarity)}>
-                          {rarity}
+                    {rarityDefinitions.map(rarity => (
+                      <SelectItem key={rarity.id} value={rarity.name}>
+                        <Badge {...getBadgeStyleFromColor(rarity.color)}>
+                          {rarity.name}
                         </Badge>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" onClick={() => setShowAddRarity(true)}>
-                  <Plus className="h-4 w-4" />
+                <Button variant="outline" size="icon" onClick={() => setShowManageRarities(true)}>
+                  <Settings className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -1329,19 +1445,136 @@ const SupabaseStockControl: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showAddRarity} onOpenChange={setShowAddRarity}>
-        <DialogContent>
+      <Dialog open={showManageRarities} onOpenChange={setShowManageRarities}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Adicionar nova raridade</DialogTitle>
-            <DialogDescription>Informe o nome para adicionar à lista de raridades.</DialogDescription>
+            <DialogTitle>Gerenciar Raridades</DialogTitle>
+            <DialogDescription>
+              Adicione, edite ou remova raridades e suas cores.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <Label>Nome da raridade</Label>
-            <Input value={newRarity} onChange={(e) => setNewRarity(e.target.value)} placeholder="Ex.: lendária" />
+          
+          <div className="space-y-6">
+            {/* Create New Rarity Form */}
+            <div className="p-4 border rounded-lg bg-secondary/20 space-y-4">
+              <h3 className="font-medium text-sm flex items-center gap-2">
+                <Plus className="h-4 w-4" /> Adicionar Nova Raridade
+              </h3>
+              <div className="flex gap-4 items-end">
+                <div className="flex-1 space-y-2">
+                  <Label>Nome</Label>
+                  <Input 
+                    value={newRarity.name} 
+                    onChange={(e) => setNewRarity(prev => ({ ...prev, name: e.target.value }))} 
+                    placeholder="Ex: lendária" 
+                  />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Label>Cor</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="color" 
+                      value={newRarity.color.startsWith('#') ? newRarity.color : '#000000'}
+                      onChange={(e) => setNewRarity(prev => ({ ...prev, color: e.target.value }))}
+                      className="w-12 h-10 p-1 cursor-pointer"
+                    />
+                    <Input 
+                      value={newRarity.color}
+                      onChange={(e) => setNewRarity(prev => ({ ...prev, color: e.target.value }))}
+                      placeholder="#000000 ou classe"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <Button onClick={handleCreateRarity} disabled={loading.manageRarity}>
+                  {loading.manageRarity ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Adicionar'}
+                </Button>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Preview:</span>
+                <Badge {...getBadgeStyleFromColor(newRarity.color)}>
+                  {newRarity.name || 'Nome da Raridade'}
+                </Badge>
+              </div>
+            </div>
+
+            {/* List Existing Rarities */}
+            <div className="space-y-2">
+              <h3 className="font-medium text-sm">Raridades Existentes</h3>
+              <div className="border rounded-lg divide-y">
+                {rarityDefinitions.map(rarity => (
+                  <div key={rarity.id} className="p-3 flex items-center justify-between hover:bg-secondary/10 transition-colors">
+                    {editingRarity?.id === rarity.id ? (
+                      <div className="flex items-center gap-2 flex-1 mr-4">
+                        <Input 
+                          value={editingRarity.name} 
+                          onChange={(e) => setEditingRarity(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
+                          className="h-8"
+                        />
+                        <div className="flex gap-1 items-center flex-1">
+                          <Input 
+                            type="color" 
+                            value={editingRarity.color.startsWith('#') ? editingRarity.color : '#000000'}
+                            onChange={(e) => setEditingRarity(prev => prev ? ({ ...prev, color: e.target.value }) : null)}
+                            className="w-8 h-8 p-0.5 cursor-pointer shrink-0"
+                          />
+                          <Input 
+                            value={editingRarity.color}
+                            onChange={(e) => setEditingRarity(prev => prev ? ({ ...prev, color: e.target.value }) : null)}
+                            className="h-8 min-w-[100px]"
+                          />
+                        </div>
+                        <Button size="sm" variant="ghost" onClick={handleUpdateRarity} disabled={loading.manageRarity}>
+                          <Check className="h-4 w-4 text-green-500" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingRarity(null)}>
+                          <X className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <Badge {...getBadgeStyleFromColor(rarity.color)}>
+                            {rarity.name}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => setEditingRarity(rarity)}>
+                            <Edit className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setRarityToDelete(rarity)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowAddRarity(false)}>Cancelar</Button>
-            <Button onClick={handleAddRarity} className="bg-gradient-gaming">Adicionar</Button>
+            <Button variant="outline" onClick={() => setShowManageRarities(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Rarity Confirmation */}
+      <Dialog open={!!rarityToDelete} onOpenChange={(open) => !open && setRarityToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Raridade</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir a raridade "{rarityToDelete?.name}"?
+              <br /><br />
+              <span className="text-red-500 font-bold">Atenção:</span> Isso pode afetar itens que usam esta raridade. Eles manterão o nome da raridade, mas perderão a associação com a cor definida aqui.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRarityToDelete(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmDeleteRarity} disabled={loading.manageRarity}>
+              {loading.manageRarity ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Excluir'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
