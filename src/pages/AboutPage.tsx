@@ -19,7 +19,7 @@ export default function AboutPage() {
       <Navigation />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-12 relative z-10">
+      <main className="container mx-auto px-4 pt-24 pb-12 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

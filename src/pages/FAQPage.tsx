@@ -56,8 +56,8 @@ const FAQPage = () => {
       
       {/* Navigation */}
       <Navigation />
-      
-      <div className="relative z-10 container mx-auto px-4 py-16">
+
+      <div className="relative z-10 container mx-auto px-4 pt-24 pb-16">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

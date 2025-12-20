@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingCart, Star, Package, Eye, X, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ShoppingCart, Star, Package, Eye, X, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -89,9 +89,8 @@ const ItemDetailPage: React.FC = () => {
       <div className="relative">
         {/* Background Gradients similar to RafflePage */}
         <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-background to-blue-900/20 pointer-events-none" />
-        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
-        <div className="container mx-auto px-6 py-12 relative z-10">
+        <div className="container mx-auto px-6 pt-24 pb-12 relative z-10">
             {/* Header com botão voltar */}
             <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -136,11 +135,11 @@ const ItemDetailPage: React.FC = () => {
                     {/* Badge de raridade */}
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
                         <Badge 
-                            {...getBadgeStyleFromColor(getRarityColor(item.rarity), "shadow-lg backdrop-blur-md text-base px-3 py-1")}
+                            {...getBadgeStyleFromColor(getRarityColor(item.rarity), "shadow-lg backdrop-blur-md text-xs px-2.5 py-0.5 md:text-base md:px-3 md:py-1")}
                         >
                             {item.rarity}
                         </Badge>
-                        {item.discount && item.discount > 0 && (
+                        {item.discount !== undefined && item.discount > 0 && (
                         <Badge className="bg-red-600 text-white font-bold shadow-lg border-0 self-start">
                             -{item.discount}%
                         </Badge>
@@ -160,25 +159,25 @@ const ItemDetailPage: React.FC = () => {
                 </Card>
 
                 {/* Blocos auxiliares */}
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="mt-6 grid grid-cols-2 gap-3 md:gap-6">
                 {/* Estoque */}
                 <Card className="bg-black/20 border-white/10 backdrop-blur-sm rounded-xl">
-                    <CardHeader className="pb-2">
-                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                        <Package className="w-5 h-5 text-primary" />
+                    <CardHeader className="p-3 pb-2 md:p-6 md:pb-2">
+                    <h3 className="text-sm md:text-lg font-semibold text-foreground flex items-center gap-2">
+                        <Package className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                         Disponibilidade
                     </h3>
                     </CardHeader>
-                    <CardContent>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-muted-foreground">Em estoque:</span>
-                        <span className="text-foreground font-semibold">
+                    <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-1 md:mb-2 gap-1">
+                        <span className="text-xs md:text-base text-muted-foreground">Em estoque:</span>
+                        <span className="text-sm md:text-base text-foreground font-semibold">
                         {item.current_stock} / {item.initial_stock}
                         </span>
                     </div>
-                    <div className="w-full bg-white/5 rounded-full h-2">
+                    <div className="w-full bg-white/5 rounded-full h-1.5 md:h-2">
                         <div
-                        className="bg-gradient-to-r from-primary/80 to-primary h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-primary/80 to-primary h-1.5 md:h-2 rounded-full transition-all duration-300"
                         style={{
                             width: `${Math.min((item.current_stock / item.initial_stock) * 100, 100)}%`
                         }}
@@ -189,33 +188,33 @@ const ItemDetailPage: React.FC = () => {
 
                 {/* Seletor de Quantidade */}
                 <Card className="bg-black/20 border-white/10 backdrop-blur-sm rounded-xl">
-                    <CardHeader className="pb-2">
-                    <h3 className="text-lg font-semibold text-foreground">Quantidade</h3>
+                    <CardHeader className="p-3 pb-2 md:p-6 md:pb-2">
+                    <h3 className="text-sm md:text-lg font-semibold text-foreground">Quantidade</h3>
                     </CardHeader>
-                    <CardContent>
-                    <div className="flex items-center gap-4">
+                    <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+                    <div className="flex items-center gap-2 md:gap-4">
                         <Button
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
                         variant="outline"
                         size="sm"
-                        className="bg-transparent border-white/10 hover:bg-white/5 h-8 w-8 p-0"
+                        className="bg-transparent border-white/10 hover:bg-white/5 h-7 w-7 md:h-8 md:w-8 p-0"
                         >
                         -
                         </Button>
-                        <span className="text-foreground font-semibold text-xl w-8 text-center">
+                        <span className="text-foreground font-semibold text-lg md:text-xl w-6 md:w-8 text-center">
                         {quantity}
                         </span>
                         <Button
                         onClick={() => setQuantity(Math.min(item.current_stock, quantity + 1))}
                         variant="outline"
                         size="sm"
-                        className="bg-transparent border-white/10 hover:bg-white/5 h-8 w-8 p-0"
+                        className="bg-transparent border-white/10 hover:bg-white/5 h-7 w-7 md:h-8 md:w-8 p-0"
                         disabled={quantity >= item.current_stock}
                         >
                         +
                         </Button>
                     </div>
-                    <p className="text-muted-foreground text-sm mt-2">
+                    <p className="text-muted-foreground text-xs md:text-sm mt-1 md:mt-2">
                         Total: R$ {(
                         (item.discount && item.discount > 0 
                             ? item.price * (1 - item.discount / 100) 
@@ -295,14 +294,21 @@ const ItemDetailPage: React.FC = () => {
                 </Button>
                 </motion.div>
 
-                <div className="flex items-center gap-4 text-sm text-muted-foreground p-4 bg-white/5 rounded-lg border border-white/5">
-                    <div className="flex items-center gap-2">
-                        <Info className="w-4 h-4" />
-                        <span>Entrega via Trade Link</span>
-                    </div>
-                    <div className="w-px h-4 bg-white/10" />
-                    <div>
-                        Garantia de 7 dias
+                <div className="flex flex-col gap-2 p-4 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition-colors duration-300">
+                    <div className="flex items-start gap-3">
+                        <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                        <div className="space-y-2">
+                            <div>
+                                <p className="text-sm text-foreground font-medium">Dúvidas sobre a entrega?</p>
+                                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                                    O envio é realizado via presente (30 dias) ou troca direta, dependendo do item. 
+                                    Garantimos segurança e suporte total durante todo o processo.
+                                </p>
+                            </div>
+                            <Link to="/faq" className="inline-flex items-center text-xs text-primary hover:text-primary/80 transition-colors font-medium group/link">
+                                Entenda como funciona no FAQ <ArrowRight className="w-3 h-3 ml-1 group-hover/link:translate-x-0.5 transition-transform" />
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </motion.div>

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Package, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useIsMobile } from '../hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface NavigationProps {
   className?: string;
@@ -13,8 +14,9 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   const location = useLocation();
   const { user, logout, isAdmin } = useAuth();
   const isMobile = useIsMobile();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [sellerApproved, setSellerApproved] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sellerApproved, setSellerApproved] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -24,12 +26,21 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
     await logout();
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
     // Fechar o menu mobile ao navegar para outra rota
     setMobileOpen(false);
   }, [location.pathname]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     const checkSeller = async () => {
       if (!user?.email) {
@@ -54,21 +65,37 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   }, [user?.email]);
 
   return (
-    <header className={`relative z-20 border-b border-white/10 bg-black/20 backdrop-blur-sm ${className}`}>
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <Link
-            to="/"
-            aria-label="Ir para página inicial"
-            className="flex items-center space-x-2 hover:opacity-90 transition-opacity"
-          >
-            <div className="w-8 h-8 bg-gradient-gaming rounded-lg flex items-center justify-center">
-              <Package className="h-5 w-5 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white drop-shadow-lg">
-              Dota Play Brasil
-            </h1>
-          </Link>
+    <div className={cn("fixed top-0 left-0 right-0 z-50 flex justify-center transition-all duration-300 pointer-events-none", isScrolled ? "pt-4" : "pt-0")}>
+      <header 
+        className={cn(
+          "pointer-events-auto transition-all duration-500 ease-in-out border-white/10 backdrop-blur-md bg-black/20",
+          isScrolled 
+            ? "w-[90%] md:w-[80%] rounded-2xl border shadow-lg shadow-black/20" 
+            : "w-full border-b",
+          className
+        )}
+      >
+        <div className={cn("container mx-auto px-6 transition-all duration-300", isScrolled ? "py-1" : "py-4")}>
+          <div className="flex items-center justify-between">
+            <Link
+              to="/"
+              aria-label="Ir para página inicial"
+              className="flex items-center hover:opacity-90 transition-opacity"
+            >
+              <div className={cn(
+                "bg-gradient-gaming rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20 transition-all duration-300",
+                isScrolled ? "w-7 h-7" : "w-8 h-8"
+              )}>
+                <Package className="h-5 w-5 text-white" />
+              </div>
+              <h1 className={cn(
+                "font-bold text-white drop-shadow-lg tracking-tight transition-all duration-300 overflow-hidden whitespace-nowrap",
+                isScrolled ? "text-lg md:text-xl" : "text-xl md:text-2xl",
+                isScrolled && isMobile ? "max-w-0 opacity-0 ml-0" : "max-w-[300px] opacity-100 ml-2"
+              )}>
+                Dota Play Brasil
+              </h1>
+            </Link>
           {/* Navegação Desktop */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link 
@@ -180,10 +207,13 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
               ) : (
                 <Link
                   to="/login"
-                  className="flex items-center space-x-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all"
+                  className={cn(
+                    "flex items-center space-x-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all",
+                    isScrolled ? "px-3 py-1 text-xs" : "px-4 py-2 text-sm font-medium"
+                  )}
                 >
-                  <User className="w-4 h-4" />
-                  <span className="text-sm font-medium">Login</span>
+                  <User className={cn("transition-all", isScrolled ? "w-3 h-3" : "w-4 h-4")} />
+                  <span>Login</span>
                 </Link>
               )}
             </div>
@@ -202,9 +232,12 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
             ) : (
               <Link
                 to="/login"
-                className="flex items-center space-x-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-1.5 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all text-sm"
+                className={cn(
+                  "flex items-center space-x-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all text-sm",
+                  isScrolled ? "px-2 py-1" : "px-3 py-1.5"
+                )}
               >
-                <User className="w-4 h-4" />
+                <User className={cn("transition-all", isScrolled ? "w-3 h-3" : "w-4 h-4")} />
                 <span className="font-medium">Login</span>
               </Link>
             )}
@@ -213,7 +246,10 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
               aria-expanded={mobileOpen}
               aria-controls="mobile-menu"
               onClick={() => setMobileOpen((v) => !v)}
-              className="p-2 rounded-md border border-white/10 text-white hover:bg-white/10"
+              className={cn(
+                "rounded-md border border-white/10 text-white hover:bg-white/10 transition-all",
+                isScrolled ? "p-1" : "p-2"
+              )}
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -298,6 +334,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
         )}
       </div>
     </header>
+    </div>
   );
 };
 

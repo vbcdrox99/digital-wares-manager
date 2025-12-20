@@ -157,10 +157,9 @@ const RafflePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-
-      {/* Hero Grande */}
-      <motion.section 
-        className="relative overflow-hidden bg-gradient-to-br from-violet-900/40 via-background to-blue-900/40 py-8 border-b border-white/5"
+            {/* Hero Grande */}
+            <motion.section 
+              className="relative overflow-hidden bg-gradient-to-br from-violet-900/20 via-background to-blue-900/20 pt-24 pb-8 border-b border-white/5"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: 'easeOut' }}

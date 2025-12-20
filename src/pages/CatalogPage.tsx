@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HeroCombobox } from '@/components/HeroCombobox';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { 
   Star, 
   Search, 
@@ -16,14 +17,16 @@ import {
   List,
   SortAsc,
   SortDesc,
-  X
+  X,
+  ChevronDown,
+  SlidersHorizontal,
+  Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useItems } from '@/hooks/useItems';
 import { useRarities } from '@/hooks/useRarities';
 import { getBadgeStyleFromColor } from '@/utils/rarityUtils';
 import ImageWithFallback from '@/components/ui/image-with-fallback';
-// Removido lógica de Sorteio Premium do Catálogo
 import Navigation from '@/components/Navigation';
 
 const CatalogPage: React.FC = () => {
@@ -36,34 +39,77 @@ const CatalogPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [priceRange, setPriceRange] = useState<string>('all');
-  // Lógica de Sorteio Premium movida para página de Admin
+  
+  // State for active filters (what is actually applied)
+  const [activeFilters, setActiveFilters] = useState({
+    nameSearch: '',
+    heroSearch: '',
+    selectedRarity: 'all',
+    priceRange: 'all',
+    sortBy: 'newest'
+  });
+
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [showFab, setShowFab] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const filtersRef = React.useRef<HTMLDivElement>(null);
+
+  // Initialize active filters on mount or when items change
+  // Actually, we just want to ensure that if the user loads the page, the initial state is reflected
+  // But since initial state is empty/all, it's fine.
+  
+  // Monitor scroll for FAB visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      if (filtersRef.current) {
+        const rect = filtersRef.current.getBoundingClientRect();
+        // Show FAB when the filter section is completely out of view (top is negative and below viewport height)
+        // actually, just when bottom < 0 means it's scrolled past up
+        setShowFab(rect.bottom < 0);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const applyFilters = () => {
+    setActiveFilters({
+      nameSearch,
+      heroSearch,
+      selectedRarity,
+      priceRange,
+      sortBy
+    });
+    setIsSheetOpen(false);
+  };
 
   // Filtrar e ordenar itens
   useEffect(() => {
     let filtered = [...items];
 
     // Filtro por nome
-    if (nameSearch) {
+    if (activeFilters.nameSearch) {
       filtered = filtered.filter(item => 
-        item.name.toLowerCase().includes(nameSearch.toLowerCase())
+        item.name.toLowerCase().includes(activeFilters.nameSearch.toLowerCase())
       );
     }
 
     // Filtro por herói
-    if (heroSearch) {
+    if (activeFilters.heroSearch) {
       filtered = filtered.filter(item => 
-        item.hero_name.toLowerCase() === heroSearch.toLowerCase()
+        item.hero_name.toLowerCase() === activeFilters.heroSearch.toLowerCase()
       );
     }
 
     // Filtro por raridade
-    if (selectedRarity !== 'all') {
-      filtered = filtered.filter(item => item.rarity === selectedRarity);
+    if (activeFilters.selectedRarity !== 'all') {
+      filtered = filtered.filter(item => item.rarity === activeFilters.selectedRarity);
     }
 
     // Filtro por faixa de preço
-    if (priceRange !== 'all') {
-      switch (priceRange) {
+    if (activeFilters.priceRange !== 'all') {
+      switch (activeFilters.priceRange) {
         case 'low':
           filtered = filtered.filter(item => parseFloat(item.price.toString()) < 25);
           break;
@@ -80,7 +126,7 @@ const CatalogPage: React.FC = () => {
     }
 
     // Ordenação
-    switch (sortBy) {
+    switch (activeFilters.sortBy) {
       case 'newest':
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
@@ -99,7 +145,7 @@ const CatalogPage: React.FC = () => {
     }
 
     setFilteredItems(filtered);
-  }, [items, nameSearch, heroSearch, selectedRarity, sortBy, priceRange]);
+  }, [items, activeFilters]);
 
   const clearFilters = () => {
     setNameSearch('');
@@ -107,7 +153,144 @@ const CatalogPage: React.FC = () => {
     setSelectedRarity('all');
     setSortBy('newest');
     setPriceRange('all');
+    // Also clear active filters immediately? Or require apply?
+    // Usually "Clear" implies immediate action.
+    setActiveFilters({
+      nameSearch: '',
+      heroSearch: '',
+      selectedRarity: 'all',
+      priceRange: 'all',
+      sortBy: 'newest'
+    });
   };
+
+  const FilterContent = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+      
+      {/* Filtro: Nome */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+          Nome
+        </label>
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+          <Input
+            placeholder="Buscar item..."
+            value={nameSearch}
+            onChange={(e) => setNameSearch(e.target.value)}
+            className="pl-10 bg-black/20 border-white/10 rounded-lg focus:bg-black/40 focus:border-primary/50 transition-all duration-300 h-10"
+          />
+        </div>
+      </div>
+
+      {/* Filtro: Herói */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Herói</label>
+        <HeroCombobox 
+          value={heroSearch} 
+          onChange={setHeroSearch} 
+          className="w-full bg-black/20 border-white/10 rounded-lg hover:bg-black/30 focus:border-primary/50 transition-all duration-300 h-10"
+        />
+      </div>
+
+      {/* Filtro: Raridade */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Raridade</label>
+        <Select value={selectedRarity} onValueChange={setSelectedRarity}>
+          <SelectTrigger className="bg-black/20 border-white/10 rounded-lg hover:bg-black/30 focus:border-primary/50 transition-all duration-300 h-10">
+            <SelectValue placeholder="Todas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            {rarities.map((rarity) => (
+              <SelectItem key={rarity.id} value={rarity.name}>
+                <span className="capitalize">{rarity.name}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Filtro: Preço */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Preço</label>
+        <Select value={priceRange} onValueChange={setPriceRange}>
+          <SelectTrigger className="bg-black/20 border-white/10 rounded-lg hover:bg-black/30 focus:border-primary/50 transition-all duration-300 h-10">
+            <SelectValue placeholder="Todos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="low">Até R$ 25</SelectItem>
+            <SelectItem value="medium">R$ 25 - R$ 100</SelectItem>
+            <SelectItem value="high">Acima de R$ 100</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Ordenação */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ordenar</label>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="bg-black/20 border-white/10 rounded-lg hover:bg-black/30 focus:border-primary/50 transition-all duration-300 h-10">
+            <SelectValue placeholder="Recentes" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Mais recentes</SelectItem>
+            <SelectItem value="oldest">Mais antigos</SelectItem>
+            <SelectItem value="price-low">Menor preço</SelectItem>
+            <SelectItem value="price-high">Maior preço</SelectItem>
+            <SelectItem value="name">Nome A-Z</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Visualização e Limpar */}
+      <div className="space-y-2">
+         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ações</label>
+         <div className="flex gap-2">
+          {/* Botão de Filtrar (Confirmar) */}
+          <Button 
+            onClick={applyFilters} 
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground h-10 transition-all duration-300 font-bold"
+            title="Aplicar filtros"
+          >
+            <Check className="h-4 w-4 mr-2" />
+            Filtrar
+          </Button>
+
+          <div className="flex items-center bg-black/20 rounded-lg p-1 border border-white/10 h-10">
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className={`h-8 w-8 p-0 ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-primary'}`}
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className={`h-8 w-8 p-0 ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-primary'}`}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {(nameSearch || heroSearch || selectedRarity !== 'all' || priceRange !== 'all' || sortBy !== 'newest') && (
+            <Button 
+              variant="ghost" 
+              onClick={clearFilters} 
+              className="h-10 w-10 p-0 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all duration-300"
+              title="Limpar filtros"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+         </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,146 +298,99 @@ const CatalogPage: React.FC = () => {
       <Navigation />
 
       {/* Filtros e Controles */}
-      <motion.section 
-        className="py-8 bg-gradient-to-b from-background to-muted/20"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-      >
-        <div className="container mx-auto px-6">
-          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-2xl space-y-6">
-            
-            {/* Header dos Filtros */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-2 text-primary">
-                <Filter className="h-5 w-5" />
-                <h2 className="font-semibold text-lg tracking-wide">Filtros Avançados</h2>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{filteredItems.length} {filteredItems.length === 1 ? 'item encontrado' : 'itens encontrados'}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+      <div ref={filtersRef}>
+        <motion.section 
+          className="pt-24 pb-8 bg-gradient-to-b from-background to-muted/20"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <div className="container mx-auto px-6">
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 hover:border-primary/30 group">
               
-              {/* Filtro: Nome */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                  Nome
-                </label>
-                <div className="relative group">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-                  <Input
-                    placeholder="Buscar item..."
-                    value={nameSearch}
-                    onChange={(e) => setNameSearch(e.target.value)}
-                    className="pl-10 bg-black/20 border-white/10 rounded-lg focus:bg-black/40 focus:border-primary/50 transition-all duration-300 h-10"
-                  />
+              {/* Header dos Filtros (Clicável) */}
+              <div 
+                onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                className="flex items-center justify-between p-6 cursor-pointer hover:bg-white/5 transition-colors bg-gradient-to-r from-transparent via-primary/5 to-transparent"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg bg-primary/10 text-primary transition-transform duration-300 ${isFiltersOpen ? 'scale-110 shadow-lg shadow-primary/20' : ''}`}>
+                    <Filter className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-lg tracking-wide text-white group-hover:text-primary transition-colors">Filtros Avançados</h2>
+                    <p className="text-xs text-muted-foreground">
+                      {filteredItems.length} {filteredItems.length === 1 ? 'item encontrado' : 'itens encontrados'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:block">
+                    {isFiltersOpen ? 'Ocultar filtros' : 'Expandir filtros'}
+                  </span>
+                  <div className={`p-1 rounded-full border border-white/10 bg-black/20 transition-transform duration-500 ${isFiltersOpen ? 'rotate-180 bg-primary/20 border-primary/30' : ''}`}>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </div>
               </div>
 
-              {/* Filtro: Herói */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Herói</label>
-                <HeroCombobox 
-                  value={heroSearch} 
-                  onChange={setHeroSearch} 
-                  className="w-full bg-black/20 border-white/10 rounded-lg hover:bg-black/30 focus:border-primary/50 transition-all duration-300 h-10"
-                />
-              </div>
-
-              {/* Filtro: Raridade */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Raridade</label>
-                <Select value={selectedRarity} onValueChange={setSelectedRarity}>
-                  <SelectTrigger className="bg-black/20 border-white/10 rounded-lg hover:bg-black/30 focus:border-primary/50 transition-all duration-300 h-10">
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    {rarities.map((rarity) => (
-                      <SelectItem key={rarity.id} value={rarity.name}>
-                        <span className="capitalize">{rarity.name}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Filtro: Preço */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Preço</label>
-                <Select value={priceRange} onValueChange={setPriceRange}>
-                  <SelectTrigger className="bg-black/20 border-white/10 rounded-lg hover:bg-black/30 focus:border-primary/50 transition-all duration-300 h-10">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="low">Até R$ 25</SelectItem>
-                    <SelectItem value="medium">R$ 25 - R$ 100</SelectItem>
-                    <SelectItem value="high">Acima de R$ 100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Ordenação */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ordenar</label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="bg-black/20 border-white/10 rounded-lg hover:bg-black/30 focus:border-primary/50 transition-all duration-300 h-10">
-                    <SelectValue placeholder="Recentes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Mais recentes</SelectItem>
-                    <SelectItem value="oldest">Mais antigos</SelectItem>
-                    <SelectItem value="price-low">Menor preço</SelectItem>
-                    <SelectItem value="price-high">Maior preço</SelectItem>
-                    <SelectItem value="name">Nome A-Z</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Visualização e Limpar */}
-              <div className="space-y-2">
-                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Visualização</label>
-                 <div className="flex gap-2">
-                  <div className="flex items-center bg-black/20 rounded-lg p-1 border border-white/10 h-10">
-                    <Button
-                      variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('grid')}
-                      className={`h-8 w-8 p-0 ${viewMode === 'grid' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                    >
-                      <Grid3X3 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('list')}
-                      className={`h-8 w-8 p-0 ${viewMode === 'list' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {(nameSearch || heroSearch || selectedRarity !== 'all' || priceRange !== 'all' || sortBy !== 'newest') && (
-                    <Button 
-                      variant="ghost" 
-                      onClick={clearFilters} 
-                      className="flex-1 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 h-10 transition-all duration-300"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                 </div>
-              </div>
-
+              <AnimatePresence>
+                {isFiltersOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-6 pt-0 border-t border-white/10 bg-black/20">
+                      <div className="pt-6">
+                        <FilterContent />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
+        </motion.section>
+      </div>
 
-          {/* Painel de seleção de Itens Premium removido (agora no Admin) */}
-        </div>
-      </motion.section>
+      {/* Floating Action Button (FAB) */}
+      <AnimatePresence>
+        {showFab && (
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <motion.button
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="fixed bottom-6 right-6 z-40 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-primary/25 transition-all flex items-center justify-center"
+              >
+                <SlidersHorizontal className="w-6 h-6" />
+              </motion.button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-md bg-background/95 backdrop-blur-xl border-l border-white/10 overflow-y-auto">
+              <SheetHeader className="mb-6">
+                <SheetTitle className="flex items-center gap-2 text-xl">
+                  <Filter className="w-5 h-5 text-primary" />
+                  Filtros Avançados
+                </SheetTitle>
+              </SheetHeader>
+              <div className="pb-20">
+                <div className="flex flex-col gap-6">
+                   {/* Reusing FilterContent logic but unwrapped for vertical layout if needed, 
+                       but Grid works fine in narrow Sheet too (will be 1 col) */}
+                   <FilterContent />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
+      </AnimatePresence>
 
       {/* Grid de Itens */}
       <motion.section 

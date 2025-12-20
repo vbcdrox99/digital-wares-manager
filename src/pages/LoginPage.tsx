@@ -28,8 +28,6 @@ const LoginPage: React.FC = () => {
     document.title = isLogin ? 'Login - Dotaplay' : 'Cadastro de Vendedor - Dotaplay';
   }, [isLogin]);
 
-  // Página de cadastro não redireciona automaticamente
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
