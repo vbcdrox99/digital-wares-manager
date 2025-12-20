@@ -164,8 +164,8 @@ const CatalogPage: React.FC = () => {
     });
   };
 
-  const FilterContent = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+  const FilterContent = ({ isSheet = false }: { isSheet?: boolean }) => (
+    <div className={`grid gap-6 ${isSheet ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'}`}>
       
       {/* Filtro: Nome */}
       <div className="space-y-2">
@@ -373,7 +373,7 @@ const CatalogPage: React.FC = () => {
                 <SlidersHorizontal className="w-6 h-6" />
               </motion.button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-md bg-background/95 backdrop-blur-xl border-l border-white/10 overflow-y-auto">
+            <SheetContent side="right" className="w-full sm:max-w-md md:max-w-[50vw] bg-background/95 backdrop-blur-xl border-l border-white/10 overflow-y-auto">
               <SheetHeader className="mb-6">
                 <SheetTitle className="flex items-center gap-2 text-xl">
                   <Filter className="w-5 h-5 text-primary" />
@@ -382,9 +382,7 @@ const CatalogPage: React.FC = () => {
               </SheetHeader>
               <div className="pb-20">
                 <div className="flex flex-col gap-6">
-                   {/* Reusing FilterContent logic but unwrapped for vertical layout if needed, 
-                       but Grid works fine in narrow Sheet too (will be 1 col) */}
-                   <FilterContent />
+                   <FilterContent isSheet={true} />
                 </div>
               </div>
             </SheetContent>
