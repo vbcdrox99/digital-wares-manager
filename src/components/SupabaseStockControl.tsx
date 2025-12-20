@@ -589,15 +589,28 @@ const SupabaseStockControl: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, deleteItem: true }));
+      
+      // Primeiro remover registros na tabela order_items (histórico de vendas)
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('item_id', itemToDelete);
+
+      if (orderItemsError) {
+        console.error('Erro ao remover histórico de pedidos do item:', orderItemsError);
+        throw orderItemsError;
+      }
+
+      // Em seguida remover o item
       await supabaseServices.items.remove(itemToDelete);
       toast({ title: 'Item removido com sucesso!' });
       
       if (selectedChestForView) {
         await loadItemsByChestId(selectedChestForView);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Erro ao remover item ${itemToDelete}:`, error);
-      toast({ title: 'Erro ao remover item', variant: 'destructive' });
+      toast({ title: 'Erro ao remover item', description: error.message || 'Ocorreu um erro desconhecido.', variant: 'destructive' });
     } finally {
       setLoading(prev => ({ ...prev, deleteItem: false }));
       setIsDeleteModalOpen(false);
