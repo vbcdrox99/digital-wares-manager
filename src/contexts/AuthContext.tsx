@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../integrations/supabase/client';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -35,12 +35,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Função para buscar dados do usuário com timeout
+  // Função para buscar dados do usuário simplificada
   const fetchUserData = async (userId: string): Promise<User | null> => {
     try {
-      // Implementar timeout de 10 segundos
+      // Timeout de 5 segundos para evitar travamentos
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na busca de dados do usuário')), 10000);
+        setTimeout(() => reject(new Error('Timeout na busca de dados do usuário')), 5000);
       });
 
       const dataPromise = supabase
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .eq('id', userId)
         .single();
 
-      const { data, error } = await Promise.race([dataPromise, timeoutPromise]);
+      const { data, error } = await Promise.race([dataPromise, timeoutPromise]) as any;
 
       if (error) {
         console.error('Erro ao buscar dados do usuário:', error);
@@ -162,14 +162,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const getSession = async () => {
       try {
-        // Timeout para verificação de sessão
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout na verificação de sessão')), 8000);
-        });
-
-        const sessionPromise = supabase.auth.getSession();
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+        const { data: { session }, error } = await supabase.auth.getSession();
         
+        if (error) throw error;
+
         if (session?.user) {
           const userData = await fetchUserData(session.user.id);
           if (userData) {
@@ -178,7 +174,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Erro ao recuperar sessão:', error);
-        // Em caso de timeout ou erro, definir loading como false para não travar a interface
       } finally {
         setLoading(false);
       }

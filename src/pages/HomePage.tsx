@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, ShoppingCart, Zap, Gift, TrendingUp, Users, Package, Award, Loader2, ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
+import { Star, ShoppingCart, Zap, TrendingUp, Users, Package, Award, Loader2, ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabaseServices } from '@/integrations/supabase/services';
 import { Item } from '@/types/inventory';
@@ -11,28 +11,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '../components/Navigation';
 import { useToast } from '@/hooks/use-toast';
 import ImageWithFallback from '@/components/ui/image-with-fallback';
-
-// Função para mapear raridade para cor do badge
-const getRarityColor = (rarity: string) => {
-  switch (rarity) {
-    case 'comum':
-      return 'bg-gray-500';
-    case 'persona':
-      return 'bg-blue-500';
-    case 'arcana':
-      return 'bg-purple-500';
-    case 'immortal':
-      return 'bg-yellow-500';
-    default:
-      return 'bg-gray-500';
-  }
-};
+import { useRarities } from '@/hooks/useRarities';
+import { getBadgeStyleFromColor } from '@/utils/rarityUtils';
 
 const HomePage: React.FC = () => {
   // Removido carregamento global de itens para otimizar primeira visita
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getRarityColor } = useRarities();
   const [highlightedItems, setHighlightedItems] = useState<Item[]>([]);
   const [currentHighlightedIndex, setCurrentHighlightedIndex] = useState(0);
   const [loadingHighlighted, setLoadingHighlighted] = useState(true);
@@ -216,7 +203,10 @@ const HomePage: React.FC = () => {
                               src={currentHighlightedItem.image_url}
                               alt={currentHighlightedItem.name}
                               className="w-full h-64 object-cover rounded-xl border-2 border-white/30 shadow-2xl transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-3xl"
-                              imgProps={{ decoding: 'async', loading: 'eager', fetchpriority: 'high' }}
+                              decoding="async"
+                              loading="eager"
+                              // @ts-ignore - fetchpriority is a valid attribute but not yet in React types
+                              fetchpriority="high"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-xl pointer-events-none" />
                             <div className="absolute inset-0 ring-2 ring-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -294,9 +284,20 @@ const HomePage: React.FC = () => {
                         
                         <div className="flex items-center gap-2">
                           <div className="text-right">
-                            <div className="text-sm font-bold text-green-400">
-                              R$ {currentHighlightedItem.price?.toFixed(2) || '0.00'}
-                            </div>
+                            {currentHighlightedItem.discount && currentHighlightedItem.discount > 0 ? (
+                              <div className="flex flex-col items-end">
+                                <span className="text-xs text-gray-400 line-through">
+                                  R$ {currentHighlightedItem.price?.toFixed(2) || '0.00'}
+                                </span>
+                                <span className="text-sm font-bold text-green-400">
+                                  R$ {(currentHighlightedItem.price * (1 - currentHighlightedItem.discount / 100)).toFixed(2)}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-sm font-bold text-green-400">
+                                R$ {currentHighlightedItem.price?.toFixed(2) || '0.00'}
+                              </div>
+                            )}
                             <div className="text-xs text-gray-400">
                               Est: {currentHighlightedItem.current_stock || currentHighlightedItem.initial_stock || 0}
                             </div>
@@ -442,83 +443,89 @@ const HomePage: React.FC = () => {
                   whileHover={{ scale: 1.02, y: -5 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Card className="group bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 overflow-hidden cursor-pointer" onClick={() => navigate(`/item/${item.id}`)}>
-                  <CardHeader className="pb-3">
-                    <div className="relative overflow-hidden rounded-lg aspect-[2/1]">
-                      <motion.div 
-                        whileHover={{ scale: 1.1 }} 
-                        transition={{ duration: 0.3 }} 
-                        onClick={() => navigate(`/item/${item.id}`)}
-                        className="w-full h-full"
-                      >
-                        <ImageWithFallback 
-                          src={item.image_url || ''} 
-                          alt={item.name} 
-                          className="w-full h-full object-cover bg-muted cursor-pointer" 
-                          fallbackSrc="/placeholder.svg"
-                          imgProps={{ decoding: 'async', loading: 'eager', fetchpriority: 'high' }}
-                        />
-                      </motion.div>
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      />
-                      <Badge 
-                        className={`absolute bottom-2 left-2 ${getRarityColor(item.rarity)} text-white`}
-                      >
-                        {item.rarity}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                       <h3 className="font-semibold text-lg">{item.name}</h3>
-                       <p className="text-muted-foreground">{item.hero_name}</p>
-                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <motion.span 
-                            className="text-2xl font-bold text-primary"
-                            whileHover={{ scale: 1.05 }}
+                  <Link to={`/item/${item.id}`} className="block h-full">
+                    <Card className="group bg-black/20 border border-white/10 rounded-xl backdrop-blur-sm hover:bg-black/40 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 overflow-hidden cursor-pointer h-full">
+                    <CardHeader className="p-0">
+                      <div className="relative overflow-hidden aspect-[16/10]">
+                        {item.image_url ? (
+                          <ImageWithFallback 
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center group-hover:from-gray-800 group-hover:to-gray-700 transition-colors">
+                            <Package className="h-8 w-8 text-gray-600 group-hover:text-gray-500 transition-colors mb-2" />
+                            <span className="text-gray-600 text-sm">Sem imagem</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
+                        
+                        <div className="absolute top-2 left-2 flex flex-col gap-1">
+                          <Badge 
+                            {...getBadgeStyleFromColor(getRarityColor(item.rarity), "shadow-lg backdrop-blur-md")}
                           >
-                             R$ {parseFloat(item.price.toString()).toFixed(2)}
-                           </motion.span>
-                        </div>
-                        <motion.div 
-                          className="flex items-center gap-1"
-                          whileHover={{ scale: 1.02 }}
-                        >
-                          {[...Array(5)].map((_, i) => (
-                            <motion.div
-                              key={i}
-                              whileHover={{ scale: 1.2, rotate: 15 }}
-                              transition={{ duration: 0.2 }}
+                            {item.rarity}
+                          </Badge>
+                          {/* @ts-ignore - is_partner might be missing in some Item types but used in Catalog */}
+                          {item.is_partner && (
+                            <Badge
+                              className="bg-blue-500/20 text-blue-300 border-blue-400/30 backdrop-blur-md shadow-lg"
                             >
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            </motion.div>
-                          ))}
-                          <span className="text-sm text-muted-foreground ml-1">(4.9)</span>
-                        </motion.div>
+                              Parceiro
+                            </Badge>
+                          )}
+                        </div>
+
+                        {item.discount && item.discount > 0 && (
+                          <Badge
+                            className="absolute top-2 right-2 bg-red-600 text-white font-bold shadow-lg border-0"
+                          >
+                            -{item.discount}%
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-5 space-y-4">
+                      <div className="space-y-1">
+                        <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors duration-300">{item.name}</h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="uppercase tracking-wider text-xs font-medium bg-white/5 px-2 py-0.5 rounded text-gray-400">
+                            {item.hero_name}
+                          </span>
+                        </div>
                       </div>
                       
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Button size="sm" className="bg-gradient-gaming shadow-gaming-glow" onClick={(e) => { e.stopPropagation(); handleBuy(); }}>
-                          <motion.div
-                            className="flex items-center"
-                            whileHover={{ x: 2 }}
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-1" />
-                            Comprar
-                          </motion.div>
+                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <div className="space-y-0.5">
+                          <div className="flex flex-col items-start">
+                            {item.discount && item.discount > 0 ? (
+                              <>
+                                <span className="text-xs text-muted-foreground line-through">
+                                  R$ {parseFloat(item.price.toString()).toFixed(2)}
+                                </span>
+                                <span className="text-xl font-bold text-green-400 shadow-green-900/20">
+                                  R$ {(item.price * (1 - item.discount / 100)).toFixed(2)}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-xl font-bold text-primary shadow-primary/20">
+                                R$ {parseFloat(item.price.toString()).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          size="sm" 
+                          className="bg-white/5 hover:bg-primary hover:text-primary-foreground text-muted-foreground border border-white/10 transition-all duration-300"
+                        >
+                          <Package className="h-4 w-4" />
                         </Button>
-                      </motion.div>
-                    </div>
-                  </CardContent>
-                  </Card>
+                      </div>
+                    </CardContent>
+                    </Card>
+                  </Link>
                 </motion.div>
               ))}
             </motion.div>
@@ -547,28 +554,14 @@ const HomePage: React.FC = () => {
 
       {/* Promotional Section */}
       <motion.section 
-        className="py-16 bg-gradient-to-r from-red-500/10 to-orange-500/10"
+        className="py-16 bg-muted/30 border-t border-border/50"
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         viewport={{ once: true }}
       >
         <div className="container mx-auto px-6">
-          <motion.div 
-            className="text-center space-y-4 mb-12"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl font-bold flex items-center justify-center gap-2">
-              <Gift className="h-8 w-8 text-red-500" />
-              Sobre Nós
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Ofertas limitadas com descontos imperdíveis
-            </p>
-          </motion.div>
+
 
           <motion.div 
             className="grid md:grid-cols-2 gap-8"
@@ -592,10 +585,10 @@ const HomePage: React.FC = () => {
               transition={{ duration: 0.6, ease: "easeOut" }}
               whileHover={{ scale: 1.02, rotateY: 2 }}
             >
-              <Card className="bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30">
+              <Card className="bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border-cyan-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <ExternalLink className="h-6 w-6 text-emerald-500" />
+                    <ExternalLink className="h-6 w-6 text-cyan-400" />
                     Linktr.ee
                   </CardTitle>
                   <CardDescription>
@@ -608,7 +601,7 @@ const HomePage: React.FC = () => {
                     whileTap={{ scale: 0.95 }}
                   >
                     <a href="https://linktr.ee/dotaplaybrasil" target="_blank" rel="noopener noreferrer">
-                      <Button className="w-full bg-emerald-500 hover:bg-emerald-600 bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300">
+                      <Button className="w-full bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-lg backdrop-blur-sm transition-all duration-300">
                         <motion.span whileHover={{ x: 2 }}>
                           Abrir Linktr.ee
                         </motion.span>
@@ -627,10 +620,10 @@ const HomePage: React.FC = () => {
               transition={{ duration: 0.6, ease: "easeOut" }}
               whileHover={{ scale: 1.02, rotateY: -2 }}
             >
-              <Card className="bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-blue-500/30">
+              <Card className="bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-6 w-6 text-blue-500" />
+                    <Zap className="h-6 w-6 text-purple-400" />
                     Sobre
                   </CardTitle>
                   <CardDescription>
@@ -643,7 +636,7 @@ const HomePage: React.FC = () => {
                     whileTap={{ scale: 0.95 }}
                   >
                     <Link to="/sobre">
-                      <Button className="w-full bg-blue-500 hover:bg-blue-600 bg-white/5 border border-white/20 rounded-lg backdrop-blur-sm hover:bg-white/8 hover:border-white/30 transition-all duration-300">
+                      <Button className="w-full bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg backdrop-blur-sm transition-all duration-300">
                         <motion.span whileHover={{ x: 2 }}>
                           Abrir página Sobre
                         </motion.span>

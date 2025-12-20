@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, AlertTriangle, User, Package, X } from 'lucide-react';
 import { getOrdersWithItems, updateOrderStatus } from '@/integrations/supabase/services/orderService';
+import { useRarities } from '@/hooks/useRarities';
+import { getBadgeStyleFromColor } from '@/utils/rarityUtils';
 
 interface OrderItem {
   id: string;
@@ -40,16 +42,6 @@ type OrderStatus = 'pending' | 'overdue' | 'sent' | 'cancelled';
 
 interface ShippingQueueProps {}
 
-const getRarityColor = (rarity: string) => {
-  const colors = {
-    'comum': 'bg-gray-100 text-gray-800 border-gray-300',
-    'persona': 'bg-blue-100 text-blue-800 border-blue-300',
-    'arcana': 'bg-purple-100 text-purple-800 border-purple-300',
-    'immortal': 'bg-orange-100 text-orange-800 border-orange-300'
-  };
-  return colors[rarity as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-300';
-};
-
 const getStatusColor = (status: OrderStatus) => {
   const colors = {
     'pending': 'bg-blue-100 text-blue-800 border-blue-300',
@@ -73,6 +65,7 @@ const getStatusLabel = (status: OrderStatus) => {
 const ShippingQueue: React.FC<ShippingQueueProps> = () => {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
+  const { getRarityColor } = useRarities();
 
   const loadOrders = async () => {
     try {
@@ -294,7 +287,7 @@ const ShippingQueue: React.FC<ShippingQueueProps> = () => {
                       <div className="space-y-1">
                         {order.order_items.map((orderItem, idx) => (
                           <div key={idx} className="flex items-center gap-2 text-sm">
-                            <Badge className={getRarityColor(orderItem.items.rarity)}>
+                            <Badge {...getBadgeStyleFromColor(getRarityColor(orderItem.items.rarity))}>
                               {orderItem.items.rarity}
                             </Badge>
                             <span>{orderItem.items.hero_name}</span>
@@ -387,7 +380,7 @@ const ShippingQueue: React.FC<ShippingQueueProps> = () => {
                       <div className="space-y-1">
                         {order.order_items.map((orderItem, index) => (
                           <div key={index} className="flex items-center gap-2 text-sm">
-                            <Badge className={getRarityColor(orderItem.items.rarity)}>
+                            <Badge {...getBadgeStyleFromColor(getRarityColor(orderItem.items.rarity))}>
                               {orderItem.items.rarity}
                             </Badge>
                             <span>{orderItem.items.hero_name}</span>

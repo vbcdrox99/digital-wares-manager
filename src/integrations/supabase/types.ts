@@ -59,6 +59,7 @@ export type Database = {
           created_at: string | null
           current_stock: number
           approved: boolean
+          discount: number
           hero_name: string
           highlighted: boolean | null
           id: string
@@ -91,6 +92,7 @@ export type Database = {
           created_at?: string | null
           current_stock?: number
           approved?: boolean
+          discount?: number
           hero_name?: string
           highlighted?: boolean | null
           id?: string

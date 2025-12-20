@@ -34,11 +34,21 @@ const Index = () => {
 
   // Itens separados por preço para o painel de Sorteios Premium
   const premiumExpensiveItems = useMemo(() => {
-    return filteredPremiumItems.filter(i => parseFloat(i.price.toString()) > 31);
+    return filteredPremiumItems.filter(i => {
+      const currentPrice = i.discount && i.discount > 0 
+        ? i.price * (1 - i.discount / 100) 
+        : i.price;
+      return parseFloat(currentPrice.toString()) > 31;
+    });
   }, [filteredPremiumItems]);
 
   const premiumCheapItems = useMemo(() => {
-    return filteredPremiumItems.filter(i => parseFloat(i.price.toString()) <= 30);
+    return filteredPremiumItems.filter(i => {
+      const currentPrice = i.discount && i.discount > 0 
+        ? i.price * (1 - i.discount / 100) 
+        : i.price;
+      return parseFloat(currentPrice.toString()) <= 30;
+    });
   }, [filteredPremiumItems]);
 
   // Controla a exibição dos itens mais baratos (<= R$30)
@@ -124,7 +134,7 @@ const Index = () => {
 
       <div className="container mx-auto px-6 py-8">
         <Tabs defaultValue="inventory" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
             <TabsTrigger value="inventory" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Inventário
@@ -148,10 +158,6 @@ const Index = () => {
             <TabsTrigger value="featured" className="flex items-center gap-2">
               <Star className="h-4 w-4" />
               Sorteios Premium
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Configurações
             </TabsTrigger>
           </TabsList>
 
@@ -329,27 +335,6 @@ const Index = () => {
                       ))}
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <Card className="bg-black/30 border border-white/10">
-              <CardHeader>
-                <CardTitle>Configurações</CardTitle>
-                <CardDescription>Preferências e ajustes do sistema</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm">Preferência 1</label>
-                    <Input placeholder="Ex.: 100" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm">Preferência 2</label>
-                    <Input placeholder="Ex.: 50" />
-                  </div>
                 </div>
               </CardContent>
             </Card>

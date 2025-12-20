@@ -7,11 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Minus, Trash2, Package, Loader2, Users, Edit, Star, Settings, Palette, Check, X } from 'lucide-react';
+import { Plus, Minus, Trash2, Package, Loader2, Users, Edit, Star, Settings, Palette, Check, X, ChevronsUpDown } from 'lucide-react';
 import { Rarity } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
 import { supabaseServices, Chest, Item, Customer } from '@/integrations/supabase/services';
 import { supabase } from '@/integrations/supabase/client';
+import { getBadgeStyleFromColor } from '@/utils/rarityUtils';
+import { HeroCombobox } from './HeroCombobox';
+
 
 interface RarityDefinition {
   id: string;
@@ -19,29 +22,7 @@ interface RarityDefinition {
   color: string;
 }
 
-const getContrastColor = (hexColor: string) => {
-  if (!hexColor || !hexColor.startsWith('#')) return 'white';
-  const r = parseInt(hexColor.substr(1, 2), 16);
-  const g = parseInt(hexColor.substr(3, 2), 16);
-  const b = parseInt(hexColor.substr(5, 2), 16);
-  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-  return (yiq >= 128) ? 'black' : 'white';
-};
 
-const getBadgeStyleFromColor = (color: string) => {
-  if (!color) return {};
-  if (color.startsWith('#') || color.startsWith('rgb')) {
-    return {
-      style: {
-        backgroundColor: color,
-        color: getContrastColor(color),
-        borderColor: color
-      },
-      className: 'border'
-    };
-  }
-  return { className: color };
-};
 
 const SupabaseStockControl: React.FC = () => {
   // Estados para os dados
@@ -138,7 +119,7 @@ const SupabaseStockControl: React.FC = () => {
     const initialDiscounts: Record<string, number> = {};
     items.forEach(item => {
       initialPrices[item.id] = item.price;
-      initialDiscounts[item.id] = 0;
+      initialDiscounts[item.id] = item.discount || 0;
     });
     setItemPrices(initialPrices);
     setItemDiscounts(initialDiscounts);
@@ -712,12 +693,32 @@ const SupabaseStockControl: React.FC = () => {
   };
 
   // Funções para controle de preços e descontos
-  const handlePriceChange = (itemId: string, change: number) => {
-    setItemPrices(prev => {
-      const currentPrice = prev[itemId] || 0;
+  const handlePriceChange = async (itemId: string, change: number) => {
+    try {
+      const currentPrice = itemPrices[itemId] || 0;
       const newPrice = Math.max(0, currentPrice + change);
-      return { ...prev, [itemId]: newPrice };
-    });
+      
+      // Atualizar estado local
+      setItemPrices(prev => ({ ...prev, [itemId]: newPrice }));
+      
+      // Atualizar no banco de dados
+      await supabaseServices.items.update(itemId, { price: newPrice });
+      
+      // Atualizar item na lista local
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, price: newPrice } : i));
+      
+      toast({
+        title: "Preço atualizado",
+        description: `Preço alterado para R$ ${newPrice.toFixed(2)}`,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar preço:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o preço.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleStockChange = async (itemId: string, change: number) => {
@@ -782,8 +783,29 @@ const SupabaseStockControl: React.FC = () => {
     }
   };
 
-  const handleDiscountChange = (itemId: string, discount: number) => {
-    setItemDiscounts(prev => ({ ...prev, [itemId]: discount }));
+  const handleDiscountChange = async (itemId: string, discount: number) => {
+    try {
+      // Atualizar estado local
+      setItemDiscounts(prev => ({ ...prev, [itemId]: discount }));
+      
+      // Atualizar no banco de dados
+      await supabaseServices.items.update(itemId, { discount });
+      
+      toast({
+        title: "Desconto atualizado",
+        description: `Desconto de ${discount}% aplicado com sucesso.`,
+      });
+      
+      // Atualizar item na lista local
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, discount } : i));
+    } catch (error) {
+      console.error('Erro ao atualizar desconto:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o desconto.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getDiscountedPrice = (itemId: string, originalPrice: number) => {
@@ -926,11 +948,9 @@ const SupabaseStockControl: React.FC = () => {
             
             <div>
               <Label>Nome do Herói</Label>
-              <Input
+              <HeroCombobox
                 value={newItem.hero_name}
-                onChange={(e) => setNewItem({ ...newItem, hero_name: e.target.value })}
-                placeholder="Ex: Pudge"
-                className="bg-secondary/50"
+                onChange={(value) => setNewItem({ ...newItem, hero_name: value })}
               />
             </div>
             
@@ -1281,12 +1301,13 @@ const SupabaseStockControl: React.FC = () => {
               <Label htmlFor="edit-hero" className="text-right">
                 Herói
               </Label>
-              <Input
-                id="edit-hero"
-                value={editForm.hero_name}
-                onChange={(e) => setEditForm(prev => ({ ...prev, hero_name: e.target.value }))}
-                className="col-span-3"
-              />
+              <div className="col-span-3">
+                <HeroCombobox
+                  id="edit-hero"
+                  value={editForm.hero_name}
+                  onChange={(value) => setEditForm(prev => ({ ...prev, hero_name: value }))}
+                />
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-rarity" className="text-right">Raridade</Label>

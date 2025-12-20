@@ -16,6 +16,7 @@ export interface Item {
   is_partner?: boolean;
   seller_id?: string | null;
   approved?: boolean; // aprovado pelo admin para aparecer no catálogo
+  discount?: number;
 }
 
 export interface Chest {
@@ -35,6 +36,8 @@ export interface CartItem {
   rarity: Rarity;
   price: number;
   chestName: string;
+  discount?: number;
+  original_price?: number;
 }
 
 export interface Order {

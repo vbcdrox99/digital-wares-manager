@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Minus, Trash2, Package } from 'lucide-react';
 import { Chest, Item, Rarity, Order } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
+import { useRarities } from '@/hooks/useRarities';
+import { getBadgeStyleFromColor } from '@/utils/rarityUtils';
 
 interface StockControlProps {
   chests: Chest[];
@@ -206,9 +208,9 @@ const StockControl: React.FC<StockControlProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {rarities.map((rarity) => (
-                    <SelectItem key={rarity} value={rarity}>
-                      <Badge className={getRarityColor(rarity)}>
-                        {rarity}
+                    <SelectItem key={rarity.id} value={rarity.name}>
+                      <Badge {...getBadgeStyleFromColor(rarity.color)}>
+                        {rarity.name}
                       </Badge>
                     </SelectItem>
                   ))}
@@ -290,9 +292,9 @@ const StockControl: React.FC<StockControlProps> = ({
                             </SelectTrigger>
                             <SelectContent>
                               {rarities.map((rarity) => (
-                                <SelectItem key={rarity} value={rarity}>
-                                  <Badge className={getRarityColor(rarity)}>
-                                    {rarity}
+                                <SelectItem key={rarity.id} value={rarity.name}>
+                                  <Badge {...getBadgeStyleFromColor(rarity.color)}>
+                                    {rarity.name}
                                   </Badge>
                                 </SelectItem>
                               ))}

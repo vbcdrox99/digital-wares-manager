@@ -15,6 +15,8 @@ import { chestsService } from '@/integrations/supabase/services/chests';
 import { itemsService } from '@/integrations/supabase/services/items';
 import { customersService, Customer } from '@/integrations/supabase/services/customers';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRarities } from '@/hooks/useRarities';
+import { getBadgeStyleFromColor } from '@/utils/rarityUtils';
 
 interface OrdersProps {}
 
@@ -52,16 +54,6 @@ interface TimeOption {
 
 type OrderStatus = 'pending' | 'sent' | 'cancelled';
 
-const getRarityColor = (rarity: Rarity) => {
-  const colors = {
-    comum: 'bg-gray-500/20 text-gray-700 border-gray-500/30',
-    persona: 'bg-blue-500/20 text-blue-700 border-blue-500/30',
-    arcana: 'bg-purple-500/20 text-purple-700 border-purple-500/30',
-    immortal: 'bg-orange-500/20 text-orange-700 border-orange-500/30'
-  };
-  return colors[rarity];
-};
-
 const getStatusColor = (status: OrderStatus) => {
   const colors = {
     pending: 'bg-pending/20 text-pending border-pending/30',
@@ -93,6 +85,7 @@ const Orders: React.FC<OrdersProps> = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [showSteamSuggestions, setShowSteamSuggestions] = useState(false);
+  const { getRarityColor } = useRarities();
   
   const timeOptions: TimeOption[] = Array.from({ length: 31 }, (_, i) => {
     const day = i + 1;
@@ -324,11 +317,15 @@ const Orders: React.FC<OrdersProps> = () => {
     }
 
     // Tipos de itens permitidos
+    // Permitir todas as raridades que existem no banco ou pelo menos as mais comuns
+    // Se quiser restringir, deve ser baseado nas raridades dinâmicas, mas por enquanto vamos remover a restrição hardcoded que está causando o erro
+    /*
     const allowedRarities: Rarity[] = ['comum', 'persona', 'arcana', 'immortal'];
     if (!allowedRarities.includes(selectedItemData.rarity)) {
       toast({ title: 'Item não permitido', description: 'Tipo de item não permitido para pedido.', variant: 'destructive' });
       return;
     }
+    */
 
     // Verificar estoque disponível
     const currentStock = selectedItemData.current_stock ?? selectedItemData.initial_stock ?? 0;
@@ -342,13 +339,21 @@ const Orders: React.FC<OrdersProps> = () => {
     }
 
     const chest = chests.find(c => c.id === selectedItemData.chest_id);
+    
+    // Calcular preço com desconto se houver
+    const originalPrice = selectedItemData.price;
+    const discount = selectedItemData.discount || 0;
+    const finalPrice = discount > 0 ? originalPrice * (1 - discount / 100) : originalPrice;
+    
     const cartItem: CartItem = {
       item_id: selectedItem,
       quantity,
       name: selectedItemData.name ?? '',
       hero_name: selectedItemData.hero_name,
       rarity: selectedItemData.rarity,
-      price: selectedItemData.price,
+      price: finalPrice,
+      original_price: discount > 0 ? originalPrice : undefined,
+      discount: discount > 0 ? discount : undefined,
       chestName: chest?.name || ''
     };
 
@@ -731,7 +736,7 @@ const Orders: React.FC<OrdersProps> = () => {
                     {availableItems.map((item) => (
                       <SelectItem key={item.id} value={item.id}>
                         <div className="flex items-center gap-2">
-                          <Badge className={getRarityColor(item.rarity)}>
+                          <Badge {...getBadgeStyleFromColor(getRarityColor(item.rarity))}>
                             {item.rarity}
                           </Badge>
                           {item.name} ({item.hero_name}) - R$ {item.price.toFixed(2)} ({calculateAvailableStock(item)} disponível)
@@ -763,11 +768,11 @@ const Orders: React.FC<OrdersProps> = () => {
               <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:justify-end">
                 <Button 
                   onClick={addToCart}
-                  disabled={!selectedItem || quantity <= 0 || quantity > maxQuantity}
+                  disabled={quantity <= 0 || quantity > maxQuantity}
                   variant="outline"
                   className="w-full sm:w-auto"
                 >
-                  Adicionar outro item
+                  Adicionar item
                 </Button>
               </div>
             </div>
@@ -779,14 +784,28 @@ const Orders: React.FC<OrdersProps> = () => {
                   <div key={`${ci.item_id}-${idx}`} className="bg-secondary/30 p-3 rounded-lg border border-border/50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <Badge className={getRarityColor(ci.rarity)}>
+                        <Badge {...getBadgeStyleFromColor(getRarityColor(ci.rarity))}>
                           {ci.rarity}
                         </Badge>
                         <span className="font-medium">{ci.name}</span>
                         <span className="text-muted-foreground">({ci.hero_name})</span>
                         <span className="text-muted-foreground">({ci.chestName})</span>
                         <span>x{ci.quantity}</span>
-                        <span className="font-medium">R$ {(ci.price * ci.quantity).toFixed(2)}</span>
+                        <div className="flex flex-col items-end min-w-[80px]">
+                          {ci.discount && ci.discount > 0 ? (
+                            <>
+                              <span className="text-xs text-muted-foreground line-through">
+                                R$ {((ci.original_price || ci.price) * ci.quantity).toFixed(2)}
+                              </span>
+                              <span className="font-medium text-green-500">
+                                R$ {(ci.price * ci.quantity).toFixed(2)}
+                              </span>
+                              <span className="text-[10px] text-red-400 font-bold">-{ci.discount}%</span>
+                            </>
+                          ) : (
+                            <span className="font-medium">R$ {(ci.price * ci.quantity).toFixed(2)}</span>
+                          )}
+                        </div>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => removeFromCart(idx)}>
                         <X className="h-4 w-4 mr-1" /> Remover
@@ -804,7 +823,7 @@ const Orders: React.FC<OrdersProps> = () => {
               <div className="flex justify-end">
                 <Button 
                   onClick={handleCreateOrder}
-                  disabled={loading || cart.length === 0}
+                  disabled={loading || cart.length === 0 || (!selectedCustomer && (!customerName || !steamId))}
                   className="bg-gradient-gaming w-full sm:w-auto"
                 >
                   <Check className="h-4 w-4 mr-2" />
