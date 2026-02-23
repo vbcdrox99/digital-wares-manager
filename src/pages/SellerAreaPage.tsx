@@ -2,7 +2,7 @@ import React from 'react';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { Store, PlusCircle, ListChecks, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { Store, PlusCircle, ListChecks, ShieldCheck, ShoppingBag, Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { itemsService, type InsertItem, type Item } from '@/integrations/supabase/services/items';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +46,8 @@ const SellerAreaPage: React.FC = () => {
   // Form state
   const [name, setName] = React.useState('');
   const [heroName, setHeroName] = React.useState('');
-  const [imageUrl, setImageUrl] = React.useState('');
+  const [imageFile, setImageFile] = React.useState<File | null>(null);
+  const [imagePreview, setImagePreview] = React.useState<string>('');
   const [price, setPrice] = React.useState<string>('');
   const [initialStock, setInitialStock] = React.useState<string>('');
   const [rarity, setRarity] = React.useState<string>('');
@@ -112,7 +113,7 @@ const SellerAreaPage: React.FC = () => {
         .from('items')
         .select('id')
         .eq('seller_id', sellerId);
-      
+
       if (!sellerItems || sellerItems.length === 0) return;
 
       const itemIds = sellerItems.map(i => i.id);
@@ -161,12 +162,23 @@ const SellerAreaPage: React.FC = () => {
     }
   }, [availableRarities, rarity]);
 
+  const uploadImage = async (file: File): Promise<string> => {
+    const ext = file.name.split('.').pop();
+    const fileName = `${sellerId}/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('sellers-photo')
+      .upload(fileName, file, { upsert: true });
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from('sellers-photo').getPublicUrl(fileName);
+    return data.publicUrl;
+  };
+
   const validateForm = (): string | null => {
     if (!sellerApproved) return 'Seu cadastro de vendedor não está aprovado.';
     if (!parceirosChestId) return 'Baú Parceiros indisponível.';
     if (!name.trim()) return 'Informe o nome do item.';
     if (!heroName.trim()) return 'Informe o nome do herói.';
-    if (!imageUrl.trim()) return 'Informe a URL da imagem.';
+    if (!imageFile) return 'Selecione uma imagem para o item.';
     if (!rarity) return 'Selecione uma raridade.';
     const priceNum = Number(price);
     if (!Number.isFinite(priceNum) || priceNum <= 0) return 'Preço deve ser um número maior que 0.';
@@ -188,12 +200,14 @@ const SellerAreaPage: React.FC = () => {
       const priceNum = Number(price);
       const stockNum = Number(initialStock);
 
+      const uploadedUrl = await uploadImage(imageFile!);
+
       const newItem: InsertItem = {
         chest_id: parceirosChestId!,
         current_stock: stockNum,
         hero_name: heroName.trim(),
         highlighted: false,
-        image_url: imageUrl.trim(),
+        image_url: uploadedUrl,
         initial_stock: stockNum,
         name: name.trim(),
         price: priceNum,
@@ -213,7 +227,8 @@ const SellerAreaPage: React.FC = () => {
       // Reset form
       setName('');
       setHeroName('');
-      setImageUrl('');
+      setImageFile(null);
+      setImagePreview('');
       setPrice('');
       setInitialStock('');
       setRarity('comum');
@@ -283,8 +298,8 @@ const SellerAreaPage: React.FC = () => {
                   )}
                   <div className="pt-4 border-t border-white/5">
                     <p className="text-gray-400 text-sm">
-                      {sellerApproved 
-                        ? 'Sua conta está aprovada para vender itens no catálogo.' 
+                      {sellerApproved
+                        ? 'Sua conta está aprovada para vender itens no catálogo.'
                         : 'Aguarde a aprovação de um administrador para começar a vender.'}
                     </p>
                   </div>
@@ -319,13 +334,50 @@ const SellerAreaPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-300 mb-1">Imagem (URL)</label>
+                    <label className="block text-sm text-gray-300 mb-1">
+                      Upload de imagem <span className="text-red-400">*</span>
+                    </label>
+                    <label
+                      htmlFor="image-upload"
+                      className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${imagePreview
+                          ? 'border-cyan-500/50 bg-cyan-500/5'
+                          : 'border-red-500/40 bg-black/30 hover:border-cyan-500/40 hover:bg-cyan-500/5'
+                        }`}
+                    >
+                      {imagePreview ? (
+                        <div className="relative w-full h-full">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-full h-full object-contain rounded-lg p-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setImageFile(null); setImagePreview(''); }}
+                            className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 hover:bg-red-500/80 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-gray-400">
+                          <Upload className="w-7 h-7 text-red-400/60" />
+                          <span className="text-sm">Clique para selecionar uma imagem</span>
+                          <span className="text-xs text-red-400/70">Obrigatório · PNG, JPG, WEBP até 5MB</span>
+                        </div>
+                      )}
+                    </label>
                     <input
-                      type="url"
-                      className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-white"
-                      value={imageUrl}
-                      onChange={e => setImageUrl(e.target.value)}
-                      placeholder="https://..."
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setImageFile(file);
+                        setImagePreview(URL.createObjectURL(file));
+                      }}
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -383,7 +435,7 @@ const SellerAreaPage: React.FC = () => {
 
                   <button
                     type="submit"
-                    disabled={saving || !sellerApproved || !parceirosChestId}
+                    disabled={saving || !sellerApproved || !parceirosChestId || !imageFile}
                     className="w-full mt-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3 px-4 rounded-lg text-sm font-medium disabled:opacity-60 hover:opacity-90 transition-opacity"
                   >
                     {saving ? 'Publicando...' : 'Publicar item'}
@@ -439,9 +491,18 @@ const SellerAreaPage: React.FC = () => {
                                 {formatCurrency(Number(item.price))}
                               </div>
                             )}
-                            {item.approved === false && (
+                            {(item as any).rejected ? (
+                              <div className="space-y-0.5">
+                                <div className="text-[10px] text-red-400 font-semibold">Reprovado</div>
+                                {(item as any).rejection_reason && (
+                                  <div className="text-[10px] text-red-300/80 max-w-[120px] leading-tight">
+                                    {(item as any).rejection_reason}
+                                  </div>
+                                )}
+                              </div>
+                            ) : item.approved === false ? (
                               <div className="text-[10px] text-yellow-300">Aguardando aprovação</div>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       ))}
@@ -473,9 +534,9 @@ const SellerAreaPage: React.FC = () => {
                             <tr key={sale.id} className="hover:bg-white/5">
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                  <img 
-                                    src={sale.item.image_url || ''} 
-                                    alt={sale.item.name || sale.item.hero_name} 
+                                  <img
+                                    src={sale.item.image_url || ''}
+                                    alt={sale.item.name || sale.item.hero_name}
                                     className="w-8 h-8 rounded object-cover border border-white/10"
                                   />
                                   <div>
@@ -496,16 +557,15 @@ const SellerAreaPage: React.FC = () => {
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex flex-col gap-1">
-                                  <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider w-fit ${
-                                    sale.order.status === 'sent' 
-                                      ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                                      : sale.order.status === 'cancelled'
+                                  <span className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider w-fit ${sale.order.status === 'sent'
+                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                    : sale.order.status === 'cancelled'
                                       ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                                       : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                                  }`}>
+                                    }`}>
                                     {sale.order.status === 'sent' ? 'Enviado' : sale.order.status === 'cancelled' ? 'Cancelado' : 'Pendente'}
                                   </span>
-                                  
+
                                   {sale.order.status === 'pending' && sale.order.shipping_queue && sale.order.shipping_queue.length > 0 && (
                                     (() => {
                                       const deliveryDate = new Date(sale.order.shipping_queue![0].deadline);
@@ -513,11 +573,10 @@ const SellerAreaPage: React.FC = () => {
                                       const timeDiff = deliveryDate.getTime() - today.getTime();
                                       const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
                                       const isOverdue = daysLeft < 0;
-                                      
+
                                       return (
-                                        <span className={`text-xs font-medium ${
-                                          isOverdue ? 'text-red-400' : daysLeft <= 7 ? 'text-orange-400' : 'text-blue-400'
-                                        }`}>
+                                        <span className={`text-xs font-medium ${isOverdue ? 'text-red-400' : daysLeft <= 7 ? 'text-orange-400' : 'text-blue-400'
+                                          }`}>
                                           {isOverdue ? `${Math.abs(daysLeft)} dias de atraso` : `${daysLeft} dias restantes`}
                                         </span>
                                       );

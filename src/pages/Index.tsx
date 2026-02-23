@@ -35,8 +35,8 @@ const Index = () => {
   // Itens separados por preço para o painel de Sorteios Premium
   const premiumExpensiveItems = useMemo(() => {
     return filteredPremiumItems.filter(i => {
-      const currentPrice = i.discount && i.discount > 0 
-        ? i.price * (1 - i.discount / 100) 
+      const currentPrice = i.discount && i.discount > 0
+        ? i.price * (1 - i.discount / 100)
         : i.price;
       return parseFloat(currentPrice.toString()) > 31;
     });
@@ -44,8 +44,8 @@ const Index = () => {
 
   const premiumCheapItems = useMemo(() => {
     return filteredPremiumItems.filter(i => {
-      const currentPrice = i.discount && i.discount > 0 
-        ? i.price * (1 - i.discount / 100) 
+      const currentPrice = i.discount && i.discount > 0
+        ? i.price * (1 - i.discount / 100)
         : i.price;
       return parseFloat(currentPrice.toString()) <= 30;
     });
@@ -163,7 +163,7 @@ const Index = () => {
 
           <TabsContent value="inventory">
             <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando catálogo do Supabase..." /> }>
+              <Suspense fallback={<Loading text="Carregando catálogo do Supabase..." />}>
                 <SupabaseStockControl />
               </Suspense>
             </ErrorBoundary>
@@ -171,7 +171,7 @@ const Index = () => {
 
           <TabsContent value="orders">
             <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando pedidos..." /> }>
+              <Suspense fallback={<Loading text="Carregando pedidos..." />}>
                 <Orders />
               </Suspense>
             </ErrorBoundary>
@@ -179,7 +179,7 @@ const Index = () => {
 
           <TabsContent value="shipping">
             <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando fila de envios..." /> }>
+              <Suspense fallback={<Loading text="Carregando fila de envios..." />}>
                 <ShippingQueue />
               </Suspense>
             </ErrorBoundary>
@@ -187,7 +187,7 @@ const Index = () => {
 
           <TabsContent value="customers">
             <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando clientes..." /> }>
+              <Suspense fallback={<Loading text="Carregando clientes..." />}>
                 <Customers />
               </Suspense>
             </ErrorBoundary>
@@ -195,36 +195,48 @@ const Index = () => {
 
           {/* Vendedores */}
           <TabsContent value="sellers">
-            <Card className="bg-black/30 border border-white/10">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <IdCard className="h-5 w-5" />
-                    <CardTitle>Vendedores</CardTitle>
-                  </div>
-                  <CardDescription>Gerencie solicitações e aprovações de vendedores</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <SellersAdminSection />
-              </CardContent>
-            </Card>
+            <Tabs defaultValue="sellers-approval" className="space-y-4">
+              <TabsList className="bg-gray-900/60 border border-white/10">
+                <TabsTrigger value="sellers-approval" className="flex items-center gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
+                  <IdCard className="h-4 w-4" />
+                  Vendedores e Aprovação
+                </TabsTrigger>
+                <TabsTrigger value="pending-items" className="flex items-center gap-2 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
+                  <Package className="h-4 w-4" />
+                  Itens Pendentes
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Itens Pendentes de Aprovação */}
-            <Card className="mt-6 bg-black/30 border border-white/10">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    <CardTitle>Itens pendentes</CardTitle>
-                  </div>
-                  <CardDescription>Itens cadastrados por vendedores aguardando aprovação</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ItemsPendingAdminSection />
-              </CardContent>
-            </Card>
+              <TabsContent value="sellers-approval">
+                <Card className="bg-black/30 border border-white/10">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <IdCard className="h-5 w-5" />
+                      <CardTitle>Vendedores</CardTitle>
+                    </div>
+                    <CardDescription>Gerencie solicitações e aprovações de vendedores</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SellersAdminSection />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="pending-items">
+                <Card className="bg-black/30 border border-white/10">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      <CardTitle>Itens Pendentes</CardTitle>
+                    </div>
+                    <CardDescription>Itens cadastrados por vendedores aguardando aprovação</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ItemsPendingAdminSection />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="featured">
@@ -351,6 +363,7 @@ type Seller = {
   email: string | null;
   cpf: string | null;
   steam_id: string | null;
+  phone: string | null;
   status: 'pending' | 'approved' | 'rejected' | null;
   approved: boolean | null;
   approved_at: string | null;
@@ -435,6 +448,7 @@ const SellersAdminSection: React.FC = () => {
                   <div className="text-xs text-muted-foreground">Email: {s.email}</div>
                   <div className="text-xs text-muted-foreground">CPF: {s.cpf}</div>
                   <div className="text-xs text-muted-foreground">Steam: {s.steam_id}</div>
+                  <div className="text-xs text-muted-foreground">Telefone: {s.phone || '(11) 9 9999-9999'}</div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="default" onClick={() => approveSeller(s.id)} className="bg-green-600 hover:bg-green-700">
@@ -463,6 +477,7 @@ const SellersAdminSection: React.FC = () => {
                   <div className="text-xs text-muted-foreground">Email: {s.email}</div>
                   <div className="text-xs text-muted-foreground">CPF: {s.cpf}</div>
                   <div className="text-xs text-muted-foreground">Steam: {s.steam_id}</div>
+                  <div className="text-xs text-muted-foreground">Telefone: {s.phone || '(11) 9 9999-9999'}</div>
                 </div>
                 <div className="flex gap-2">
                   <Link to={`/seller/${s.id}`} className="text-sm text-cyan-400 hover:text-cyan-300">Abrir página pessoal</Link>
@@ -482,6 +497,8 @@ type PendingItem = Item & {
   seller_id?: string | null;
   is_partner?: boolean;
   approved?: boolean;
+  rejected?: boolean;
+  rejection_reason?: string | null;
   seller?: { name: string | null; email?: string | null } | null;
 };
 
@@ -489,6 +506,8 @@ const ItemsPendingAdminSection: React.FC = () => {
   const [items, setItems] = React.useState<PendingItem[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string>("");
+  const [rejectingItem, setRejectingItem] = React.useState<{ id: string; name: string } | null>(null);
+  const [rejectionReason, setRejectionReason] = React.useState<string>("");
 
   const fetchPendingItems = React.useCallback(async () => {
     setLoading(true);
@@ -499,6 +518,7 @@ const ItemsPendingAdminSection: React.FC = () => {
         .select('*, seller:sellers(name, email)')
         .eq('is_partner', true)
         .eq('approved', false)
+        .eq('rejected', false)
         .order('created_at', { ascending: false });
       if (error) throw error;
       setItems((data || []) as PendingItem[]);
@@ -527,13 +547,15 @@ const ItemsPendingAdminSection: React.FC = () => {
     }
   };
 
-  const rejectItem = async (id: string) => {
+  const rejectItem = async (id: string, reason: string) => {
     try {
       const { error } = await supabase
         .from('items')
-        .update({ approved: false })
+        .update({ rejected: true, rejection_reason: reason } as any)
         .eq('id', id);
       if (error) throw error;
+      setRejectingItem(null);
+      setRejectionReason('');
       fetchPendingItems();
     } catch (err) {
       console.error('Erro ao reprovar item', err);
@@ -544,34 +566,91 @@ const ItemsPendingAdminSection: React.FC = () => {
     return <Loading text="Carregando itens pendentes..." />;
   }
 
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price);
+
   return (
-    <div className="space-y-3">
-      {error && <div className="text-red-400 text-sm">{error}</div>}
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {error && <div className="text-red-400 text-sm col-span-full">{error}</div>}
       {items.length === 0 ? (
-        <div className="text-sm text-muted-foreground">Nenhum item pendente</div>
+        <div className="text-sm text-muted-foreground col-span-full">Nenhum item pendente</div>
       ) : (
         items.map((item) => (
-          <div key={item.id} className="flex items-center gap-3 p-3 border border-white/10 rounded-lg">
-            <img
-              src={item.image_url || ''}
-              alt={item.name || item.hero_name}
-              className="w-16 h-16 object-cover rounded-md border border-white/10"
-            />
-            <div className="flex-1">
-              <div className="text-sm font-medium">{item.name || item.hero_name}</div>
-              <div className="text-xs text-muted-foreground">
-                Herói: {item.hero_name} • Raridade: {item.rarity} • Estoque: {item.current_stock}
+          <div key={item.id} className="border border-white/10 rounded-xl overflow-hidden bg-black/30 flex flex-col">
+            {/* Image */}
+            <div className="relative w-full aspect-square bg-black/50">
+              {item.image_url ? (
+                <img
+                  src={item.image_url}
+                  alt={item.name || item.hero_name}
+                  className="w-full h-full object-contain p-2"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">Sem imagem</div>
+              )}
+              {/* Price badge */}
+              <div className="absolute top-2 right-2 bg-black/70 backdrop-blur border border-white/10 rounded-md px-2 py-1">
+                <span className="text-sm font-bold text-emerald-400">{formatPrice(Number(item.price))}</span>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Vendedor: {item.seller?.name || item.seller?.email || '—'}</div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="default" onClick={() => approveItem(item.id)} className="bg-green-600 hover:bg-green-700">
+
+            {/* Info */}
+            <div className="p-3 flex-1 space-y-2">
+              <div className="font-semibold text-white text-sm leading-tight">{item.name || item.hero_name}</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <div><span className="text-gray-500">Herói:</span> {item.hero_name}</div>
+                <div><span className="text-gray-500">Raridade:</span> {item.rarity}</div>
+                <div><span className="text-gray-500">Estoque:</span> {item.current_stock}</div>
+                <div><span className="text-gray-500">Vendedor:</span> {item.seller?.name || item.seller?.email || '—'}</div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-3 pt-0 flex gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => approveItem(item.id)}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
                 <Check className="h-4 w-4" /> Aprovar
               </Button>
-              <Button variant="secondary" onClick={() => rejectItem(item.id)} className="bg-red-600 hover:bg-red-700 text-white">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => { setRejectingItem({ id: item.id, name: item.name || item.hero_name }); setRejectionReason(''); }}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
                 <X className="h-4 w-4" /> Reprovar
               </Button>
             </div>
+
+            {/* Inline rejection reason form */}
+            {rejectingItem?.id === item.id && (
+              <div className="border-t border-red-500/30 bg-red-950/20 p-3 space-y-2">
+                <p className="text-xs text-red-400 font-medium">Informe o motivo da reprovação:</p>
+                <textarea
+                  value={rejectionReason}
+                  onChange={e => setRejectionReason(e.target.value)}
+                  rows={2}
+                  placeholder="Ex.: Imagem de baixa qualidade, preço fora do padrão..."
+                  className="w-full bg-black/40 border border-red-500/30 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-red-500 resize-none"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => rejectItem(item.id, rejectionReason)}
+                    disabled={!rejectionReason.trim()}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Confirmar Reprovação
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setRejectingItem(null); setRejectionReason(''); }}>
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         ))
       )}

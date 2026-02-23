@@ -29,7 +29,7 @@ const SupabaseStockControl: React.FC = () => {
   const [chests, setChests] = useState<Chest[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  
+
   // Estados para carregamento
   const [loading, setLoading] = useState({
     chests: false,
@@ -63,12 +63,12 @@ const SupabaseStockControl: React.FC = () => {
     name: '',
     steam_id: ''
   });
-  
+
   // Estados para controle de preços, descontos e estoque
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
   const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
   const [itemStocks, setItemStocks] = useState<Record<string, number>>({});
-  
+
   // Estados para modal de edição
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -91,6 +91,8 @@ const SupabaseStockControl: React.FC = () => {
 
   // Estado para filtro de busca
   const [searchFilter, setSearchFilter] = useState('');
+  const [catalogPage, setCatalogPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
   const [rarityDefinitions, setRarityDefinitions] = useState<RarityDefinition[]>([]);
   const [showManageRarities, setShowManageRarities] = useState(false);
   const [newRarity, setNewRarity] = useState({ name: '', color: '#000000' });
@@ -106,7 +108,9 @@ const SupabaseStockControl: React.FC = () => {
 
   // Carregar itens quando um baú for selecionado para visualização
   useEffect(() => {
-    if (selectedChestForView) {
+    if (selectedChestForView === 'all') {
+      loadAllItems();
+    } else if (selectedChestForView) {
       loadItemsByChestId(selectedChestForView);
     } else {
       setItems([]);
@@ -134,9 +138,9 @@ const SupabaseStockControl: React.FC = () => {
         .from('rarities')
         .select('*')
         .order('name');
-      
+
       if (error) throw error;
-      
+
       if (data) {
         setRarityDefinitions(data);
       }
@@ -154,7 +158,7 @@ const SupabaseStockControl: React.FC = () => {
       toast({ title: 'Nome inválido', description: 'Digite um nome de raridade.', variant: 'destructive' });
       return;
     }
-    
+
     if (rarityDefinitions.some(r => r.name.toLowerCase() === name)) {
       toast({ title: 'Já existe', description: 'Essa raridade já está na lista.' });
       return;
@@ -183,37 +187,37 @@ const SupabaseStockControl: React.FC = () => {
 
   const handleUpdateRarity = async () => {
     if (!editingRarity) return;
-    
+
     try {
       setLoading(prev => ({ ...prev, manageRarity: true }));
-      
+
       // Get original name to update items if changed
       const originalRarity = rarityDefinitions.find(r => r.id === editingRarity.id);
-      
+
       const { error } = await supabase
         .from('rarities')
         .update({ name: editingRarity.name, color: editingRarity.color })
         .eq('id', editingRarity.id);
 
       if (error) throw error;
-      
+
       // If name changed, update all items
       if (originalRarity && originalRarity.name !== editingRarity.name) {
-         const { error: itemsError } = await supabase
-           .from('items')
-           .update({ rarity: editingRarity.name })
-           .eq('rarity', originalRarity.name);
-           
-         if (itemsError) {
-            console.error('Erro ao atualizar itens com nova raridade:', itemsError);
-            toast({ title: 'Aviso: Itens podem não ter sido atualizados', variant: 'destructive' });
-         }
+        const { error: itemsError } = await supabase
+          .from('items')
+          .update({ rarity: editingRarity.name })
+          .eq('rarity', originalRarity.name);
+
+        if (itemsError) {
+          console.error('Erro ao atualizar itens com nova raridade:', itemsError);
+          toast({ title: 'Aviso: Itens podem não ter sido atualizados', variant: 'destructive' });
+        }
       }
 
       setRarityDefinitions(prev => prev.map(r => r.id === editingRarity.id ? editingRarity : r));
       setEditingRarity(null);
       toast({ title: 'Raridade atualizada com sucesso!' });
-      
+
       // Reload items to reflect changes if necessary
       if (selectedChestForView) {
         loadItemsByChestId(selectedChestForView);
@@ -228,7 +232,7 @@ const SupabaseStockControl: React.FC = () => {
 
   const confirmDeleteRarity = async () => {
     if (!rarityToDelete) return;
-    
+
     try {
       setLoading(prev => ({ ...prev, manageRarity: true }));
       const { error } = await supabase
@@ -349,7 +353,7 @@ const SupabaseStockControl: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, chests: true }));
       console.log('🔍 Carregando baús...');
-      
+
       // Implementar timeout de 15 segundos
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Timeout ao carregar baús')), 15000);
@@ -357,21 +361,21 @@ const SupabaseStockControl: React.FC = () => {
 
       const chestsPromise = supabaseServices.chests.getAll();
       const chestsData = await Promise.race([chestsPromise, timeoutPromise]);
-      
+
       console.log('📦 Baús carregados:', chestsData);
-      
+
       setChests(chestsData);
-      
+
       // Se não houver baú selecionado e existirem baús, seleciona o primeiro
       if (!selectedChestForView && chestsData.length > 0) {
         setSelectedChestForView(chestsData[0].id);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar baús:', error);
-      toast({ 
-        title: 'Erro ao carregar baús', 
+      toast({
+        title: 'Erro ao carregar baús',
         description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive' 
+        variant: 'destructive'
       });
     } finally {
       setLoading(prev => ({ ...prev, chests: false }));
@@ -382,7 +386,7 @@ const SupabaseStockControl: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, items: true }));
       console.log('🔍 Carregando itens do baú:', chestId);
-      
+
       // Implementar timeout de 15 segundos
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Timeout ao carregar itens')), 15000);
@@ -390,17 +394,34 @@ const SupabaseStockControl: React.FC = () => {
 
       const itemsPromise = supabaseServices.items.getByChestId(chestId);
       const itemsData = await Promise.race([itemsPromise, timeoutPromise]);
-      
+
       console.log('🎮 Itens carregados:', itemsData);
-      
+
       setItems(itemsData);
     } catch (error) {
       console.error(`❌ Erro ao carregar itens do baú ${chestId}:`, error);
-      toast({ 
-        title: 'Erro ao carregar itens', 
+      toast({
+        title: 'Erro ao carregar itens',
         description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive' 
+        variant: 'destructive'
       });
+    } finally {
+      setLoading(prev => ({ ...prev, items: false }));
+    }
+  };
+
+  const loadAllItems = async () => {
+    try {
+      setLoading(prev => ({ ...prev, items: true }));
+      const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      setItems((data || []) as Item[]);
+    } catch (error) {
+      console.error('❌ Erro ao carregar todos os itens:', error);
+      toast({ title: 'Erro ao carregar itens', variant: 'destructive' });
     } finally {
       setLoading(prev => ({ ...prev, items: false }));
     }
@@ -410,7 +431,7 @@ const SupabaseStockControl: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, customers: true }));
       console.log('🔍 Carregando clientes...');
-      
+
       // Implementar timeout de 15 segundos
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Timeout ao carregar clientes')), 15000);
@@ -418,16 +439,16 @@ const SupabaseStockControl: React.FC = () => {
 
       const customersPromise = supabaseServices.customers.getAll();
       const customersData = await Promise.race([customersPromise, timeoutPromise]);
-      
+
       console.log('👥 Clientes carregados:', customersData);
-      
+
       setCustomers(customersData);
     } catch (error) {
       console.error('❌ Erro ao carregar clientes:', error);
-      toast({ 
-        title: 'Erro ao carregar clientes', 
+      toast({
+        title: 'Erro ao carregar clientes',
         description: error instanceof Error ? error.message : 'Erro desconhecido',
-        variant: 'destructive' 
+        variant: 'destructive'
       });
     } finally {
       setLoading(prev => ({ ...prev, customers: false }));
@@ -443,19 +464,19 @@ const SupabaseStockControl: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, createChest: true }));
-      
+
       console.log('🔍 Iniciando criação de baú:', { name: newChestName.trim() });
-      
+
       const newChest = await supabaseServices.chests.create({ name: newChestName.trim() });
-      
+
       console.log('✅ Baú criado com sucesso:', newChest);
-      
+
       // Atualizar a lista de baús diretamente no estado
       setChests(prev => [newChest, ...prev]);
-      
+
       setNewChestName('');
       toast({ title: 'Baú criado com sucesso!' });
-      
+
       // Recarregar a lista de baús para garantir sincronização
       await loadChests();
     } catch (error) {
@@ -471,10 +492,10 @@ const SupabaseStockControl: React.FC = () => {
       toast({ title: 'Preencha todos os campos obrigatórios corretamente', variant: 'destructive' });
       return;
     }
-    
+
     try {
       setLoading(prev => ({ ...prev, addItem: true }));
-      
+
       const itemData = {
         name: newItem.name.trim(),
         hero_name: newItem.hero_name.trim(),
@@ -485,18 +506,18 @@ const SupabaseStockControl: React.FC = () => {
         chest_id: selectedChestForAdd,
         image_url: newItem.image_url.trim() || null
       };
-      
+
       console.log('🔍 Iniciando criação de item:', itemData);
-      
+
       const createdItem = await supabaseServices.items.create(itemData);
-      
+
       console.log('✅ Item criado com sucesso:', createdItem);
-      
+
       setNewItem({ name: '', hero_name: '', rarity: 'comum', price: 0, initial_stock: 0, image_url: '' });
       setSelectedImage(null);
       setImagePreview('');
       toast({ title: 'Item adicionado com sucesso!' });
-      
+
       // Se o baú atual for o mesmo que estamos visualizando, recarregar itens
       if (selectedChestForAdd === selectedChestForView) {
         await loadItemsByChestId(selectedChestForView);
@@ -511,68 +532,68 @@ const SupabaseStockControl: React.FC = () => {
 
   const handleDeleteChest = async (chestId: string) => {
     console.log('handleDeleteChest chamado com ID:', chestId);
-    
+
     if (!confirm('Tem certeza que deseja excluir este baú? Todos os itens e pedidos relacionados serão removidos permanentemente.')) {
       console.log('Exclusão cancelada pelo usuário');
       return;
     }
 
     console.log('Usuário confirmou a exclusão, iniciando processo...');
-    
+
     try {
       setLoading(prev => ({ ...prev, deleteChest: true }));
-      
+
       // Primeiro, buscar todos os itens do baú
       console.log('Buscando itens do baú...');
       const { data: items, error: itemsError } = await supabase
         .from('items')
         .select('id')
         .eq('chest_id', chestId);
-      
+
       if (itemsError) {
         throw itemsError;
       }
-      
+
       console.log('Itens encontrados:', items?.length || 0);
-      
+
       // Se existem itens, excluir order_items relacionados primeiro
       if (items && items.length > 0) {
         const itemIds = items.map(item => item.id);
         console.log('Excluindo order_items relacionados...');
-        
+
         const { error: orderItemsError } = await supabase
           .from('order_items')
           .delete()
           .in('item_id', itemIds);
-        
+
         if (orderItemsError) {
           throw orderItemsError;
         }
-        
+
         console.log('Order_items excluídos com sucesso');
       }
-      
+
       // Agora excluir o baú (que excluirá os itens em cascata)
       console.log('Excluindo baú...');
       const result = await supabaseServices.chests.remove(chestId);
       console.log('Resultado da exclusão:', result);
-      
+
       toast({ title: 'Baú e todos os dados relacionados removidos com sucesso!' });
-      
+
       // Se o baú removido for o que estamos visualizando, limpar seleção
       if (chestId === selectedChestForView) {
         setSelectedChestForView('');
       }
-      
+
       console.log('Recarregando lista de baús...');
       await loadChests();
       console.log('Lista de baús recarregada com sucesso');
     } catch (error) {
       console.error(`Erro ao remover baú ${chestId}:`, error);
-      toast({ 
-        title: 'Erro ao remover baú', 
+      toast({
+        title: 'Erro ao remover baú',
         description: 'Verifique se não há pedidos pendentes relacionados a este baú.',
-        variant: 'destructive' 
+        variant: 'destructive'
       });
     } finally {
       setLoading(prev => ({ ...prev, deleteChest: false }));
@@ -589,7 +610,7 @@ const SupabaseStockControl: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, deleteItem: true }));
-      
+
       // Primeiro remover registros na tabela order_items (histórico de vendas)
       const { error: orderItemsError } = await supabase
         .from('order_items')
@@ -604,7 +625,7 @@ const SupabaseStockControl: React.FC = () => {
       // Em seguida remover o item
       await supabaseServices.items.remove(itemToDelete);
       toast({ title: 'Item removido com sucesso!' });
-      
+
       if (selectedChestForView) {
         await loadItemsByChestId(selectedChestForView);
       }
@@ -645,7 +666,7 @@ const SupabaseStockControl: React.FC = () => {
 
     try {
       setLoading(prev => ({ ...prev, editItem: true }));
-      
+
       await supabaseServices.items.update(editingItem.id, {
         name: editForm.name,
         hero_name: editForm.hero_name,
@@ -655,11 +676,11 @@ const SupabaseStockControl: React.FC = () => {
         current_stock: editForm.current_stock,
         image_url: editForm.image_url
       });
-      
+
       toast({ title: 'Item atualizado com sucesso!' });
       setIsEditModalOpen(false);
       setEditingItem(null);
-      
+
       if (selectedChestForView) {
         await loadItemsByChestId(selectedChestForView);
       }
@@ -680,17 +701,17 @@ const SupabaseStockControl: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, createCustomer: true }));
       console.log('🔄 Criando cliente:', newCustomer);
-      
+
       await supabaseServices.customers.create({
         name: newCustomer.name.trim(),
         steam_id: newCustomer.steam_id.trim()
       });
-      
+
       toast({ title: 'Cliente criado com sucesso!' });
-      
+
       // Limpar formulário
       setNewCustomer({ name: '', steam_id: '' });
-      
+
       // Recarregar lista de clientes
       await loadCustomers();
     } catch (error) {
@@ -710,16 +731,16 @@ const SupabaseStockControl: React.FC = () => {
     try {
       const currentPrice = itemPrices[itemId] || 0;
       const newPrice = Math.max(0, currentPrice + change);
-      
+
       // Atualizar estado local
       setItemPrices(prev => ({ ...prev, [itemId]: newPrice }));
-      
+
       // Atualizar no banco de dados
       await supabaseServices.items.update(itemId, { price: newPrice });
-      
+
       // Atualizar item na lista local
       setItems(prev => prev.map(i => i.id === itemId ? { ...i, price: newPrice } : i));
-      
+
       toast({
         title: "Preço atualizado",
         description: `Preço alterado para R$ ${newPrice.toFixed(2)}`,
@@ -749,7 +770,7 @@ const SupabaseStockControl: React.FC = () => {
       setItemStocks(prev => ({ ...prev, [itemId]: newStock }));
 
       // Atualizar a lista de itens para refletir a mudança
-      setItems(prev => prev.map(i => 
+      setItems(prev => prev.map(i =>
         i.id === itemId ? { ...i, current_stock: newStock } : i
       ));
 
@@ -778,7 +799,7 @@ const SupabaseStockControl: React.FC = () => {
       await supabaseServices.items.update(itemId, { highlighted: newHighlightedState });
 
       // Atualizar estado local
-      setItems(prev => prev.map(i => 
+      setItems(prev => prev.map(i =>
         i.id === itemId ? { ...i, highlighted: newHighlightedState } : i
       ));
 
@@ -800,15 +821,15 @@ const SupabaseStockControl: React.FC = () => {
     try {
       // Atualizar estado local
       setItemDiscounts(prev => ({ ...prev, [itemId]: discount }));
-      
+
       // Atualizar no banco de dados
       await supabaseServices.items.update(itemId, { discount });
-      
+
       toast({
         title: "Desconto atualizado",
         description: `Desconto de ${discount}% aplicado com sucesso.`,
       });
-      
+
       // Atualizar item na lista local
       setItems(prev => prev.map(i => i.id === itemId ? { ...i, discount } : i));
     } catch (error) {
@@ -830,6 +851,15 @@ const SupabaseStockControl: React.FC = () => {
   const discountOptions = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 
   const viewingChest = chests.find(c => c.id === selectedChestForView);
+
+  // Pagination derivation (must be before return)
+  const filteredItems = items.filter(item =>
+    item.hero_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+    item.name.toLowerCase().includes(searchFilter.toLowerCase())
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(catalogPage, totalPages);
+  const pagedItems = filteredItems.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
 
   return (
     <div className="space-y-6">
@@ -855,8 +885,8 @@ const SupabaseStockControl: React.FC = () => {
               />
             </div>
             <div className="flex items-end">
-              <Button 
-                onClick={handleCreateChest} 
+              <Button
+                onClick={handleCreateChest}
                 className="bg-gradient-gaming"
                 disabled={loading.createChest}
               >
@@ -907,8 +937,8 @@ const SupabaseStockControl: React.FC = () => {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button 
-              onClick={handleCreateCustomer} 
+            <Button
+              onClick={handleCreateCustomer}
               className="bg-gradient-gaming"
               disabled={loading.createCustomer}
             >
@@ -948,7 +978,7 @@ const SupabaseStockControl: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label>Nome do Item</Label>
               <Input
@@ -958,7 +988,7 @@ const SupabaseStockControl: React.FC = () => {
                 className="bg-secondary/50"
               />
             </div>
-            
+
             <div>
               <Label>Nome do Herói</Label>
               <HeroCombobox
@@ -966,7 +996,7 @@ const SupabaseStockControl: React.FC = () => {
                 onChange={(value) => setNewItem({ ...newItem, hero_name: value })}
               />
             </div>
-            
+
             <div>
               <Label>Imagem do Item (link externo, opcional)</Label>
               <div className="space-y-3">
@@ -1000,7 +1030,7 @@ const SupabaseStockControl: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <Label>Preço (R$)</Label>
               <Input
@@ -1013,7 +1043,7 @@ const SupabaseStockControl: React.FC = () => {
                 step="0.01"
               />
             </div>
-            
+
             <div>
               <Label>Estoque Inicial</Label>
               <Input
@@ -1025,12 +1055,12 @@ const SupabaseStockControl: React.FC = () => {
                 min="0"
               />
             </div>
-            
+
             <div>
               <Label>Raridade</Label>
               <div className="flex items-center gap-2">
-                <Select 
-                  value={newItem.rarity} 
+                <Select
+                  value={newItem.rarity}
                   onValueChange={(value: string) => setNewItem({ ...newItem, rarity: value })}
                 >
                   <SelectTrigger className="bg-secondary/50 flex-1">
@@ -1052,10 +1082,10 @@ const SupabaseStockControl: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-end">
-            <Button 
-              onClick={handleAddItem} 
+            <Button
+              onClick={handleAddItem}
               className="bg-gradient-gaming"
               disabled={loading.addItem}
             >
@@ -1090,6 +1120,7 @@ const SupabaseStockControl: React.FC = () => {
                   <SelectValue placeholder="Selecionar baú" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">TODOS</SelectItem>
                   {chests.map((chest) => (
                     <SelectItem key={chest.id} value={chest.id}>
                       {chest.name}
@@ -1098,10 +1129,10 @@ const SupabaseStockControl: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {viewingChest && (
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={() => handleDeleteChest(viewingChest.id)}
                 disabled={loading.deleteChest}
               >
@@ -1124,162 +1155,195 @@ const SupabaseStockControl: React.FC = () => {
             <div className="flex justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : viewingChest ? (
+          ) : (viewingChest || selectedChestForView === 'all') ? (
             <>
               {/* Caixa de busca */}
               <div className="mb-4">
                 <Input
                   placeholder="Buscar por nome do herói ou nome do item..."
                   value={searchFilter}
-                  onChange={(e) => setSearchFilter(e.target.value)}
+                  onChange={(e) => { setSearchFilter(e.target.value); setCatalogPage(1); }}
                   className="max-w-md"
                 />
               </div>
-              
-              {items.filter(item => 
-                item.hero_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                item.name.toLowerCase().includes(searchFilter.toLowerCase())
-              ).length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Destaque</TableHead>
-                    <TableHead>Herói</TableHead>
-                    <TableHead>Nome do Item</TableHead>
-                    <TableHead>Raridade</TableHead>
-                    <TableHead>Preço</TableHead>
-                    <TableHead>Estoque</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.filter(item => 
-                    item.hero_name.toLowerCase().includes(searchFilter.toLowerCase()) ||
-                    item.name.toLowerCase().includes(searchFilter.toLowerCase())
-                  ).map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleHighlight(item.id)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Star 
-                            className={`h-4 w-4 ${item.highlighted ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`}
-                          />
-                        </Button>
-                      </TableCell>
-                      <TableCell className="font-medium">{item.hero_name}</TableCell>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell>
-                        <Badge {...getBadgeStyleFromColor(getRarityColor(item.rarity as Rarity))}>
-                          {item.rarity}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
+
+              {filteredItems.length > 0 ? (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Destaque</TableHead>
+                        <TableHead>Herói</TableHead>
+                        <TableHead>Nome do Item</TableHead>
+                        <TableHead>Raridade</TableHead>
+                        <TableHead>Preço</TableHead>
+                        <TableHead>Estoque</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagedItems.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={() => handlePriceChange(item.id, -1)}
+                              onClick={() => handleToggleHighlight(item.id)}
                               className="h-8 w-8 p-0"
                             >
-                              <Minus className="h-4 w-4" />
+                              <Star
+                                className={`h-4 w-4 ${item.highlighted ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`}
+                              />
                             </Button>
-                            <span className="min-w-[80px] text-center font-medium">
-                              R$ {(itemPrices[item.id] || item.price).toFixed(2)}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePriceChange(item.id, 1)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs">Desconto:</Label>
-                            <Select
-                              value={(itemDiscounts[item.id] || 0).toString()}
-                              onValueChange={(value) => handleDiscountChange(item.id, parseInt(value))}
-                            >
-                              <SelectTrigger className="h-8 w-20">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {discountOptions.map(discount => (
-                                  <SelectItem key={discount} value={discount.toString()}>
-                                    {discount}%
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          {(itemDiscounts[item.id] || 0) > 0 && (
-                            <div className="text-xs text-green-600 font-medium">
-                              Final: R$ {getDiscountedPrice(item.id, item.price).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="font-medium">{item.hero_name}</TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>
+                            <Badge {...getBadgeStyleFromColor(getRarityColor(item.rarity as Rarity))}>
+                              {item.rarity}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handlePriceChange(item.id, -1)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <span className="min-w-[80px] text-center font-medium">
+                                  R$ {(itemPrices[item.id] || item.price).toFixed(2)}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handlePriceChange(item.id, 1)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs">Desconto:</Label>
+                                <Select
+                                  value={(itemDiscounts[item.id] || 0).toString()}
+                                  onValueChange={(value) => handleDiscountChange(item.id, parseInt(value))}
+                                >
+                                  <SelectTrigger className="h-8 w-20">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {discountOptions.map(discount => (
+                                      <SelectItem key={discount} value={discount.toString()}>
+                                        {discount}%
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {(itemDiscounts[item.id] || 0) > 0 && (
+                                <div className="text-xs text-green-600 font-medium">
+                                  Final: R$ {getDiscountedPrice(item.id, item.price).toFixed(2)}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStockChange(item.id, -1)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="min-w-[60px] text-center font-medium">
+                                {itemStocks[item.id] ?? item.current_stock ?? item.initial_stock}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStockChange(item.id, 1)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditItem(item)}
+                                disabled={loading.editItem}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteItem(item.id)}
+                                disabled={loading.deleteItem}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {/* Pagination bar */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-sm text-muted-foreground">
+                        {filteredItems.length} itens • página {safePage} de {totalPages}
+                      </span>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCatalogPage(p => Math.max(1, p - 1))}
+                          disabled={safePage <= 1}
+                        >
+                          ← Anterior
+                        </Button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                           <Button
-                            variant="outline"
+                            key={page}
+                            variant={page === safePage ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => handleStockChange(item.id, -1)}
-                            className="h-8 w-8 p-0"
+                            onClick={() => setCatalogPage(page)}
+                            className="w-9"
                           >
-                            <Minus className="h-4 w-4" />
+                            {page}
                           </Button>
-                          <span className="min-w-[60px] text-center font-medium">
-                            {itemStocks[item.id] ?? item.current_stock ?? item.initial_stock}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStockChange(item.id, 1)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditItem(item)}
-                            disabled={loading.editItem}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            onClick={() => handleDeleteItem(item.id)}
-                            disabled={loading.deleteItem}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                {searchFilter ? 
-                  `Nenhum item encontrado para "${searchFilter}".` : 
-                  'Nenhum item encontrado neste baú.'
-                }
-              </div>
-            )}
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCatalogPage(p => Math.min(totalPages, p + 1))}
+                          disabled={safePage >= totalPages}
+                        >
+                          Próxima →
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchFilter
+                    ? `Nenhum item encontrado para "${searchFilter}".`
+                    : 'Nenhum item encontrado neste baú.'}
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
@@ -1487,7 +1551,7 @@ const SupabaseStockControl: React.FC = () => {
               Adicione, edite ou remova raridades e suas cores.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6">
             {/* Create New Rarity Form */}
             <div className="p-4 border rounded-lg bg-secondary/20 space-y-4">
@@ -1497,22 +1561,22 @@ const SupabaseStockControl: React.FC = () => {
               <div className="flex gap-4 items-end">
                 <div className="flex-1 space-y-2">
                   <Label>Nome</Label>
-                  <Input 
-                    value={newRarity.name} 
-                    onChange={(e) => setNewRarity(prev => ({ ...prev, name: e.target.value }))} 
-                    placeholder="Ex: lendária" 
+                  <Input
+                    value={newRarity.name}
+                    onChange={(e) => setNewRarity(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ex: lendária"
                   />
                 </div>
                 <div className="flex-1 space-y-2">
                   <Label>Cor</Label>
                   <div className="flex gap-2">
-                    <Input 
-                      type="color" 
+                    <Input
+                      type="color"
                       value={newRarity.color.startsWith('#') ? newRarity.color : '#000000'}
                       onChange={(e) => setNewRarity(prev => ({ ...prev, color: e.target.value }))}
                       className="w-12 h-10 p-1 cursor-pointer"
                     />
-                    <Input 
+                    <Input
                       value={newRarity.color}
                       onChange={(e) => setNewRarity(prev => ({ ...prev, color: e.target.value }))}
                       placeholder="#000000 ou classe"
@@ -1540,19 +1604,19 @@ const SupabaseStockControl: React.FC = () => {
                   <div key={rarity.id} className="p-3 flex items-center justify-between hover:bg-secondary/10 transition-colors">
                     {editingRarity?.id === rarity.id ? (
                       <div className="flex items-center gap-2 flex-1 mr-4">
-                        <Input 
-                          value={editingRarity.name} 
+                        <Input
+                          value={editingRarity.name}
                           onChange={(e) => setEditingRarity(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
                           className="h-8"
                         />
                         <div className="flex gap-1 items-center flex-1">
-                          <Input 
-                            type="color" 
+                          <Input
+                            type="color"
                             value={editingRarity.color.startsWith('#') ? editingRarity.color : '#000000'}
                             onChange={(e) => setEditingRarity(prev => prev ? ({ ...prev, color: e.target.value }) : null)}
                             className="w-8 h-8 p-0.5 cursor-pointer shrink-0"
                           />
-                          <Input 
+                          <Input
                             value={editingRarity.color}
                             onChange={(e) => setEditingRarity(prev => prev ? ({ ...prev, color: e.target.value }) : null)}
                             className="h-8 min-w-[100px]"

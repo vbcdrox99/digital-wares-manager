@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, User, Lock, Mail, Shield, Gamepad2, UserCheck, IdCard } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Shield, Gamepad2, UserCheck, IdCard, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 
 const LoginPage: React.FC = () => {
@@ -14,14 +14,24 @@ const LoginPage: React.FC = () => {
   const [name, setName] = useState('');
   const [steamId, setSteamId] = useState('');
   const [cpf, setCpf] = useState('');
+  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  
+
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Auto-switch to register tab if ?tab=register is in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('tab') === 'register') {
+      setIsLogin(false);
+    }
+  }, [location.search]);
 
   // Definir título da página
   useEffect(() => {
@@ -41,7 +51,7 @@ const LoginPage: React.FC = () => {
       }
     } else {
       // Validações básicas de cadastro de vendedor
-      if (!email || !password || !confirmPassword || !name || !steamId || !cpf) {
+      if (!email || !password || !confirmPassword || !name || !steamId || !cpf || !phone) {
         setError('Por favor, preencha todos os campos');
         setLoading(false);
         return;
@@ -55,6 +65,13 @@ const LoginPage: React.FC = () => {
 
       if (!/^\d{11}$/.test(cpf)) {
         setError('CPF deve conter exatamente 11 dígitos numéricos');
+        setLoading(false);
+        return;
+      }
+
+      const phoneDigits = phone.replace(/\D/g, '');
+      if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+        setError('Telefone inválido. Use o formato (xx) x xxxx-xxxx');
         setLoading(false);
         return;
       }
@@ -119,7 +136,7 @@ const LoginPage: React.FC = () => {
           }
         }
 
-        // 2) Inserir solicitação de cadastro na tabela sellers com status pendente
+        // 2) Inserir vendedor já aprovado automaticamente
         const { error: insertError } = await supabase
           .from('sellers')
           .insert({
@@ -127,8 +144,9 @@ const LoginPage: React.FC = () => {
             email,
             cpf,
             steam_id: steamId,
-            status: 'pending',
-            approved: false
+            phone,
+            status: 'approved',
+            approved: true
           });
 
         if (insertError) {
@@ -149,19 +167,15 @@ const LoginPage: React.FC = () => {
             setError(insertError.message || 'Erro ao enviar cadastro');
           }
         } else {
-          setSuccess('Cadastro enviado! Aguarde aprovação no painel ADMIN.');
-          // Observação: se sua instância do Supabase exigir confirmação de email,
-          // o login só funcionará após o usuário confirmar o email.
-          // Caso deseje, posso ajustar para desabilitar a confirmação em dev ou usar magic link.
-          // Limpar formulário
+          setSuccess('Cadastro realizado com sucesso! Você já pode fazer login.');
           setEmail('');
           setPassword('');
           setConfirmPassword('');
           setName('');
           setSteamId('');
           setCpf('');
-          // Redirecionar após breve delay
-          setTimeout(() => navigate('/'), 1500);
+          setPhone('');
+          setTimeout(() => navigate('/'), 2000);
         }
       }
     } catch (error) {
@@ -173,10 +187,18 @@ const LoginPage: React.FC = () => {
 
   const formatCpfInput = (value: string) => value.replace(/\D/g, '').slice(0, 11);
 
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 2) return digits.length ? `(${digits}` : '';
+    if (digits.length <= 3) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2, 3)} ${digits.slice(3)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 3)} ${digits.slice(3, 7)}-${digits.slice(7)}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
       <Navigation />
-      
+
       <div className="flex items-center justify-center min-h-screen pt-20 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -199,7 +221,7 @@ const LoginPage: React.FC = () => {
                 {isLogin ? 'Entrar' : 'Cadastro de Vendedor'}
               </h1>
               <p className="text-gray-400">
-                {isLogin ? 'Acesse sua conta para continuar' : 'Preencha seus dados para solicitar aprovação como vendedor.'}
+                {isLogin ? 'Acesse sua conta para continuar' : 'Preencha seus dados para se cadastrar como vendedor.'}
               </p>
             </div>
 
@@ -226,67 +248,89 @@ const LoginPage: React.FC = () => {
 
               {/* Nome */}
               {!isLogin && (
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                  Nome
-                </label>
-                <div className="relative">
-                  <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                    placeholder="Seu nome completo"
-                    required
-                  />
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+                    Nome
+                  </label>
+                  <div className="relative">
+                    <UserCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="name"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                      placeholder="Seu nome completo"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* CPF */}
               {!isLogin && (
-              <div>
-                <label htmlFor="cpf" className="block text-sm font-medium text-gray-300 mb-2">
-                  CPF (apenas dígitos)
-                </label>
-                <div className="relative">
-                  <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    id="cpf"
-                    type="text"
-                    value={cpf}
-                    onChange={(e) => setCpf(formatCpfInput(e.target.value))}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                    placeholder="Ex.: 12345678901"
-                    maxLength={11}
-                    required
-                  />
+                <div>
+                  <label htmlFor="cpf" className="block text-sm font-medium text-gray-300 mb-2">
+                    CPF (apenas dígitos)
+                  </label>
+                  <div className="relative">
+                    <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="cpf"
+                      type="text"
+                      value={cpf}
+                      onChange={(e) => setCpf(formatCpfInput(e.target.value))}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                      placeholder="Ex.: 12345678901"
+                      maxLength={11}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Steam ID Field */}
               {!isLogin && (
-              <div>
-                <label htmlFor="steamId" className="block text-sm font-medium text-gray-300 mb-2">
-                  Conta Steam (17 dígitos)
-                </label>
-                <div className="relative">
-                  <Gamepad2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    id="steamId"
-                    type="text"
-                    value={steamId}
-                    onChange={(e) => setSteamId(e.target.value.replace(/\D/g, '').slice(0, 17))}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                    placeholder="Ex.: 76561198262445629"
-                    maxLength={17}
-                    required
-                  />
+                <div>
+                  <label htmlFor="steamId" className="block text-sm font-medium text-gray-300 mb-2">
+                    Conta Steam (17 dígitos)
+                  </label>
+                  <div className="relative">
+                    <Gamepad2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="steamId"
+                      type="text"
+                      value={steamId}
+                      onChange={(e) => setSteamId(e.target.value.replace(/\D/g, '').slice(0, 17))}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                      placeholder="Ex.: 76561198262445629"
+                      maxLength={17}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Telefone */}
+              {!isLogin && (
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-2">
+                    Telefone
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(formatPhone(e.target.value))}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                      placeholder="(xx) x xxxx-xxxx"
+                      maxLength={16}
+                      required
+                    />
+                  </div>
+                </div>
               )}
 
               {/* Password Field */}
@@ -317,30 +361,30 @@ const LoginPage: React.FC = () => {
 
               {/* Confirmar Senha */}
               {!isLogin && (
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirmar Senha
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                    placeholder="••••••••"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                    Confirmar Senha
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full pl-10 pr-12 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Error Message */}
@@ -376,7 +420,7 @@ const LoginPage: React.FC = () => {
                 {loading ? (
                   <div className="flex items-center justify-center">
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    {isLogin ? 'Entrando...' : 'Enviando cadastro...'}
+                    {isLogin ? 'Entrando...' : 'Cadastrando...'}
                   </div>
                 ) : (
                   isLogin ? 'Entrar' : 'Cadastrar como Vendedor'
@@ -386,22 +430,15 @@ const LoginPage: React.FC = () => {
 
             {/* Info */}
             {!isLogin && (
-              <div className="mt-6 text-center text-gray-400 text-sm">
-                Seu cadastro ficará pendente até aprovação no painel ADMIN.
-              </div>
-            )}
-
-            {/* Admin Info */}
-            {!isLogin && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4"
+                className="mt-6 bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4"
               >
-                <div className="flex items-center text-blue-400 text-sm">
+                <div className="flex items-center text-cyan-400 text-sm">
                   <Shield className="w-4 h-4 mr-2" />
-                  <span>Solicitações são avaliadas e aprovadas pelo ADMIN.</span>
+                  <span>Seu acesso como vendedor será liberado imediatamente após o cadastro.</span>
                 </div>
               </motion.div>
             )}
