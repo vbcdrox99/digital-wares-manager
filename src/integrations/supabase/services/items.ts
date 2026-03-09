@@ -1,7 +1,9 @@
 import { supabase } from '../client';
 import type { Database } from '../types';
 
-export type Item = Database['public']['Tables']['items']['Row'];
+export type Item = Database['public']['Tables']['items']['Row'] & {
+  sellers?: { name: string } | null;
+};
 export type InsertItem = Database['public']['Tables']['items']['Insert'];
 export type UpdateItem = Database['public']['Tables']['items']['Update'];
 
@@ -15,7 +17,7 @@ export const itemsService = {
   async getAll() {
     const { data, error } = await supabase
       .from('items')
-      .select('*')
+      .select('*, sellers(name)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -32,7 +34,7 @@ export const itemsService = {
   async getHighlighted(limit = 10) {
     const { data, error } = await supabase
       .from('items')
-      .select('*')
+      .select('*, sellers(name)')
       .eq('highlighted', true)
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -51,7 +53,7 @@ export const itemsService = {
   async getByChestId(chestId: string) {
     const { data, error } = await supabase
       .from('items')
-      .select('*')
+      .select('*, sellers(name)')
       .eq('chest_id', chestId)
       .order('created_at', { ascending: false });
 
@@ -69,7 +71,7 @@ export const itemsService = {
   async getById(id: string) {
     const { data, error } = await supabase
       .from('items')
-      .select('*')
+      .select('*, sellers(name)')
       .eq('id', id)
       .single();
 

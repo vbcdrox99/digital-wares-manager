@@ -13,7 +13,6 @@ const LoginPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [steamId, setSteamId] = useState('');
-  const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -51,7 +50,7 @@ const LoginPage: React.FC = () => {
       }
     } else {
       // Validações básicas de cadastro de vendedor
-      if (!email || !password || !confirmPassword || !name || !steamId || !cpf || !phone) {
+      if (!email || !password || !confirmPassword || !name || !steamId || !phone) {
         setError('Por favor, preencha todos os campos');
         setLoading(false);
         return;
@@ -63,8 +62,8 @@ const LoginPage: React.FC = () => {
         return;
       }
 
-      if (!/^\d{11}$/.test(cpf)) {
-        setError('CPF deve conter exatamente 11 dígitos numéricos');
+      if (!/^\d{17}$/.test(steamId)) {
+        setError('A conta Steam deve conter exatamente 17 dígitos (ex: 76561198262445629)');
         setLoading(false);
         return;
       }
@@ -72,12 +71,6 @@ const LoginPage: React.FC = () => {
       const phoneDigits = phone.replace(/\D/g, '');
       if (phoneDigits.length < 10 || phoneDigits.length > 11) {
         setError('Telefone inválido. Use o formato (xx) x xxxx-xxxx');
-        setLoading(false);
-        return;
-      }
-
-      if (!/^\d{17}$/.test(steamId)) {
-        setError('A conta Steam deve conter exatamente 17 dígitos (ex: 76561198262445629)');
         setLoading(false);
         return;
       }
@@ -142,7 +135,6 @@ const LoginPage: React.FC = () => {
           .insert({
             name,
             email,
-            cpf,
             steam_id: steamId,
             phone,
             status: 'approved',
@@ -156,8 +148,6 @@ const LoginPage: React.FC = () => {
             const msg = (insertError.message || '').toLowerCase();
             if (msg.includes('sellers_email_unique')) {
               setError('Este email já está cadastrado como vendedor.');
-            } else if (msg.includes('sellers_cpf_unique')) {
-              setError('Este CPF já está cadastrado como vendedor.');
             } else if (msg.includes('sellers_steam_id_unique')) {
               setError('Esta conta Steam já está cadastrada como vendedor.');
             } else {
@@ -173,7 +163,6 @@ const LoginPage: React.FC = () => {
           setConfirmPassword('');
           setName('');
           setSteamId('');
-          setCpf('');
           setPhone('');
           setTimeout(() => navigate('/'), 2000);
         }
@@ -261,28 +250,6 @@ const LoginPage: React.FC = () => {
                       onChange={(e) => setName(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                       placeholder="Seu nome completo"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* CPF */}
-              {!isLogin && (
-                <div>
-                  <label htmlFor="cpf" className="block text-sm font-medium text-gray-300 mb-2">
-                    CPF (apenas dígitos)
-                  </label>
-                  <div className="relative">
-                    <IdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      id="cpf"
-                      type="text"
-                      value={cpf}
-                      onChange={(e) => setCpf(formatCpfInput(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                      placeholder="Ex.: 12345678901"
-                      maxLength={11}
                       required
                     />
                   </div>

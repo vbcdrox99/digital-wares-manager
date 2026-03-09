@@ -1197,7 +1197,14 @@ const SupabaseStockControl: React.FC = () => {
                             </Button>
                           </TableCell>
                           <TableCell className="font-medium">{item.hero_name}</TableCell>
-                          <TableCell>{item.name}</TableCell>
+                          <TableCell>
+                            <div>{item.name}</div>
+                            {item.is_partner && item.sellers?.name && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Vendedor: {item.sellers.name}
+                              </div>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Badge {...getBadgeStyleFromColor(getRarityColor(item.rarity as Rarity))}>
                               {item.rarity}

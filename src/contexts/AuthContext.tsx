@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data.user) {
         // Aguardar um pouco para o trigger criar o registro na tabela users
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         const userDataResult = await fetchUserData(data.user.id);
         if (userDataResult) {
           setUser(userDataResult);
@@ -163,7 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const getSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) throw error;
 
         if (session?.user) {

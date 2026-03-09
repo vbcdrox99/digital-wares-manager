@@ -364,7 +364,7 @@ type Seller = {
   cpf: string | null;
   steam_id: string | null;
   phone: string | null;
-  status: 'pending' | 'approved' | 'rejected' | null;
+  status: 'pending' | 'approved' | 'rejected' | 'inactive' | null;
   approved: boolean | null;
   approved_at: string | null;
 };
@@ -425,6 +425,20 @@ const SellersAdminSection: React.FC = () => {
     }
   };
 
+  const deleteSeller = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja inativar/excluir esta conta de vendedor? Ela não poderá mais ser registrada com o mesmo email.')) return;
+    try {
+      const { error } = await supabase
+        .from('sellers')
+        .update({ status: 'inactive', approved: false })
+        .eq('id', id);
+      if (error) throw error;
+      fetchSellers();
+    } catch (err) {
+      console.error('Erro ao excluir/inativar vendedor', err);
+    }
+  };
+
   if (loading) {
     return <Loading text="Carregando vendedores..." />;
   }
@@ -446,9 +460,9 @@ const SellersAdminSection: React.FC = () => {
                 <div className="flex-1">
                   <div className="font-medium">{s.name}</div>
                   <div className="text-xs text-muted-foreground">Email: {s.email}</div>
-                  <div className="text-xs text-muted-foreground">CPF: {s.cpf}</div>
-                  <div className="text-xs text-muted-foreground">Steam: {s.steam_id}</div>
-                  <div className="text-xs text-muted-foreground">Telefone: {s.phone || '(11) 9 9999-9999'}</div>
+                  <div className="text-xs text-muted-foreground">CPF: {s.cpf || '-'}</div>
+                  <div className="text-xs text-muted-foreground">Steam: {s.steam_id || '-'}</div>
+                  <div className="text-xs text-muted-foreground">Telefone: {s.phone || '-'}</div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="default" onClick={() => approveSeller(s.id)} className="bg-green-600 hover:bg-green-700">
@@ -476,11 +490,14 @@ const SellersAdminSection: React.FC = () => {
                   <div className="font-medium">{s.name}</div>
                   <div className="text-xs text-muted-foreground">Email: {s.email}</div>
                   <div className="text-xs text-muted-foreground">CPF: {s.cpf}</div>
-                  <div className="text-xs text-muted-foreground">Steam: {s.steam_id}</div>
-                  <div className="text-xs text-muted-foreground">Telefone: {s.phone || '(11) 9 9999-9999'}</div>
+                  <div className="text-xs text-muted-foreground">Steam: {s.steam_id || '-'}</div>
+                  <div className="text-xs text-muted-foreground">Telefone: {s.phone || '-'}</div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <Link to={`/seller/${s.id}`} className="text-sm text-cyan-400 hover:text-cyan-300">Abrir página pessoal</Link>
+                  <Button variant="ghost" onClick={() => deleteSeller(s.id)} className="text-red-400 hover:text-red-300 hover:bg-red-950/30">
+                    <X className="h-4 w-4 mr-1" /> Excluir
+                  </Button>
                 </div>
               </div>
             ))}
