@@ -96,13 +96,6 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Banner de Teste */}
-      <div className="bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 text-white text-center py-4 px-6 font-extrabold text-xl shadow-lg border-b border-orange-400/30 flex items-center justify-center gap-3">
-        <span className="animate-bounce">🚀</span>
-        <span>TESTE DE DEPLOY: O GITHUB ESTÁ SINCRONIZADO!</span>
-        <span className="animate-bounce">🚀</span>
-      </div>
-
       {/* Navigation */}
       <Navigation />
 
