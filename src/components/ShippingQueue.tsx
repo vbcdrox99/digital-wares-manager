@@ -7,6 +7,8 @@ import { Clock, AlertTriangle, User, Package, X } from 'lucide-react';
 import { getOrdersWithItems, updateOrderStatus } from '@/integrations/supabase/services/orderService';
 import { useRarities } from '@/hooks/useRarities';
 import { getBadgeStyleFromColor } from '@/utils/rarityUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface OrderItem {
   id: string;
@@ -32,6 +34,7 @@ interface OrderWithItems {
   created_at: string;
   sent_at: string | null;
   total_value: number;
+  is_paid?: boolean;
   shipping_queue: {
     deadline: string;
   }[] | null;
@@ -92,6 +95,27 @@ const ShippingQueue: React.FC<ShippingQueueProps> = () => {
     }
   };
 
+  const handleSetDeadline = async (orderId: string, days: number) => {
+    try {
+      const deadline = new Date();
+      deadline.setDate(deadline.getDate() + days);
+      
+      const { error } = await supabase
+        .from('shipping_queue')
+        .insert({
+          order_id: orderId,
+          deadline: deadline.toISOString()
+        });
+
+      if (error) throw error;
+      toast.success("Amizade confirmada e prazo de envio agendado!");
+      await loadOrders();
+    } catch (error) {
+      console.error('Erro ao agendar envio:', error);
+      toast.error('Erro ao agendar envio.');
+    }
+  };
+
   // Calcular status baseado na data de entrega
   const getOrderStatus = (order: OrderWithItems): OrderStatus => {
     if (order.status === 'sent') return 'sent';
@@ -112,9 +136,14 @@ const ShippingQueue: React.FC<ShippingQueueProps> = () => {
     return 'pending';
   };
 
-  // Filtrar apenas pedidos que não foram enviados ou cancelados
+  // Filtrar apenas pedidos que não foram enviados ou cancelados E que:
+  // 1. Já estão agendados (têm deadline), OU
+  // 2. São do tipo sorteio, OU
+  // 3. São vendas e já foram pagos
   const queueOrders = orders.filter(order => 
-    order.status !== 'sent' && order.status !== 'cancelled'
+    order.status !== 'sent' && 
+    order.status !== 'cancelled' &&
+    ((order.shipping_queue && order.shipping_queue.length > 0) || order.order_type === 'giveaway' || order.is_paid)
   ).map(order => {
     let daysLeft = 0;
     
@@ -249,37 +278,71 @@ const ShippingQueue: React.FC<ShippingQueueProps> = () => {
                     </TableCell>
                     
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getStatusColor(order.calculatedStatus)}>
-                          {getStatusLabel(order.calculatedStatus)}
-                        </Badge>
-                        <div className="flex gap-1">
+                      {!order.shipping_queue || order.shipping_queue.length === 0 ? (
+                        <div className="flex items-center gap-2">
+                          <select
+                            id={`days-${order.id}`}
+                            className="bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-xs text-foreground focus:outline-none"
+                            defaultValue="30"
+                          >
+                            <option value="15">15 dias</option>
+                            <option value="30">30 dias</option>
+                            <option value="45">45 dias</option>
+                          </select>
                           <Button
-                             size="sm"
-                             variant="outline"
-                             onClick={() => updateOrderStatusLocal(order.id, 'sent')}
-                             className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white"
-                             title="Marcar como Enviado"
-                           >
-                             <Package className="h-3 w-3" />
-                           </Button>
-                           <Button
-                             size="sm"
-                             variant="outline"
-                             onClick={() => updateOrderStatusLocal(order.id, 'cancelled')}
-                             className="h-7 px-2 text-destructive hover:text-destructive"
-                             title="Cancelar Pedido"
-                           >
-                             <X className="h-3 w-3" />
-                           </Button>
+                            size="sm"
+                            onClick={() => {
+                              const selectEl = document.getElementById(`days-${order.id}`) as HTMLSelectElement;
+                              const days = Number(selectEl.value);
+                              handleSetDeadline(order.id, days);
+                            }}
+                            className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                          >
+                            Confirmar Amizade & Prazo
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateOrderStatusLocal(order.id, 'cancelled')}
+                            className="h-8 px-2 text-destructive hover:text-destructive border-zinc-800"
+                            title="Cancelar Pedido"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Badge className={getStatusColor(order.calculatedStatus)}>
+                            {getStatusLabel(order.calculatedStatus)}
+                          </Badge>
+                          <div className="flex gap-1">
+                            <Button
+                               size="sm"
+                               variant="outline"
+                               onClick={() => updateOrderStatusLocal(order.id, 'sent')}
+                               className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white"
+                               title="Marcar como Enviado"
+                             >
+                               <Package className="h-3 w-3" />
+                             </Button>
+                             <Button
+                               size="sm"
+                               variant="outline"
+                               onClick={() => updateOrderStatusLocal(order.id, 'cancelled')}
+                               className="h-7 px-2 text-destructive hover:text-destructive"
+                               title="Cancelar Pedido"
+                             >
+                               <X className="h-3 w-3" />
+                             </Button>
+                          </div>
+                        </div>
+                      )}
                     </TableCell>
                     
                     <TableCell>
                       <div>
                         <div className="font-medium">{order.customer_name}</div>
-                        <div className="text-sm text-muted-foreground">{order.steam_id}</div>
+                        <div className="text-sm text-muted-foreground">Dota ID: {order.steam_id}</div>
                       </div>
                     </TableCell>
                     
@@ -372,7 +435,7 @@ const ShippingQueue: React.FC<ShippingQueueProps> = () => {
                     <TableCell>
                       <div className="space-y-1">
                         <div className="font-medium">{order.customer_name}</div>
-                        <div className="text-sm text-muted-foreground">{order.steam_id}</div>
+                        <div className="text-sm text-muted-foreground">Dota ID: {order.steam_id}</div>
                       </div>
                     </TableCell>
                     

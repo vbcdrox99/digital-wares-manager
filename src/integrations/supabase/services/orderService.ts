@@ -337,3 +337,40 @@ export async function deleteOrder(orderId: string) {
     return { success: false, error };
   }
 }
+
+// Buscar pedidos de um cliente específico pelo email ou nome
+export async function getClientOrders(customerIdentifiers: string[]): Promise<OrderWithItems[]> {
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (
+          *,
+          items (
+            id,
+            name,
+            hero_name,
+            rarity,
+            price,
+            image_url,
+            chest_id,
+            chests (
+              name
+            )
+          )
+        ),
+        shipping_queue (
+          deadline
+        )
+      `)
+      .in('customer_name', customerIdentifiers)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as any[] as OrderWithItems[];
+  } catch (error) {
+    console.error('Erro ao buscar pedidos do cliente:', error);
+    return [];
+  }
+}

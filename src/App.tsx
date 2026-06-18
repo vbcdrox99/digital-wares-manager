@@ -17,6 +17,7 @@ import RafflePage from "./pages/RafflePage";
 import SellPage from "./pages/SellPage";
 import SellerDemoPage from "./pages/SellerDemoPage";
 import SellerAreaPage from "./pages/SellerAreaPage";
+import PerfilPage from "./pages/PerfilPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +56,11 @@ const App = () => (
               <Route path="/area-do-vendedor" element={
                 <ProtectedRoute>
                   <SellerAreaPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/perfil" element={
+                <ProtectedRoute>
+                  <PerfilPage />
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={

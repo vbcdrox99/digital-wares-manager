@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home, Star, Plus, X, Search, Check, IdCard } from "lucide-react";
+import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home, Star, Plus, X, Search, Check, IdCard, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Loading } from "@/components/ui/loading";
@@ -10,6 +10,7 @@ import SupabaseStockControl from "@/components/SupabaseStockControl";
 import Orders from "@/components/Orders";
 import ShippingQueue from "@/components/ShippingQueue";
 import Customers from "@/components/Customers";
+import Financial from "@/components/Financial";
 import { useItems } from "@/hooks/useItems";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { Item } from "@/types/inventory";
@@ -134,7 +135,7 @@ const Index = () => {
 
       <div className="container mx-auto px-6 py-8">
         <Tabs defaultValue="inventory" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
             <TabsTrigger value="inventory" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Inventário
@@ -158,6 +159,10 @@ const Index = () => {
             <TabsTrigger value="featured" className="flex items-center gap-2">
               <Star className="h-4 w-4" />
               Sorteios Premium
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Financeiro
             </TabsTrigger>
           </TabsList>
 
@@ -189,6 +194,14 @@ const Index = () => {
             <ErrorBoundary>
               <Suspense fallback={<Loading text="Carregando clientes..." />}>
                 <Customers />
+              </Suspense>
+            </ErrorBoundary>
+          </TabsContent>
+
+          <TabsContent value="financial">
+            <ErrorBoundary>
+              <Suspense fallback={<Loading text="Carregando dados financeiros..." />}>
+                <Financial />
               </Suspense>
             </ErrorBoundary>
           </TabsContent>

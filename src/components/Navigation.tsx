@@ -170,6 +170,18 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
                 Área do Vendedor
               </Link>
             )}
+            {user && (
+              <Link 
+                to="/perfil" 
+                className={`transition-colors ${
+                  isActive('/perfil') 
+                    ? 'text-foreground hover:text-primary' 
+                    : 'text-muted-foreground hover:text-primary'
+                }`}
+              >
+                Minhas Compras
+              </Link>
+            )}
             {isAdmin() && (
               <Link 
                 to="/admin" 
@@ -188,8 +200,10 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
               {user ? (
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2 text-sm">
-                    <User className="w-4 h-4 text-cyan-400" />
-                    <span className="text-gray-300">{user.email}</span>
+                    <Link to="/perfil" className="flex items-center space-x-1.5 text-gray-300 hover:text-primary transition-colors">
+                      <User className="w-4 h-4 text-cyan-400" />
+                      <span className="max-w-[150px] truncate">{user.name || user.email}</span>
+                    </Link>
                     {user.role === 'admin' && (
                       <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-2 py-1 rounded-full text-xs font-semibold">
                         ADMIN
@@ -318,6 +332,16 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
                 }`}
               >
                 Área do Vendedor
+              </Link>
+            )}
+            {user && (
+              <Link
+                to="/perfil"
+                className={`block px-2 py-2 rounded-md transition-colors ${
+                  isActive('/perfil') ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:bg-white/5'
+                }`}
+              >
+                Meu Perfil
               </Link>
             )}
             {isAdmin() && (

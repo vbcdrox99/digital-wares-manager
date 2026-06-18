@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, ShoppingCart, Star, Package, Eye, X, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ShoppingCart, Star, Package, Eye, X, Info, Copy, CheckCircle2, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -12,16 +12,61 @@ import Navigation from '../components/Navigation';
 import ImageWithFallback from '@/components/ui/image-with-fallback';
 import { useRarities } from '../hooks/useRarities';
 import { getBadgeStyleFromColor } from '@/utils/rarityUtils';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../integrations/supabase/client';
+import { toast } from 'sonner';
 
 const ItemDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { items, loading } = useItems();
   const { getRarityColor } = useRarities();
+  const { user } = useAuth();
+  
   const [item, setItem] = useState<Item | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  
+  // Checkout States
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [customerCpf, setCustomerCpf] = useState('');
+  const [qrCode, setQrCode] = useState('');
+  const [qrCodeBase64, setQrCodeBase64] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState<'idle'|'loading'|'waiting_payment'|'paid'>('idle');
+  const [orderId, setOrderId] = useState<string|null>(null);
+  const [copied, setCopied] = useState(false);
+  const [steamId, setSteamId] = useState('');
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutos (300 segundos)
+
+  useEffect(() => {
+    if (user) {
+      setSteamId(user.steam_id || '');
+    }
+    const savedCpf = localStorage.getItem('user_cpf');
+    if (savedCpf) {
+      setCustomerCpf(savedCpf);
+    }
+  }, [user]);
+
+  // Contador de 5 minutos para o pagamento do PIX
+  useEffect(() => {
+    if (paymentStatus !== 'waiting_payment' || timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setPaymentStatus('idle');
+          toast.error('O tempo limite para pagamento do PIX expirou. Por favor, gere um novo código.');
+          return 300;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [paymentStatus, timeLeft]);
 
   useEffect(() => {
     if (!loading && id) {
@@ -33,7 +78,36 @@ const ItemDetailPage: React.FC = () => {
     }
   }, [id, items, loading]);
 
+  // Listen to Order Status Changes via Realtime
+  useEffect(() => {
+    if (!orderId || paymentStatus !== 'waiting_payment') return;
+    
+    const channel = supabase
+      .channel('public:orders')
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'orders',
+        filter: `id=eq.${orderId}`
+      }, (payload: any) => {
+        if (payload.new.is_paid) {
+          setPaymentStatus('paid');
+          toast.success('Pagamento confirmado com sucesso!');
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    }
+  }, [orderId, paymentStatus]);
+
   const handleBuy = () => {
+    if (!user) {
+      toast('Login Necessário', { description: 'Você precisa fazer login para comprar.' });
+      navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
     if (!item) return;
     
     if (item.current_stock < quantity) {
@@ -41,13 +115,96 @@ const ItemDetailPage: React.FC = () => {
       return;
     }
     
-    setShowWhatsAppModal(true);
+    // Reset modal states
+    setPaymentStatus('idle');
+    setQrCode('');
+    setQrCodeBase64('');
+    setOrderId(null);
+    setTimeLeft(300); // 5 minutos (300 segundos)
+    setShowPixModal(true);
   };
 
-  const handleWhatsAppRedirect = () => {
-    window.open('https://wa.link/196mnu', '_blank');
-    setShowWhatsAppModal(false);
+  const formatCpf = (val: string) => {
+    return val.replace(/\D/g, '').slice(0, 11);
+  }
+
+  const handleGeneratePix = async () => {
+    if (!customerCpf || customerCpf.length !== 11) {
+      toast.error('Por favor, informe um CPF válido com 11 dígitos.');
+      return;
+    }
+    
+    setPaymentStatus('loading');
+    
+    try {
+      // Salvar CPF no localStorage para compras futuras
+      localStorage.setItem('user_cpf', customerCpf);
+
+      const totalValue = (item?.discount && item.discount > 0 
+        ? item.price * (1 - item.discount / 100) 
+        : item?.price || 0) * quantity;
+
+      // 1. Create Order in DB (steam_id can be updated later on paid screen)
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          customer_name: user?.user_metadata?.name || user?.email,
+          total_value: totalValue,
+          steam_id: steamId || '',
+          order_type: 'sale',
+          status: 'pending' 
+        })
+        .select()
+        .single();
+        
+      if (orderError) throw orderError;
+      setOrderId(orderData.id);
+
+      // 2. Create Order Item to link the order to the specific item
+      const { error: orderItemError } = await supabase
+        .from('order_items')
+        .insert({
+          order_id: orderData.id,
+          item_id: item.id,
+          quantity: quantity,
+          price: item?.price || 0
+        });
+
+      if (orderItemError) throw orderItemError;
+
+      const { data: pixData, error: pixError } = await supabase.functions.invoke('create-pix-payment', {
+        body: {
+          order: orderData,
+          customer_email: user?.email,
+          customer_name: user?.user_metadata?.name || user?.email,
+          customer_cpf: customerCpf
+        }
+      });
+
+      console.log('Pix Response:', { pixData, pixError });
+
+      if (pixError || pixData?.error) {
+        throw new Error(pixData?.error || pixError?.message || 'Erro ao gerar PIX');
+      }
+      
+      setQrCode(pixData.qr_code);
+      setQrCodeBase64(pixData.qr_code_base64);
+      setTimeLeft(300); // Garante reset do tempo ao gerar
+      setPaymentStatus('waiting_payment');
+      
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Erro ao gerar PIX: ' + e.message);
+      setPaymentStatus('idle');
+    }
   };
+
+  const copyPixCode = () => {
+    navigator.clipboard.writeText(qrCode);
+    setCopied(true);
+    toast.success('Código PIX copiado!');
+    setTimeout(() => setCopied(false), 2000);
+  }
   
   const getRelatedItems = () => {
     if (!item || !items.length) return [];
@@ -83,15 +240,12 @@ const ItemDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
       <Navigation />
       
       <div className="relative">
-        {/* Background Gradients similar to RafflePage */}
         <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-background to-blue-900/20 pointer-events-none" />
 
         <div className="container mx-auto px-6 pt-24 pb-12 relative z-10">
-            {/* Header com botão voltar */}
             <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -108,7 +262,6 @@ const ItemDetailPage: React.FC = () => {
             </motion.div>
 
             <div className="grid lg:grid-cols-2 gap-12">
-            {/* Imagem do Item */}
             <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -132,7 +285,6 @@ const ItemDetailPage: React.FC = () => {
                     
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
                     
-                    {/* Badge de raridade */}
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
                         <Badge 
                             {...getBadgeStyleFromColor(getRarityColor(item.rarity), "shadow-lg backdrop-blur-md text-xs px-2.5 py-0.5 md:text-base md:px-3 md:py-1")}
@@ -146,7 +298,6 @@ const ItemDetailPage: React.FC = () => {
                         )}
                     </div>
                     
-                    {/* Estrela se destacado */}
                     {item.highlighted && (
                         <div className="absolute top-4 right-4">
                             <Badge className="bg-gradient-to-r from-yellow-400 to-amber-500 text-black border-none font-bold shadow-lg backdrop-blur-md flex items-center gap-1">
@@ -158,9 +309,7 @@ const ItemDetailPage: React.FC = () => {
                 </CardContent>
                 </Card>
 
-                {/* Blocos auxiliares */}
                 <div className="mt-6 grid grid-cols-2 gap-3 md:gap-6">
-                {/* Estoque */}
                 <Card className="bg-black/20 border-white/10 backdrop-blur-sm rounded-xl">
                     <CardHeader className="p-3 pb-2 md:p-6 md:pb-2">
                     <h3 className="text-sm md:text-lg font-semibold text-foreground flex items-center gap-2">
@@ -186,7 +335,6 @@ const ItemDetailPage: React.FC = () => {
                     </CardContent>
                 </Card>
 
-                {/* Seletor de Quantidade */}
                 <Card className="bg-black/20 border-white/10 backdrop-blur-sm rounded-xl">
                     <CardHeader className="p-3 pb-2 md:p-6 md:pb-2">
                     <h3 className="text-sm md:text-lg font-semibold text-foreground">Quantidade</h3>
@@ -227,14 +375,12 @@ const ItemDetailPage: React.FC = () => {
                 </div>
             </motion.div>
 
-            {/* Informações do Item */}
             <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 }}
                 className="space-y-8"
             >
-                {/* Título e Preço */}
                 <div className="space-y-4">
                 <div>
                     <h1 className="text-4xl font-bold text-foreground mb-2 drop-shadow-sm">{item.name}</h1>
@@ -277,7 +423,6 @@ const ItemDetailPage: React.FC = () => {
                 </div>
                 </div>
 
-                {/* Botão de Compra */}
                 <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -314,7 +459,6 @@ const ItemDetailPage: React.FC = () => {
             </motion.div>
             </div>
             
-            {/* Seção de Itens Relacionados */}
             {getRelatedItems().length > 0 && (
             <motion.div
                 initial={{ opacity: 0, y: 50 }}
@@ -426,8 +570,8 @@ const ItemDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal do WhatsApp */}
-      {showWhatsAppModal && (
+      {/* Modal PIX Transparente */}
+      {showPixModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -435,37 +579,180 @@ const ItemDetailPage: React.FC = () => {
             exit={{ opacity: 0, scale: 0.9 }}
             className="bg-zinc-900 rounded-xl p-6 max-w-md w-full border border-white/10 shadow-2xl"
           >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">Finalizar Compra</h3>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">Pagamento Seguro</h3>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowWhatsAppModal(false)}
+                onClick={() => {
+                  setShowPixModal(false);
+                  if (paymentStatus === 'paid') {
+                    navigate('/perfil');
+                  }
+                }}
                 className="text-muted-foreground hover:text-white"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </Button>
             </div>
             
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/20">
-                <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-                </svg>
-              </div>
-              <p className="text-gray-300 mb-6">
-                Você será redirecionado para nosso WhatsApp para combinar o pagamento e entrega do item <strong>{item.name}</strong>.
-              </p>
-              
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setShowWhatsAppModal(false)} className="flex-1 border-white/10 hover:bg-white/5">
-                  Cancelar
+            {paymentStatus === 'idle' && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-400">
+                  Preencha os dados abaixo para gerar seu QR Code de pagamento PIX e iniciar o processo de entrega.
+                </p>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Seu CPF (só números)</label>
+                  <input
+                    type="text"
+                    value={customerCpf}
+                    onChange={(e) => setCustomerCpf(formatCpf(e.target.value))}
+                    placeholder="00011122233"
+                    className="w-full px-4 py-3 bg-black/40 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+                    maxLength={11}
+                  />
+                  <p className="text-[10px] text-zinc-400 mt-1.5">
+                    O CPF deve ser colocado apenas a primeira vez (primeira compra), e ficará salvo para as próximas.
+                  </p>
+                </div>
+                
+                <Button 
+                  onClick={handleGeneratePix} 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-2 py-6 text-lg"
+                  disabled={customerCpf.length !== 11}
+                >
+                  Gerar PIX
                 </Button>
-                <Button onClick={handleWhatsAppRedirect} className="flex-1 bg-green-600 hover:bg-green-700 text-white border-none">
-                  Continuar
+              </div>
+            )}
+
+            {paymentStatus === 'loading' && (
+              <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                <p className="text-gray-300 font-medium">Gerando pagamento no Mercado Pago...</p>
+              </div>
+            )}
+
+            {paymentStatus === 'waiting_payment' && (
+              <div className="flex flex-col items-center text-center space-y-6">
+                
+                {/* Informações do Item */}
+                <div className="w-full bg-black/30 border border-white/10 rounded-lg p-4 flex items-center gap-4 text-left">
+                  {item?.image_url ? (
+                    <img src={item.image_url} alt={item.name} className="w-16 h-16 object-cover rounded-md border border-white/10" />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-800 rounded-md flex items-center justify-center border border-white/10">
+                      <Package className="w-8 h-8 text-gray-500" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-white line-clamp-2">{item?.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Quantidade: {quantity}</p>
+                    <p className="text-lg font-bold text-green-400 mt-1">
+                      R$ {((item?.discount && item.discount > 0 ? (item?.price || 0) * (1 - item.discount / 100) : item?.price || 0) * quantity).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cronômetro Regressivo */}
+                <div className="w-full py-2 bg-red-500/10 border border-red-500/20 rounded-lg flex flex-col items-center justify-center">
+                  <div className="flex items-center gap-2 text-red-400 font-bold text-lg">
+                    <Clock className="w-5 h-5 animate-pulse" />
+                    <span>Tempo restante: {Math.floor(timeLeft / 60).toString().padStart(2, '0')}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                  </div>
+                  <p className="text-[10px] text-red-300/80 mt-1">Efetue o pagamento antes que o código expire.</p>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl shadow-lg shadow-white/5 mt-2">
+                  <img src={`data:image/jpeg;base64,${qrCodeBase64}`} alt="QR Code PIX" className="w-48 h-48" />
+                </div>
+                
+                <div className="space-y-2 w-full">
+                  <p className="text-gray-300 text-sm">Escaneie o QR Code ou use o Pix Copia e Cola:</p>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={qrCode} 
+                      className="flex-1 bg-black/50 border border-gray-700 rounded-lg py-2 px-3 text-xs text-gray-400 focus:outline-none overflow-hidden text-ellipsis"
+                    />
+                    <Button 
+                      variant="secondary" 
+                      onClick={copyPixCode}
+                      className="shrink-0 flex items-center gap-2"
+                    >
+                      {copied ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="w-full flex items-center justify-center p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mr-3" />
+                  <span className="text-sm text-blue-400">Aguardando confirmação do pagamento...</span>
+                </div>
+              </div>
+            )}
+
+            {paymentStatus === 'paid' && (
+              <div className="py-6 flex flex-col items-center text-center space-y-4">
+                <motion.div 
+                  initial={{ scale: 0 }} 
+                  animate={{ scale: 1 }} 
+                  className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-1"
+                >
+                  <CheckCircle2 className="w-8 h-8 text-green-500" />
+                </motion.div>
+                <h3 className="text-2xl font-bold text-white">Pagamento Aprovado!</h3>
+                <p className="text-gray-300 text-sm max-w-sm mx-auto">
+                  Por favor, digite seu **ID do Dota 2 (ID de Amigo)** para podermos te adicionar e efetuar o envio do seu item.
+                </p>
+
+                <div className="w-full text-left space-y-2 mt-2">
+                  <label className="block text-xs font-semibold text-zinc-400">ID do Dota 2</label>
+                  <input
+                    type="text"
+                    value={steamId}
+                    onChange={(e) => setSteamId(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Ex: 235480181"
+                    className="w-full px-4 py-3 bg-black/40 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+                  />
+                  <p className="text-[10px] text-zinc-500">
+                    Você pode encontrar esse ID dentro do Dota 2 na aba de amigos. Todas as informações do seu pedido estarão no seu perfil.
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={async () => {
+                    if (steamId.trim()) {
+                      try {
+                        if (user) {
+                          await supabase
+                            .from('users')
+                            .update({ steam_id: steamId })
+                            .eq('id', user.id);
+                        }
+                        if (orderId) {
+                          await supabase
+                            .from('orders')
+                            .update({ steam_id: steamId })
+                            .eq('id', orderId);
+                        }
+                        toast.success('ID do Dota 2 salvo com sucesso!');
+                      } catch (err) {
+                        console.error('Error saving Dota ID:', err);
+                      }
+                    }
+                    setShowPixModal(false);
+                    navigate('/perfil');
+                  }}
+                  className="w-full bg-white text-black hover:bg-gray-200 mt-4 py-6 text-base font-bold"
+                >
+                  Confirmar e Ver Perfil
                 </Button>
               </div>
-            </div>
+            )}
+
           </motion.div>
         </div>
       )}

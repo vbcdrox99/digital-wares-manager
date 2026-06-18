@@ -6,6 +6,8 @@ interface User {
   id: string;
   email: string;
   role: 'admin' | 'customer';
+  name?: string | null;
+  steam_id?: string | null;
 }
 
 interface AuthContextType {
@@ -45,7 +47,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const dataPromise = supabase
         .from('users')
-        .select('id, email, role')
+        .select('id, email, role, name, steam_id')
         .eq('id', userId)
         .single();
 

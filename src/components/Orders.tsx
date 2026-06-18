@@ -165,47 +165,38 @@ const Orders: React.FC<OrdersProps> = () => {
   }, []);
 
   // Funções de autocomplete para clientes memoizadas
-  const searchCustomers = useCallback((searchTerm: string, searchBy: 'name' | 'steam_id') => {
+  const searchCustomers = useCallback(async (searchTerm: string) => {
     if (!searchTerm.trim()) {
       setCustomerSuggestions([]);
       return;
     }
 
-    const filtered = customers.filter(customer => {
-      if (searchBy === 'name') {
-        return customer.name.toLowerCase().includes(searchTerm.toLowerCase());
-      } else {
-        return customer.steam_id.includes(searchTerm);
-      }
-    });
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+        .limit(10);
 
-    setCustomerSuggestions(filtered.slice(0, 5)); // Limita a 5 sugestões
-  }, [customers]);
+      if (error) throw error;
+      setCustomerSuggestions(data || []);
+    } catch (err) {
+      console.error('Erro ao buscar usuários:', err);
+    }
+  }, []);
 
   // Debounce para as buscas de clientes
   const debouncedCustomerName = useDebounce(customerName, 300);
-  const debouncedSteamId = useDebounce(steamId, 300);
 
   // Efeito para buscar clientes quando os valores debounced mudarem
   useEffect(() => {
     if (debouncedCustomerName && !selectedCustomer) {
-      searchCustomers(debouncedCustomerName, 'name');
+      searchCustomers(debouncedCustomerName);
       setShowCustomerSuggestions(true);
-      setShowSteamSuggestions(false);
     } else if (!debouncedCustomerName) {
       setShowCustomerSuggestions(false);
     }
   }, [debouncedCustomerName, selectedCustomer, searchCustomers]);
-
-  useEffect(() => {
-    if (debouncedSteamId && !selectedCustomer) {
-      searchCustomers(debouncedSteamId, 'steam_id');
-      setShowSteamSuggestions(true);
-      setShowCustomerSuggestions(false);
-    } else if (!debouncedSteamId) {
-      setShowSteamSuggestions(false);
-    }
-  }, [debouncedSteamId, selectedCustomer, searchCustomers]);
 
   const handleCustomerNameChange = useCallback((value: string) => {
     setCustomerName(value);
@@ -217,10 +208,10 @@ const Orders: React.FC<OrdersProps> = () => {
     setSelectedCustomer(null);
   }, []);
 
-  const selectCustomer = useCallback((customer: Customer) => {
+  const selectCustomer = useCallback((customer: any) => {
     setSelectedCustomer(customer);
-    setCustomerName(customer.name);
-    setSteamId(customer.steam_id);
+    setCustomerName(customer.name || customer.email || '');
+    setSteamId(customer.steam_id || '');
     setShowCustomerSuggestions(false);
     setShowSteamSuggestions(false);
   }, []);
@@ -252,24 +243,36 @@ const Orders: React.FC<OrdersProps> = () => {
     }
   };
 
-  const getOrCreateCustomer = async (): Promise<Customer | null> => {
-    if (selectedCustomer) {
-      return selectedCustomer;
-    }
-
-    if (!customerName.trim() || !steamId.trim()) {
-      toast({ title: 'Nome e Steam ID são obrigatórios', variant: 'destructive' });
+  const getOrCreateCustomer = async (): Promise<any | null> => {
+    if (!selectedCustomer) {
+      toast({ title: 'Por favor, selecione um cliente cadastrado', variant: 'destructive' });
       return null;
     }
 
-    // Verificar se já existe um cliente com esse Steam ID
-    const existingCustomer = customers.find(c => c.steam_id === steamId);
-    if (existingCustomer) {
-      return existingCustomer;
-    }
+    try {
+      // Procurar se já existe o registro correspondente na tabela customers
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('steam_id', selectedCustomer.steam_id || '')
+        .maybeSingle();
 
-    // Criar novo cliente
-    return await createNewCustomer(customerName.trim(), steamId.trim());
+      if (existingCustomer) {
+        return existingCustomer;
+      }
+
+      // Se não existir, criar um novo registro na tabela customers para satisfazer a foreign key
+      const newCustomer = await customersService.create({
+        name: selectedCustomer.name || selectedCustomer.email || 'Cliente',
+        steam_id: selectedCustomer.steam_id || ''
+      });
+      
+      return newCustomer;
+    } catch (error) {
+      console.error('Erro ao obter ou criar cliente na tabela customers:', error);
+      toast({ title: 'Erro ao vincular cliente', variant: 'destructive' });
+      return null;
+    }
   };
 
   const calculateAvailableStock = (item: Item) => {
@@ -591,7 +594,7 @@ const Orders: React.FC<OrdersProps> = () => {
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <div>
                     <div className="font-medium text-green-700 dark:text-green-300">Cliente Selecionado</div>
-                    <div className="text-sm text-green-600 dark:text-green-400">{selectedCustomer.name} - {selectedCustomer.steam_id}</div>
+                    <div className="text-sm text-green-600 dark:text-green-400">{selectedCustomer.name || selectedCustomer.email} - Dota ID: {selectedCustomer.steam_id || 'Não informado'}</div>
                   </div>
                 </div>
                 <Button
@@ -604,15 +607,14 @@ const Orders: React.FC<OrdersProps> = () => {
                 </Button>
               </div>
             )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
-                <Label htmlFor="customer-name">Nome do Cliente</Label>
+                <Label htmlFor="customer-name">Buscar Cliente Cadastrado (digite para pesquisar)</Label>
                 <Input
                   id="customer-name"
                   value={customerName}
                   onChange={(e) => handleCustomerNameChange(e.target.value)}
-                  placeholder={selectedCustomer ? "Cliente selecionado" : "Digite o nome do cliente..."}
+                  placeholder={selectedCustomer ? (selectedCustomer.name || selectedCustomer.email) : "Digite o nome ou email para buscar..."}
                   className={`bg-secondary/50 ${selectedCustomer ? 'border-green-500/50' : ''}`}
                   onFocus={() => customerName && setShowCustomerSuggestions(true)}
                   onBlur={() => setTimeout(() => setShowCustomerSuggestions(false), 200)}
@@ -626,8 +628,8 @@ const Orders: React.FC<OrdersProps> = () => {
                         className="px-3 py-2 hover:bg-secondary cursor-pointer border-b border-border/50 last:border-b-0"
                         onClick={() => selectCustomer(customer)}
                       >
-                        <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-muted-foreground">{customer.steam_id}</div>
+                        <div className="font-medium">{customer.name || 'Sem nome'}</div>
+                        <div className="text-xs text-muted-foreground">{customer.email} • Dota ID: {customer.steam_id || 'Não informado'}</div>
                       </div>
                     ))}
                   </div>
@@ -635,31 +637,15 @@ const Orders: React.FC<OrdersProps> = () => {
               </div>
               
               <div className="relative">
-                <Label htmlFor="steam-id">Steam ID</Label>
+                <Label htmlFor="steam-id">Dota ID (ID de Amigo)</Label>
                 <Input
                   id="steam-id"
                   value={steamId}
-                  onChange={(e) => handleSteamIdChange(e.target.value)}
-                  placeholder={selectedCustomer ? "Cliente selecionado" : "Digite o Steam ID..."}
-                  className={`bg-secondary/50 ${selectedCustomer ? 'border-green-500/50' : ''}`}
-                  onFocus={() => steamId && setShowSteamSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSteamSuggestions(false), 200)}
-                  disabled={!!selectedCustomer}
+                  readOnly
+                  placeholder={selectedCustomer ? steamId : "Selecione um cliente acima..."}
+                  className="bg-secondary/20 cursor-not-allowed border-zinc-800 text-zinc-500"
+                  disabled
                 />
-                {showSteamSuggestions && customerSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                    {customerSuggestions.map((customer) => (
-                      <div
-                        key={customer.id}
-                        className="px-3 py-2 hover:bg-secondary cursor-pointer border-b border-border/50 last:border-b-0"
-                        onClick={() => selectCustomer(customer)}
-                      >
-                        <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-muted-foreground">{customer.steam_id}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
             
@@ -823,7 +809,7 @@ const Orders: React.FC<OrdersProps> = () => {
               <div className="flex justify-end">
                 <Button 
                   onClick={handleCreateOrder}
-                  disabled={loading || cart.length === 0 || (!selectedCustomer && (!customerName || !steamId))}
+                  disabled={loading || cart.length === 0 || !selectedCustomer}
                   className="bg-gradient-gaming w-full sm:w-auto"
                 >
                   <Check className="h-4 w-4 mr-2" />
