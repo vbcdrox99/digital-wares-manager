@@ -3,9 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { History, Settings, Monitor, Play, Copy, Check, X, Volume2, Save, BadgeDollarSign, MessageSquare, Music, Target, Percent, Clock, Camera } from "lucide-react";
+import { History, Settings, Monitor, Play, Copy, Check, X, Volume2, Save, BadgeDollarSign, MessageSquare, Music, Target, Percent, Clock, Camera, CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface Donation {
   id: string;
@@ -938,7 +943,11 @@ export default function DotaPixAdmin() {
                     type="number"
                     min="5"
                     value={settings.goal_target}
-                    onChange={(e) => setSettings({ ...settings, goal_target: parseFloat(e.target.value) || 100 })}
+                    onChange={(e) => setSettings({ 
+                      ...settings, 
+                      goal_target: parseFloat(e.target.value) || 100,
+                      goal_start_date: new Date().toISOString()
+                    })}
                     className="bg-black/40 border-white/10 text-white"
                   />
                 </div>
@@ -949,19 +958,50 @@ export default function DotaPixAdmin() {
                     type="number"
                     min="0"
                     value={settings.goal_initial_value || 0}
-                    onChange={(e) => setSettings({ ...settings, goal_initial_value: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setSettings({ 
+                      ...settings, 
+                      goal_initial_value: parseFloat(e.target.value) || 0,
+                      goal_start_date: new Date().toISOString()
+                    })}
                     className="bg-black/40 border-white/10 text-white"
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 flex flex-col">
                   <label className="text-xs text-gray-400 font-medium">Data de Encerramento (Opcional)</label>
-                  <Input
-                    type="datetime-local"
-                    value={settings.goal_end_date ? settings.goal_end_date.substring(0, 16) : ''}
-                    onChange={(e) => setSettings({ ...settings, goal_end_date: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                    className="bg-black/40 border-white/10 text-white"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-black/40 border-white/10 text-white",
+                          !settings.goal_end_date && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {settings.goal_end_date ? (
+                          format(new Date(settings.goal_end_date), "PPP", { locale: ptBR })
+                        ) : (
+                          <span>Selecione uma data</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-neutral-900 border-white/10 text-white" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={settings.goal_end_date ? new Date(settings.goal_end_date) : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            date.setHours(23, 59, 59, 999);
+                            setSettings({ ...settings, goal_end_date: date.toISOString() });
+                          } else {
+                            setSettings({ ...settings, goal_end_date: null });
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-1">
