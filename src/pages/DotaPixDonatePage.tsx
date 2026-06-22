@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Mic, PenTool, Loader2, Copy, CheckCircle, Volume2, ChevronDown, Check, Flame, TrendingUp, Tv, Activity, Heart } from "lucide-react";
+import { Sparkles, Mic, PenTool, Loader2, Copy, CheckCircle, Volume2, ChevronDown, Check, Flame, TrendingUp, Tv, Activity, Heart, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -85,6 +85,70 @@ export default function DotaPixDonatePage() {
     enabled: boolean;
   } | null>(null);
 
+  // Profile image and settings row ID
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  
+  // YouTube Live Status states
+  const [isLive, setIsLive] = useState<boolean | null>(null);
+  const [ytSettings, setYtSettings] = useState<{ key: string; channelId: string; enabled: boolean } | null>(null);
+
+  // Handle Profile Upload
+  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `profile_${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      toast.info("Enviando foto de perfil...");
+
+      const { error: uploadError } = await supabase.storage
+        .from('dotapix-audios')
+        .upload(filePath, file, {
+          contentType: file.type,
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('dotapix-audios')
+        .getPublicUrl(filePath);
+
+      const publicUrl = data.publicUrl;
+      setProfileImageUrl(publicUrl);
+
+      // Save to database settings table
+      if (settingsId) {
+        const { error: updateError } = await supabase
+          .from('dotapix_settings')
+          .update({ profile_image_url: publicUrl })
+          .eq('id', settingsId);
+          
+        if (updateError) throw updateError;
+        toast.success("Foto de perfil atualizada!");
+      } else {
+        // Fallback insert
+        const { data: newSettings, error: insertError } = await supabase
+          .from('dotapix_settings')
+          .insert({ profile_image_url: publicUrl })
+          .select()
+          .single();
+          
+        if (insertError) throw insertError;
+        setSettingsId(newSettings.id);
+        toast.success("Foto de perfil salva!");
+      }
+    } catch (err: any) {
+      console.error("Erro ao subir foto de perfil:", err);
+      toast.error("Erro ao atualizar foto de perfil: " + err.message);
+    }
+  };
+
   // Load custom premium fonts
   useEffect(() => {
     const link = document.createElement('link');
@@ -108,6 +172,9 @@ export default function DotaPixDonatePage() {
       console.log("DotaPixDonatePage - Loaded settings:", settingsData, "error:", settingsError);
       
       if (!settingsError && settingsData) {
+        setSettingsId(settingsData.id);
+        setProfileImageUrl(settingsData.profile_image_url);
+
         setSettings({
           min_donation: Number(settingsData.min_donation) || 3.00,
           min_donation_custom_voice: Number(settingsData.min_donation_custom_voice) || 5.00,
@@ -139,10 +206,48 @@ export default function DotaPixDonatePage() {
             });
           }
         }
+
+        // Set YouTube settings if enabled
+        if (settingsData.youtube_integration_enabled && settingsData.youtube_api_key && settingsData.youtube_channel_id) {
+          setYtSettings({
+            key: settingsData.youtube_api_key,
+            channelId: settingsData.youtube_channel_id,
+            enabled: true
+          });
+        }
       }
     };
     fetchData();
   }, []);
+
+  // Poll YouTube Live Status
+  useEffect(() => {
+    if (!ytSettings || !ytSettings.enabled || !ytSettings.key || !ytSettings.channelId) {
+      setIsLive(false);
+      return;
+    }
+
+    const checkYouTubeLiveStatus = async () => {
+      try {
+        console.log("YouTube - Checking if channel is live...");
+        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${ytSettings.channelId}&type=video&eventType=live&key=${ytSettings.key}`;
+        const res = await fetch(searchUrl);
+        if (!res.ok) throw new Error("YouTube API returned error");
+        const searchData = await res.json();
+        
+        const live = searchData.items && searchData.items.length > 0;
+        setIsLive(live);
+        console.log("YouTube - Live status checked:", live);
+      } catch (err) {
+        console.error("YouTube Live check error:", err);
+      }
+    };
+
+    checkYouTubeLiveStatus();
+    // Check status every 2 minutes (120000ms)
+    const interval = setInterval(checkYouTubeLiveStatus, 120000);
+    return () => clearInterval(interval);
+  }, [ytSettings]);
 
   // Realtime subscription for payment confirmation
   useEffect(() => {
@@ -297,13 +402,13 @@ export default function DotaPixDonatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#040406] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+    <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
       
       {/* Styles for dynamic drift animations */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes drift {
           0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
-          50% { transform: translate(-45%, -55%) rotate(180deg) scale(1.1); }
+          50% { transform: translate(-45%, -55%) rotate(180deg) scale(1.15); }
           100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
         }
         .animate-drift-slow {
@@ -314,151 +419,107 @@ export default function DotaPixDonatePage() {
         }
       `}} />
 
-      {/* Modern Dynamic Background Orbs */}
-      <div className="absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-[#1a1438]/15 rounded-full blur-[120px] pointer-events-none animate-drift-slow" />
-      <div className="absolute bottom-[10%] right-[10%] w-[500px] h-[500px] bg-[#082214]/15 rounded-full blur-[120px] pointer-events-none animate-drift-slower" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.008)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.008)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-50" />
-
-      {/* Premium Dashboard Header */}
-      <div className="w-full max-w-4xl flex items-center justify-between mb-6 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/[0.03] border border-white/[0.08] rounded-full overflow-hidden p-0.5 shadow-lg">
-            <div className="w-full h-full rounded-full overflow-hidden bg-[#14141c]">
-              <img 
-                src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=64&h=64&fit=crop" 
-                alt="Logo" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-xs font-bold uppercase tracking-widest font-mono text-white">DotaPlay</h1>
-            <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider font-mono">Live Donate System</p>
-          </div>
-        </div>
-        
-        {/* Live Indicator Pill */}
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-neutral-900/60 border border-white/[0.04] rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34c759] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#34c759]"></span>
-          </span>
-          <span className="text-[8px] text-[#34c759] font-black uppercase tracking-wider font-mono">Live on Stream</span>
-        </div>
-      </div>
+      {/* Modern Dynamic Light Background Orbs & Gradients */}
+      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-indigo-200/40 via-purple-100/35 to-transparent rounded-full blur-[140px] pointer-events-none animate-drift-slow" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-emerald-100/40 via-teal-50/30 to-transparent rounded-full blur-[140px] pointer-events-none animate-drift-slower" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.015)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
 
       {/* Grid Dashboard Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full relative z-10">
         
-        {/* LEFT COLUMN: Preview & Goal status */}
+        {/* LEFT COLUMN: Streamer Profile & Goal status */}
         <div className="space-y-6 flex flex-col justify-start">
           
-          {/* Capsule 1: Live Preview Widget */}
-          <div className="bg-black border border-white/[0.05] rounded-[2rem] p-5 space-y-4 shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-white/[0.08]">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.005)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.005)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+          <div className="bg-white border border-neutral-200/60 rounded-[2rem] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative overflow-hidden transition-all duration-300 hover:border-neutral-300 flex flex-col justify-between">
+            {/* Background Grid Pattern */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.005)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.005)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
             
-            <div className="flex justify-between items-center relative z-10">
-              <div className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest font-mono flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-[#34c759]" /> Widget Live Preview
-              </div>
-              <span className="text-[8px] bg-neutral-900 text-neutral-500 font-mono px-2.5 py-0.5 rounded-full border border-white/5 uppercase">Real-Time</span>
-            </div>
-
-            {/* Apple-style Gradient Progress Bar (Net Energy / kcal style) */}
-            <div className="space-y-1.5 relative z-10 pt-1">
-              <div className="flex justify-between text-[8px] text-neutral-400 font-mono font-bold uppercase tracking-wider">
-                <span>Nível do Alerta</span>
-                <span className="text-[#34c759]">R$ {amount}</span>
-              </div>
-              <div className="h-3.5 w-full bg-neutral-950 rounded-full overflow-hidden relative border border-white/[0.04]">
-                <div 
-                  className="h-full bg-gradient-to-r from-[#ff5e3a] via-[#ffda44] to-[#007aff] transition-all duration-500 rounded-full relative" 
-                  style={{ width: `${Math.min(100, Math.max(15, (getAmountNumber() / 50) * 100))}%` }} 
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent h-1/2" />
-                </div>
-                <div className="absolute inset-0 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.8)] rounded-full pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Content capsule */}
-            <div className="space-y-2 relative z-10 pt-1">
-              <div className="bg-[#0e0e12] border border-white/[0.04] rounded-2xl p-3 flex justify-between items-center shadow-lg">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-[#34c759] rounded-full animate-pulse shadow-sm shadow-[#34c759]/50" />
-                  <div className="font-bold text-xs text-white tracking-wide uppercase font-mono">
-                    {donorName.trim() ? donorName : 'Doador'}
+            {/* Streamer Profile Section */}
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="relative group w-12 h-12 bg-white border border-neutral-200 shadow-md rounded-full overflow-hidden p-0.5 cursor-pointer shrink-0">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  id="profile-upload" 
+                  onChange={handleProfileUpload}
+                />
+                <label htmlFor="profile-upload" className="w-full h-full rounded-full overflow-hidden bg-slate-100 block relative cursor-pointer">
+                  <img 
+                    src={profileImageUrl || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=128&h=128&fit=crop"} 
+                    alt="Logo Dota Play Brasil" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
+                    <Camera className="w-4 h-4 text-white" />
                   </div>
-                </div>
-                <div className="bg-white text-black font-extrabold text-[10px] px-2.5 py-0.5 rounded-full font-mono">
-                  R$ {amount}
-                </div>
+                </label>
               </div>
-
-              <div className="bg-[#0e0e12] border border-white/[0.04] rounded-2xl p-3 min-h-[48px] flex items-center justify-center text-center shadow-lg">
-                {messageType === 'text' ? (
-                  <p className="text-[11px] text-neutral-300 italic font-medium leading-relaxed">
-                    "{message.trim() ? message : 'Sua mensagem aparecerá aqui...'}"
-                  </p>
-                ) : (
-                  <div className="flex flex-col items-center space-y-1.5 w-full">
-                    <div className="flex items-center gap-1.5 h-6">
-                      <div className="w-1 h-3 bg-gradient-to-t from-[#ff5e3a] to-[#ffda44] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-1 h-5 bg-gradient-to-t from-[#ffda44] to-[#007aff] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-1 h-2 bg-[#ff5e3a] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      <div className="w-1 h-4 bg-gradient-to-t from-[#ff5e3a] to-[#007aff] rounded-full animate-bounce" style={{ animationDelay: '450ms' }} />
-                      <div className="w-1 h-3 bg-[#007aff] rounded-full animate-bounce" style={{ animationDelay: '600ms' }} />
-                    </div>
-                    <span className="text-[8px] text-neutral-500 font-bold tracking-wider font-mono">ALERTA DE AUDIO SELECIONADO</span>
-                  </div>
-                )}
+              <div className="text-left flex-1 min-w-0">
+                <h1 className="text-base font-black text-neutral-900 tracking-tight truncate">Dota Play Brasil</h1>
+                <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest font-mono">Sistema de Apoio Oficial</p>
               </div>
-            </div>
-          </div>
-
-          {/* Capsule 2: Meta da Stream Progress Widget (Inspired by Cybertruck / Sunrise) */}
-          {goal && goal.enabled ? (
-            <div className="bg-black border border-white/[0.05] rounded-[2rem] p-5 space-y-4 shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-white/[0.08]">
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.005)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.005)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
               
-              <div className="flex justify-between items-center relative z-10">
-                <div className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest font-mono flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-[#00f5a0]" /> Progresso da Meta
-                </div>
-                <span className="text-[8px] text-neutral-500 font-mono tracking-wider uppercase">{goal.title}</span>
-              </div>
-
-              <div className="flex items-end justify-between relative z-10 pt-1">
-                <div className="space-y-0.5">
-                  <span className="text-3xl font-black font-mono tracking-tighter text-white">
-                    {Math.round((goal.current / goal.target) * 100)}%
-                  </span>
-                  <p className="text-[8px] text-neutral-500 uppercase tracking-widest font-black font-mono">Completo</p>
-                </div>
-                <div className="text-right font-mono space-y-0.5">
-                  <span className="text-xs text-neutral-300 font-bold">R$ {goal.current}</span>
-                  <span className="text-[9px] text-neutral-600 block">de R$ {goal.target}</span>
-                </div>
-              </div>
-
-              {/* Glowing progress line */}
-              <div className="h-3 w-full bg-neutral-950 rounded-full overflow-hidden relative border border-white/[0.04] z-10">
-                <div 
-                  className="h-full bg-gradient-to-r from-[#00f5a0] to-[#00d9f5] transition-all duration-500 rounded-full relative" 
-                  style={{ width: `${Math.min(100, (goal.current / goal.target) * 100)}%` }} 
-                >
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent h-1/2" />
-                </div>
-                <div className="absolute inset-0 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.8)] rounded-full pointer-events-none" />
+              {/* Live Indicator Pill */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-neutral-200/80 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.01)] shrink-0">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isLive ? 'bg-red-500' : 'bg-neutral-400'} opacity-75`}></span>
+                  <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isLive ? 'bg-red-500' : 'bg-neutral-400'}`}></span>
+                </span>
+                <span className={`text-[8px] font-black uppercase tracking-wider font-mono ${isLive ? 'text-red-600' : 'text-neutral-500'}`}>
+                  {isLive ? 'Ao Vivo' : 'Offline'}
+                </span>
               </div>
             </div>
-          ) : (
-            <div className="bg-black border border-white/[0.04] rounded-[2rem] p-5 shadow-2xl text-center space-y-2">
-              <Heart className="w-6 h-6 text-neutral-700 mx-auto" />
-              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider font-mono">DotaPlay Live Stream</h3>
-              <p className="text-[10px] text-neutral-500 max-w-[240px] mx-auto leading-normal">Seu apoio ajuda a manter o canal online com lives diárias.</p>
+
+            {/* Separator line */}
+            <div className="border-t border-neutral-100 my-4 relative z-10" />
+
+            {/* Goal Progress Section */}
+            <div className="relative z-10 space-y-3 pb-1">
+              {goal && goal.enabled ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <div className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest font-mono flex items-center gap-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-[#10b981]" /> Progresso da Meta
+                    </div>
+                    <span className="text-[8px] text-neutral-400 font-mono tracking-wider uppercase">{goal.title}</span>
+                  </div>
+
+                  <div className="flex items-end justify-between pt-0.5">
+                    <div className="space-y-0.5">
+                      <span className="text-2xl font-black font-mono tracking-tighter text-neutral-800">
+                        {Math.round((goal.current / goal.target) * 100)}%
+                      </span>
+                      <p className="text-[8px] text-neutral-400 uppercase tracking-widest font-black font-mono">Completo</p>
+                    </div>
+                    <div className="text-right font-mono space-y-0.5">
+                      <span className="text-xs text-neutral-700 font-bold">R$ {goal.current}</span>
+                      <span className="text-[9px] text-neutral-400 block">de R$ {goal.target}</span>
+                    </div>
+                  </div>
+
+                  {/* Glowing progress line */}
+                  <div className="h-2.5 w-full bg-neutral-100 rounded-full overflow-hidden relative border border-neutral-200/30">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#10b981] to-[#06b6d4] transition-all duration-500 rounded-full relative" 
+                      style={{ width: `${Math.min(100, (goal.current / goal.target) * 100)}%` }} 
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent h-1/2" />
+                    </div>
+                    <div className="absolute inset-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] rounded-full pointer-events-none" />
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-1 space-y-1">
+                  <Heart className="w-5 h-5 text-neutral-300 mx-auto" />
+                  <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider font-mono">DotaPlay Live Stream</h3>
+                  <p className="text-[9px] text-neutral-400 leading-normal">Seu apoio ajuda a manter o canal online com lives diárias.</p>
+                </div>
+              )}
             </div>
-          )}
+
+          </div>
 
         </div>
 
@@ -467,16 +528,16 @@ export default function DotaPixDonatePage() {
           
           {paymentQrCode ? (
             /* Capsule 4: Pix QR Code Widget */
-            <div className="bg-black border border-white/[0.05] rounded-[2rem] p-6 space-y-6 shadow-2xl relative transition-all duration-300">
+            <div className="bg-white border border-neutral-200/60 rounded-[2rem] p-6 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative transition-all duration-300">
               
               {paymentStatus === 'approved' ? (
                 <div className="flex flex-col items-center text-center space-y-4 py-8">
-                  <div className="w-16 h-16 bg-[#34c759]/10 rounded-full flex items-center justify-center border border-[#34c759]/20 shadow-lg shadow-[#34c759]/10">
-                    <CheckCircle className="w-8 h-8 text-[#34c759]" />
+                  <div className="w-16 h-16 bg-[#10b981]/10 rounded-full flex items-center justify-center border border-[#10b981]/20 shadow-lg shadow-[#10b981]/5">
+                    <CheckCircle className="w-8 h-8 text-[#10b981]" />
                   </div>
-                  <h2 className="text-base font-bold text-white tracking-tight uppercase font-mono">Doação Recebida!</h2>
-                  <p className="text-neutral-400 text-xs leading-relaxed max-w-[260px]">
-                    Muito obrigado, <span className="text-[#34c759] font-bold">{donorName}</span>! Seu apoio foi computado e o alerta foi enviado para o streaming.
+                  <h2 className="text-base font-bold text-neutral-800 tracking-tight uppercase font-mono">Doação Recebida!</h2>
+                  <p className="text-neutral-500 text-xs leading-relaxed max-w-[260px]">
+                    Muito obrigado, <span className="text-[#10b981] font-bold">{donorName}</span>! Seu apoio foi computado e o alerta foi enviado para o streaming.
                   </p>
                   <Button 
                     onClick={() => {
@@ -488,7 +549,7 @@ export default function DotaPixDonatePage() {
                       setAudioBlob(null);
                       setAudioUrl(null);
                     }}
-                    className="bg-white hover:bg-neutral-200 text-black font-extrabold rounded-full px-6 py-2.5 border-none text-[10px] tracking-widest uppercase transition-all duration-200"
+                    className="bg-neutral-900 hover:bg-neutral-800 text-white font-extrabold rounded-full px-6 py-2.5 border-none text-[10px] tracking-widest uppercase transition-all duration-200"
                   >
                     Novo Envio
                   </Button>
@@ -496,12 +557,12 @@ export default function DotaPixDonatePage() {
               ) : (
                 <div className="w-full flex flex-col items-center space-y-5">
                   <div className="text-center space-y-1">
-                    <h3 className="font-bold text-white text-xs uppercase tracking-wider font-mono">QR CODE DE PAGAMENTO</h3>
-                    <p className="text-[9px] text-neutral-500 uppercase tracking-widest font-mono">Leia no app do seu banco</p>
+                    <h3 className="font-bold text-neutral-800 text-xs uppercase tracking-wider font-mono">QR CODE DE PAGAMENTO</h3>
+                    <p className="text-[9px] text-neutral-400 uppercase tracking-widest font-mono">Leia no app do seu banco</p>
                   </div>
                   
-                  <div className="bg-[#020204] border border-white/[0.06] p-4.5 rounded-[2rem] shadow-inner relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:10px_10px]" />
+                  <div className="bg-neutral-50 border border-neutral-200/60 p-4.5 rounded-[2rem] shadow-inner relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.01)_1px,transparent_1px)] bg-[size:10px_10px]" />
                     <img 
                       src={`data:image/png;base64,${paymentQrCode}`} 
                       alt="Pix QR Code" 
@@ -509,20 +570,20 @@ export default function DotaPixDonatePage() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-center gap-2 text-[#34c759] text-xs font-semibold animate-pulse font-mono">
+                  <div className="flex items-center justify-center gap-2 text-[#10b981] text-xs font-semibold animate-pulse font-mono">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span className="text-[10px] tracking-wider">AGUARDANDO CONFIRMAÇÃO...</span>
                   </div>
 
                   <div className="w-full space-y-1.5">
-                    <label className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider px-1">Pix Copia e Cola</label>
+                    <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider px-1">Pix Copia e Cola</label>
                     <div className="flex gap-2">
                       <Input 
                         value={paymentCopyPaste || ''} 
                         readOnly 
-                        className="bg-neutral-950 border-white/[0.04] text-white text-xs rounded-xl h-11 shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)]"
+                        className="bg-neutral-50 border-neutral-200 text-neutral-800 text-xs rounded-xl h-11 shadow-inner"
                       />
-                      <Button onClick={copyToClipboard} size="icon" className="bg-white hover:bg-neutral-200 text-black rounded-xl h-11 w-11 shrink-0 border-none transition-all">
+                      <Button onClick={copyToClipboard} size="icon" className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl h-11 w-11 shrink-0 border-none transition-all">
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
@@ -534,7 +595,7 @@ export default function DotaPixDonatePage() {
                       setPaymentCopyPaste(null);
                       setDonationId(null);
                     }}
-                    className="text-neutral-500 hover:text-neutral-300 text-xs mt-2"
+                    className="text-neutral-400 hover:text-neutral-600 text-xs mt-2"
                   >
                     Voltar
                   </Button>
@@ -543,21 +604,21 @@ export default function DotaPixDonatePage() {
             </div>
           ) : (
             /* Capsule 3: Form Card */
-            <div className="bg-black border border-white/[0.05] rounded-[2rem] p-6 space-y-5 shadow-2xl relative transition-all duration-300 hover:border-white/[0.08]">
+            <div className="bg-white border border-neutral-200/60 rounded-[2rem] p-6 space-y-5 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative transition-all duration-300 hover:border-neutral-300">
               
               {/* Nome de usuário */}
               <div className="space-y-1.5">
-                <label className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest px-1 font-mono">Seu nome de usuário</label>
+                <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest px-1 font-mono">Seu nome de usuário</label>
                 <Input
                   placeholder="Ex: GamerPro"
                   value={donorName}
                   onChange={(e) => setDonorName(e.target.value)}
-                  className="bg-neutral-950 border-white/[0.04] text-white placeholder-neutral-700 rounded-2xl focus:ring-1 focus:ring-white/20 focus:border-white/20 h-11 px-4 text-xs shadow-[inset_0_2.5px_4px_rgba(0,0,0,0.9)]"
+                  className="bg-slate-50 border-neutral-200 text-neutral-800 placeholder-neutral-400 rounded-2xl focus:ring-1 focus:ring-black/10 focus:border-neutral-300 h-11 px-4 text-xs shadow-inner"
                 />
               </div>
 
               {/* Abas Enviar Mensagem / Gravar Áudio - Pill style */}
-              <div className="grid grid-cols-2 gap-1.5 bg-neutral-950 p-1 rounded-2xl border border-white/[0.04] shadow-[inset_0_2px_4px_rgba(0,0,0,0.7)]">
+              <div className="grid grid-cols-2 gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-neutral-200/50 shadow-inner">
                 <button
                   type="button"
                   onClick={() => {
@@ -570,8 +631,8 @@ export default function DotaPixDonatePage() {
                   }}
                   className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold tracking-widest uppercase transition-all duration-300 font-mono ${
                     messageType === 'text' 
-                      ? 'bg-neutral-900 text-white shadow-lg border border-white/[0.05]' 
-                      : 'text-neutral-500 hover:text-neutral-300'
+                      ? 'bg-white text-neutral-800 shadow-md border border-neutral-200/30' 
+                      : 'text-neutral-400 hover:text-neutral-600'
                   }`}
                 >
                   <PenTool className="w-3.5 h-3.5" />
@@ -589,8 +650,8 @@ export default function DotaPixDonatePage() {
                   }}
                   className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold tracking-widest uppercase transition-all duration-300 font-mono ${
                     messageType === 'audio' 
-                      ? 'bg-neutral-900 text-white shadow-lg border border-white/[0.05]' 
-                      : 'text-neutral-500 hover:text-neutral-300'
+                      ? 'bg-white text-neutral-800 shadow-md border border-neutral-200/30' 
+                      : 'text-neutral-400 hover:text-neutral-600'
                   }`}
                 >
                   <Mic className="w-3.5 h-3.5" />
@@ -608,26 +669,26 @@ export default function DotaPixDonatePage() {
                       onChange={(e) => setMessage(e.target.value.substring(0, 200))}
                       maxLength={200}
                       rows={3}
-                      className="w-full bg-neutral-950 border border-white/[0.04] rounded-2xl px-4 py-3 text-xs text-white placeholder-neutral-700 focus:outline-none focus:ring-1 focus:ring-white/20 focus:border-white/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.9)] resize-none"
+                      className="w-full bg-slate-50 border border-neutral-200 rounded-2xl px-4 py-3 text-xs text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black/10 focus:border-neutral-300 shadow-inner resize-none"
                     />
-                    <div className="absolute right-3.5 bottom-3 text-neutral-600 text-[9px] font-bold font-mono">
+                    <div className="absolute right-3.5 bottom-3 text-neutral-400 text-[9px] font-bold font-mono">
                       {message.length}/200
                     </div>
                   </div>
 
                   {/* Seleção de Voz - Pill type select */}
                   <div className="space-y-1.5 relative">
-                    <label className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest px-1 font-mono">Voz para o Alerta</label>
+                    <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest px-1 font-mono">Voz para o Alerta</label>
                     
                     {/* Custom select trigger button */}
                     <button
                       type="button"
                       onClick={() => setShowVoiceMenu(!showVoiceMenu)}
-                      className="w-full bg-neutral-950 hover:bg-[#121218]/20 border border-white/[0.04] rounded-2xl px-4 py-3 text-xs text-white flex items-center justify-between transition-all focus:outline-none focus:ring-1 focus:ring-white/20 shadow-[inset_0_1.5px_2px_rgba(0,0,0,0.9)] font-mono"
+                      className="w-full bg-slate-50 hover:bg-slate-100/50 border border-neutral-200 rounded-2xl px-4 py-3 text-xs text-neutral-800 flex items-center justify-between transition-all focus:outline-none focus:ring-1 focus:ring-black/10 shadow-inner font-mono"
                     >
                       <span className="flex items-center gap-2">
-                        <Volume2 className="w-3.5 h-3.5 text-neutral-500" />
-                        <span className="font-extrabold text-white">
+                        <Volume2 className="w-3.5 h-3.5 text-neutral-400" />
+                        <span className="font-extrabold text-neutral-800">
                           {voiceId === 'br_001' ? 'Voz padrão' : 
                            voiceId === 'pt_male_bueno' ? 'Galvão Bueno' :
                            voiceId === 'bp_female_ivete' ? 'Ivete Sangalo' :
@@ -635,7 +696,7 @@ export default function DotaPixDonatePage() {
                            settings?.fish_voices?.find(v => v.id === voiceId)?.name || 'Voz padrão'}
                         </span>
                       </span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-neutral-500 transition-transform duration-200 ${showVoiceMenu ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-200 ${showVoiceMenu ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Custom select dropdown */}
@@ -643,7 +704,7 @@ export default function DotaPixDonatePage() {
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowVoiceMenu(false)} />
                         
-                        <div className="absolute left-0 right-0 z-50 mt-2 bg-[#09090b] border border-white/[0.08] rounded-[1.8rem] p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.9)] max-h-60 overflow-y-auto space-y-1 scrollbar-none animate-in fade-in-50 slide-in-from-top-1 duration-150">
+                        <div className="absolute left-0 right-0 z-50 mt-2 bg-white border border-neutral-200 rounded-[1.8rem] p-2.5 shadow-[0_15px_40px_rgba(0,0,0,0.08)] max-h-60 overflow-y-auto space-y-1 scrollbar-none animate-in fade-in-50 slide-in-from-top-1 duration-150">
                           {[
                             { id: 'br_001', name: 'Voz padrão', description: 'Tradicional' },
                             { id: 'pt_male_bueno', name: 'Galvão Bueno', description: 'Narrador' },
@@ -671,8 +732,8 @@ export default function DotaPixDonatePage() {
                                 }}
                                 className={`w-full flex items-center justify-between p-2.5 rounded-[1.2rem] transition-all text-left ${
                                   isSelected 
-                                    ? 'bg-neutral-900 text-[#34c759] border border-white/[0.04]' 
-                                    : 'hover:bg-white/[0.01] border border-transparent text-neutral-400 hover:text-white'
+                                    ? 'bg-slate-50 text-[#10b981] border border-neutral-200/50' 
+                                    : 'hover:bg-slate-50 border border-transparent text-neutral-500 hover:text-neutral-800'
                                 }`}
                               >
                                 <div className="space-y-0.5">
@@ -680,15 +741,15 @@ export default function DotaPixDonatePage() {
                                     <span className="font-bold text-xs">{voice.name}</span>
                                     <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${
                                       isCustomVoice 
-                                        ? 'bg-blue-500/10 text-blue-400' 
-                                        : 'bg-[#34c759]/10 text-[#34c759]'
+                                        ? 'bg-blue-50 text-blue-600' 
+                                        : 'bg-[#10b981]/10 text-[#059669]'
                                     }`}>
                                       Min: R$ {minVal?.toFixed(2)}
                                     </span>
                                   </div>
-                                  <p className="text-[9px] text-neutral-500">{voice.description}</p>
+                                  <p className="text-[9px] text-neutral-400">{voice.description}</p>
                                 </div>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-[#34c759]" />}
+                                {isSelected && <Check className="w-3.5 h-3.5 text-[#10b981]" />}
                               </button>
                             );
                           })}
@@ -701,15 +762,15 @@ export default function DotaPixDonatePage() {
 
               {/* Gravar Áudio */}
               {messageType === 'audio' && (
-                <div className="flex flex-col items-center p-4 bg-neutral-950 border border-white/[0.04] rounded-[1.8rem] space-y-3.5 shadow-[inset_0_2px_4px_rgba(0,0,0,0.9)]">
-                  <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest font-mono">Grave um áudio (máx. 15s)</p>
+                <div className="flex flex-col items-center p-4 bg-slate-50 border border-neutral-200 rounded-[1.8rem] space-y-3.5 shadow-inner">
+                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest font-mono">Grave um áudio (máx. 15s)</p>
 
                   <div className="flex items-center gap-3">
                     {!isRecording ? (
                       <Button 
                         type="button" 
                         onClick={startRecording}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-full p-3 h-12 w-12 flex items-center justify-center shadow-lg shadow-red-500/20 border-none transition-all duration-200"
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-full p-3 h-12 w-12 flex items-center justify-center shadow-lg shadow-red-500/10 border-none transition-all duration-200"
                       >
                         <Mic className="w-5 h-5" />
                       </Button>
@@ -717,7 +778,7 @@ export default function DotaPixDonatePage() {
                       <Button 
                         type="button" 
                         onClick={stopRecording}
-                        className="bg-neutral-700 hover:bg-neutral-600 text-white rounded-full p-3 h-12 w-12 flex items-center justify-center animate-pulse border-none"
+                        className="bg-neutral-600 hover:bg-neutral-500 text-white rounded-full p-3 h-12 w-12 flex items-center justify-center animate-pulse border-none"
                       >
                         <div className="w-3 h-3 bg-red-500 rounded-sm" />
                       </Button>
@@ -726,10 +787,10 @@ export default function DotaPixDonatePage() {
 
                   {audioUrl && (
                     <div className="w-full flex flex-col items-center space-y-2">
-                      <p className="text-[10px] text-[#34c759] font-bold flex items-center gap-1">
+                      <p className="text-[10px] text-[#10b981] font-bold flex items-center gap-1">
                         <Volume2 className="w-3.5 h-3.5 animate-pulse" /> Áudio pronto para envio
                       </p>
-                      <audio src={audioUrl} controls className="w-full max-w-xs h-7 bg-neutral-900 border border-white/5 rounded-lg" />
+                      <audio src={audioUrl} controls className="w-full max-w-xs h-7 bg-white border border-neutral-200 rounded-lg" />
                     </div>
                   )}
                 </div>
@@ -737,16 +798,16 @@ export default function DotaPixDonatePage() {
 
               {/* Valor da Doação */}
               <div className="space-y-1.5">
-                <label className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest px-1 font-mono">Valor da doação</label>
+                <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest px-1 font-mono">Valor da doação</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-500 font-black text-base">R$</span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 font-black text-base">R$</span>
                   <Input
                     value={amount}
                     onChange={(e) => handleAmountChange(e.target.value)}
-                    className="bg-neutral-950 border-white/[0.04] text-white pl-11 pr-4 py-5 text-base font-black rounded-2xl focus:ring-1 focus:ring-white/20 focus:border-white/20 shadow-[inset_0_2.5px_4px_rgba(0,0,0,0.9)]"
+                    className="bg-slate-50 border-neutral-200 text-neutral-800 pl-11 pr-4 py-5 text-base font-black rounded-2xl focus:ring-1 focus:ring-black/10 focus:border-neutral-300 shadow-inner"
                   />
                 </div>
-                <p className="text-[10px] text-neutral-500 font-medium px-1 font-mono">
+                <p className="text-[10px] text-neutral-400 font-medium px-1 font-mono">
                   Valor mínimo: R$ {
                     (settings 
                       ? (messageType === 'audio' 
@@ -763,7 +824,7 @@ export default function DotaPixDonatePage() {
                 type="button"
                 disabled={loading}
                 onClick={handleContinue}
-                className="w-full bg-white hover:bg-neutral-200 text-black font-extrabold text-[10px] py-5 rounded-2xl transition-all flex items-center justify-center gap-2 border-none tracking-widest uppercase shadow-lg hover:shadow-xl duration-300 font-mono"
+                className="w-full bg-neutral-900 hover:bg-neutral-800 text-white font-extrabold text-[10px] py-5 rounded-2xl transition-all flex items-center justify-center gap-2 border-none tracking-widest uppercase shadow-md hover:shadow-lg duration-300 font-mono"
               >
                 {loading ? (
                   <>
@@ -775,7 +836,7 @@ export default function DotaPixDonatePage() {
                 )}
               </Button>
 
-              <p className="text-[9px] text-neutral-600 text-center leading-normal px-1">
+              <p className="text-[9px] text-neutral-400 text-center leading-normal px-1">
                 Ao continuar, você concorda com os <a href="#" className="underline hover:text-neutral-500">Termos de Uso</a>.
               </p>
             </div>

@@ -12,6 +12,15 @@ interface DonationAlert {
   voice_id: string | null;
 }
 
+const formatAmountForTTS = (amount: number) => {
+  const intPart = Math.floor(amount);
+  const cents = Math.round((amount - intPart) * 100);
+  if (cents === 0) {
+    return `${intPart} reais`;
+  }
+  return `${intPart} reais e ${cents} centavos`;
+};
+
 export default function DotaPixWidgetPage() {
   const [currentAlert, setCurrentAlert] = useState<DonationAlert | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -122,15 +131,18 @@ export default function DotaPixWidgetPage() {
 
           if (apiKey && referenceId) {
             const payload = {
-              text: `${alert.donor_name} enviou ${Number(alert.amount).toFixed(2)} reais. ${alert.message}`,
+              text: `${alert.donor_name} enviou ${formatAmountForTTS(alert.amount)}. ${alert.message}`,
               reference_id: referenceId,
               format: 'mp3'
             };
 
             let response = null;
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const primaryUrl = isLocalhost ? '/api-fish/v1/tts' : 'https://api.fish.audio/v1/tts';
+
             try {
-              console.log("Fish Audio - Requesting via local Vite proxy...");
-              response = await fetch('/api-fish/v1/tts', {
+              console.log("Fish Audio - Requesting via primary URL:", primaryUrl);
+              response = await fetch(primaryUrl, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -138,9 +150,25 @@ export default function DotaPixWidgetPage() {
                 },
                 body: JSON.stringify(payload)
               });
-              console.log("Fish Audio - Local proxy response status:", response.status);
+              console.log("Fish Audio - Response status:", response.status);
             } catch (err) {
-              console.error("Fish Audio - Fetch error via local proxy:", err);
+              console.warn("Fish Audio - Primary endpoint failed (possibly CORS). Trying CORS proxy fallback...", err);
+              if (!isLocalhost) {
+                try {
+                  const fallbackUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://api.fish.audio/v1/tts');
+                  response = await fetch(fallbackUrl, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(payload)
+                  });
+                  console.log("Fish Audio - Fallback response status:", response?.status);
+                } catch (fallbackErr) {
+                  console.error("Fish Audio - Fallback CORS proxy failed:", fallbackErr);
+                }
+              }
             }
 
             if (response && response.ok) {
@@ -188,7 +216,7 @@ export default function DotaPixWidgetPage() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              text: `${alert.donor_name} enviou ${Number(alert.amount).toFixed(2)} reais. ${alert.message}`,
+              text: `${alert.donor_name} enviou ${formatAmountForTTS(alert.amount)}. ${alert.message}`,
               voice: alert.voice_id
             })
           });
@@ -226,7 +254,7 @@ export default function DotaPixWidgetPage() {
       if (!playedTTS) {
         try {
           await new Promise<void>((resolve) => {
-            const textToSpeak = `${alert.donor_name} enviou R$ ${Number(alert.amount).toFixed(2)}. ${alert.message}`;
+            const textToSpeak = `${alert.donor_name} enviou ${formatAmountForTTS(alert.amount)}. ${alert.message}`;
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
             utterance.lang = 'pt-BR';
 

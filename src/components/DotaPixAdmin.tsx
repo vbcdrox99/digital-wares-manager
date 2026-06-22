@@ -285,9 +285,14 @@ export default function DotaPixAdmin() {
     return `${minutes}m`;
   };
 
+  const getWidgetUrl = (path: 'widget' | 'goal') => {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const origin = isLocal ? 'https://dotaplaybrasil.lovable.app' : window.location.origin;
+    return `${origin}/dotapix/${path}`;
+  };
+
   const copyWidgetUrl = () => {
-    const origin = window.location.origin;
-    const url = `${origin}/dotapix/widget`;
+    const url = getWidgetUrl('widget');
     navigator.clipboard.writeText(url);
     toast.success("Link do Widget copiado!");
   };
@@ -499,7 +504,7 @@ export default function DotaPixAdmin() {
               </p>
               <div className="flex gap-2 max-w-lg mt-2">
                 <Input
-                  value={`${window.location.origin}/dotapix/widget`}
+                  value={getWidgetUrl('widget')}
                   readOnly
                   className="bg-black/40 border-white/10 text-white text-xs py-5"
                 />
@@ -570,13 +575,13 @@ export default function DotaPixAdmin() {
               </p>
               <div className="flex gap-2 max-w-lg mt-2">
                 <Input
-                  value={`${window.location.origin}/dotapix/goal`}
+                  value={getWidgetUrl('goal')}
                   readOnly
                   className="bg-black/40 border-white/10 text-white text-xs py-5"
                 />
                 <Button 
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/dotapix/goal`);
+                    navigator.clipboard.writeText(getWidgetUrl('goal'));
                     toast.success("Link do Widget de Meta copiado!");
                   }} 
                   className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold flex items-center gap-2"
