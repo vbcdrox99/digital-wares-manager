@@ -811,7 +811,13 @@ export default function DotaPixAdmin() {
                         <Input
                           placeholder="ID do Modelo"
                           value={voice.id || ''}
-                          onChange={(e) => handleVoiceChange(idx, 'id', e.target.value)}
+                          onChange={(e) => {
+                            let val = e.target.value;
+                            if (val.includes('fish.audio/m/')) {
+                              val = val.split('fish.audio/m/')[1].split('/')[0].split('?')[0];
+                            }
+                            handleVoiceChange(idx, 'id', val);
+                          }}
                           className="bg-black/40 border-white/10 text-white text-xs h-9"
                         />
                       </div>

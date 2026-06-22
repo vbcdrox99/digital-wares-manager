@@ -121,7 +121,12 @@ export default function DotaPixWidgetPage() {
             .maybeSingle();
 
           const apiKey = settings?.fish_audio_key;
-          const referenceId = alert.voice_id; // The voice ID stored is the actual model ID!
+          let referenceId = alert.voice_id; // The voice ID stored is the actual model ID!
+          
+          // Sanitize if the user pasted the entire URL (e.g. https://fish.audio/m/767ca9e696...)
+          if (referenceId && referenceId.includes('fish.audio/m/')) {
+            referenceId = referenceId.split('fish.audio/m/')[1].split('/')[0].split('?')[0];
+          }
 
           console.log("Fish Audio - Settings loaded:", {
             hasKey: !!apiKey,
