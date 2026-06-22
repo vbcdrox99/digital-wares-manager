@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { History, Settings, Monitor, Play, Copy, Check, X, Volume2, Save, BadgeDollarSign, MessageSquare, Music, Target, Percent, Clock } from "lucide-react";
+import { History, Settings, Monitor, Play, Copy, Check, X, Volume2, Save, BadgeDollarSign, MessageSquare, Music, Target, Percent, Clock, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -40,6 +40,8 @@ interface DotaPixSettings {
   youtube_integration_enabled?: boolean | null;
   fish_audio_key?: string | null;
   fish_voices?: { id: string; name: string }[] | null;
+  profile_image_url?: string | null;
+  channel_name?: string | null;
 }
 
 export default function DotaPixAdmin() {
@@ -65,7 +67,9 @@ export default function DotaPixAdmin() {
     youtube_channel_id: '',
     youtube_integration_enabled: false,
     fish_audio_key: '',
-    fish_voices: []
+    fish_voices: [],
+    profile_image_url: null,
+    channel_name: 'Dota Play Brasil'
   });
   const [savingSettings, setSavingSettings] = useState(false);
   const [testMessage, setTestMessage] = useState('gostei muito desse novo sistema DotaPix!');
@@ -171,7 +175,9 @@ export default function DotaPixAdmin() {
           youtube_channel_id: data.youtube_channel_id || '',
           youtube_integration_enabled: !!data.youtube_integration_enabled,
           fish_audio_key: data.fish_audio_key || '',
-          fish_voices: Array.isArray(data.fish_voices) ? data.fish_voices : []
+          fish_voices: Array.isArray(data.fish_voices) ? data.fish_voices : [],
+          profile_image_url: data.profile_image_url || null,
+          channel_name: data.channel_name || 'Dota Play Brasil'
         });
       }
     } catch (err: any) {
@@ -209,6 +215,8 @@ export default function DotaPixAdmin() {
           youtube_integration_enabled: settings.youtube_integration_enabled,
           fish_audio_key: settings.fish_audio_key,
           fish_voices: settings.fish_voices,
+          profile_image_url: settings.profile_image_url,
+          channel_name: settings.channel_name,
           updated_at: new Date().toISOString()
         });
 
@@ -219,6 +227,40 @@ export default function DotaPixAdmin() {
       toast.error("Erro ao salvar configurações.");
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `profile_${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      toast.info("Enviando foto de perfil...");
+
+      const { error: uploadError } = await supabase.storage
+        .from('dotapix-audios')
+        .upload(filePath, file, {
+          contentType: file.type,
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('dotapix-audios')
+        .getPublicUrl(filePath);
+
+      const publicUrl = data.publicUrl;
+      setSettings(prev => ({ ...prev, profile_image_url: publicUrl }));
+      toast.success("Foto de perfil enviada. Salve as configurações para aplicar!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao subir foto: " + err.message);
     }
   };
 
@@ -598,6 +640,40 @@ export default function DotaPixAdmin() {
         {activeTab === 'config' && (
           <div className="space-y-5 max-w-md">
             <h3 className="font-semibold text-sm text-cyan-400">Configurações Gerais</h3>
+
+            {/* Perfil */}
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="relative group w-16 h-16 bg-white/5 border border-white/10 rounded-full overflow-hidden p-0.5 cursor-pointer shrink-0">
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    id="admin-profile-upload" 
+                    onChange={handleProfileUpload}
+                  />
+                  <label htmlFor="admin-profile-upload" className="w-full h-full rounded-full overflow-hidden bg-black block relative cursor-pointer">
+                    <img 
+                      src={settings.profile_image_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=128&h=128&fit=crop"} 
+                      alt="Perfil" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
+                      <Camera className="w-4 h-4 text-white" />
+                    </div>
+                  </label>
+                </div>
+                <div className="space-y-1 flex-1">
+                  <label className="text-xs text-gray-400 font-medium">Nome do Canal</label>
+                  <Input
+                    placeholder="Ex: Dota Play Brasil"
+                    value={settings.channel_name || ''}
+                    onChange={(e) => setSettings({ ...settings, channel_name: e.target.value })}
+                    className="bg-black/40 border-white/10 text-white text-xs h-9"
+                  />
+                </div>
+              </div>
+            </div>
 
             {/* Valores Mínimos */}
             <div className="space-y-3">

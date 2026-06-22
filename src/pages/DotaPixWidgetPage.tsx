@@ -291,10 +291,7 @@ export default function DotaPixWidgetPage() {
 
     // Update database that it was played
     if (!testMode) {
-      await supabase
-        .from('dotapix_donations')
-        .update({ played_on_stream: true })
-        .eq('id', alert.id);
+      await supabase.rpc('mark_donation_played', { donation_id: alert.id });
     }
 
     // Dequeue and loop

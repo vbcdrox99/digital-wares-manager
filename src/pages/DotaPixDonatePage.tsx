@@ -76,6 +76,7 @@ export default function DotaPixDonatePage() {
     min_donation_custom_voice: number;
     min_donation_audio: number;
     fish_voices: { id: string; name: string }[];
+    channel_name?: string;
   } | null>(null);
 
   const [goal, setGoal] = useState<{
@@ -93,63 +94,7 @@ export default function DotaPixDonatePage() {
   const [isLive, setIsLive] = useState<boolean | null>(null);
   const [ytSettings, setYtSettings] = useState<{ key: string; channelId: string; enabled: boolean } | null>(null);
 
-  // Handle Profile Upload
-  const handleProfileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `profile_${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      toast.info("Enviando foto de perfil...");
-
-      const { error: uploadError } = await supabase.storage
-        .from('dotapix-audios')
-        .upload(filePath, file, {
-          contentType: file.type,
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('dotapix-audios')
-        .getPublicUrl(filePath);
-
-      const publicUrl = data.publicUrl;
-      setProfileImageUrl(publicUrl);
-
-      // Save to database settings table
-      if (settingsId) {
-        const { error: updateError } = await supabase
-          .from('dotapix_settings')
-          .update({ profile_image_url: publicUrl })
-          .eq('id', settingsId);
-          
-        if (updateError) throw updateError;
-        toast.success("Foto de perfil atualizada!");
-      } else {
-        // Fallback insert
-        const { data: newSettings, error: insertError } = await supabase
-          .from('dotapix_settings')
-          .insert({ profile_image_url: publicUrl })
-          .select()
-          .single();
-          
-        if (insertError) throw insertError;
-        setSettingsId(newSettings.id);
-        toast.success("Foto de perfil salva!");
-      }
-    } catch (err: any) {
-      console.error("Erro ao subir foto de perfil:", err);
-      toast.error("Erro ao atualizar foto de perfil: " + err.message);
-    }
-  };
-
-  // Load custom premium fonts
+  // Fetch settings and live goal details
   useEffect(() => {
     const link = document.createElement('link');
     link.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap';
@@ -179,7 +124,8 @@ export default function DotaPixDonatePage() {
           min_donation: Number(settingsData.min_donation) || 3.00,
           min_donation_custom_voice: Number(settingsData.min_donation_custom_voice) || 5.00,
           min_donation_audio: Number(settingsData.min_donation_audio) || 8.00,
-          fish_voices: Array.isArray(settingsData.fish_voices) ? settingsData.fish_voices : []
+          fish_voices: Array.isArray(settingsData.fish_voices) ? settingsData.fish_voices : [],
+          channel_name: settingsData.channel_name || 'Dota Play Brasil'
         });
         
         // Formate initial default amount if standard donation has different value
@@ -436,28 +382,18 @@ export default function DotaPixDonatePage() {
             
             {/* Streamer Profile Section */}
             <div className="relative z-10 flex items-center gap-3">
-              <div className="relative group w-12 h-12 bg-white border border-neutral-200 shadow-md rounded-full overflow-hidden p-0.5 cursor-pointer shrink-0">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  id="profile-upload" 
-                  onChange={handleProfileUpload}
-                />
-                <label htmlFor="profile-upload" className="w-full h-full rounded-full overflow-hidden bg-slate-100 block relative cursor-pointer">
+              <div className="relative w-16 h-16 bg-white border border-neutral-200 shadow-md rounded-full overflow-hidden p-0.5 shrink-0">
+                <div className="w-full h-full rounded-full overflow-hidden bg-slate-100 relative">
                   <img 
                     src={profileImageUrl || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=128&h=128&fit=crop"} 
                     alt="Logo Dota Play Brasil" 
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                    <Camera className="w-4 h-4 text-white" />
-                  </div>
-                </label>
+                </div>
               </div>
               <div className="text-left flex-1 min-w-0">
-                <h1 className="text-base font-black text-neutral-900 tracking-tight truncate">Dota Play Brasil</h1>
-                <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest font-mono">Sistema de Apoio Oficial</p>
+                <h1 className="text-2xl font-black text-neutral-900 tracking-tight truncate">{settings?.channel_name || 'Dota Play Brasil'}</h1>
+                <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest font-mono mt-0.5">Sistema de Apoio Oficial</p>
               </div>
               
               {/* Live Indicator Pill */}
