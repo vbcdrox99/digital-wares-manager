@@ -94,15 +94,9 @@ export default function DotaPixDonatePage() {
   const [isLive, setIsLive] = useState<boolean | null>(null);
   const [ytSettings, setYtSettings] = useState<{ key: string; channelId: string; enabled: boolean } | null>(null);
 
-  // Fetch settings and live goal details
+  // Removed external font loading to use system default
   useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-    return () => {
-      document.head.removeChild(link);
-    };
+    // Fonts are now handled globally
   }, []);
 
   // Fetch settings and live goal details
@@ -348,8 +342,13 @@ export default function DotaPixDonatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden" style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
       
+      {/* Background elements aligned with HomePage */}
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-purple-900/30 via-blue-900/20 to-transparent rounded-full blur-[140px] pointer-events-none animate-drift-slow" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-cyan-900/30 via-emerald-900/20 to-transparent rounded-full blur-[140px] pointer-events-none animate-drift-slower" />
+
       {/* Styles for dynamic drift animations */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes drift {
@@ -365,25 +364,18 @@ export default function DotaPixDonatePage() {
         }
       `}} />
 
-      {/* Modern Dynamic Light Background Orbs & Gradients */}
-      <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-indigo-200/40 via-purple-100/35 to-transparent rounded-full blur-[140px] pointer-events-none animate-drift-slow" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-tr from-emerald-100/40 via-teal-50/30 to-transparent rounded-full blur-[140px] pointer-events-none animate-drift-slower" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.015)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
-
       {/* Grid Dashboard Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full relative z-10">
         
         {/* LEFT COLUMN: Streamer Profile & Goal status */}
         <div className="space-y-6 flex flex-col justify-start">
           
-          <div className="bg-white border border-neutral-200/60 rounded-[2rem] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative overflow-hidden transition-all duration-300 hover:border-neutral-300 flex flex-col justify-between">
-            {/* Background Grid Pattern */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.005)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.005)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+          <div className="bg-black/20 border border-white/10 backdrop-blur-md rounded-[2rem] p-5 relative overflow-hidden transition-all duration-300 hover:bg-black/30 hover:border-white/20 flex flex-col justify-between glass-card">
             
             {/* Streamer Profile Section */}
             <div className="relative z-10 flex items-center gap-3">
-              <div className="relative w-16 h-16 bg-white border border-neutral-200 shadow-md rounded-full overflow-hidden p-0.5 shrink-0">
-                <div className="w-full h-full rounded-full overflow-hidden bg-slate-100 relative">
+              <div className="relative w-16 h-16 bg-white/5 border border-white/10 shadow-lg rounded-full overflow-hidden p-0.5 shrink-0">
+                <div className="w-full h-full rounded-full overflow-hidden bg-black/50 relative">
                   <img 
                     src={profileImageUrl || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=128&h=128&fit=crop"} 
                     alt="Logo Dota Play Brasil" 
@@ -392,65 +384,64 @@ export default function DotaPixDonatePage() {
                 </div>
               </div>
               <div className="text-left flex-1 min-w-0">
-                <h1 className="text-2xl font-black text-neutral-900 tracking-tight truncate">{settings?.channel_name || 'Dota Play Brasil'}</h1>
-                <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest font-mono mt-0.5">Sistema de Apoio Oficial</p>
+                <h1 className="text-2xl font-black text-white tracking-tight truncate">{settings?.channel_name || 'Dota Play Brasil'}</h1>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest font-mono mt-0.5">Sistema de Apoio Oficial</p>
               </div>
               
               {/* Live Indicator Pill */}
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-neutral-200/80 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.01)] shrink-0">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-black/40 border border-white/10 backdrop-blur-sm rounded-full shadow-lg shrink-0">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isLive ? 'bg-red-500' : 'bg-neutral-400'} opacity-75`}></span>
-                  <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isLive ? 'bg-red-500' : 'bg-neutral-400'}`}></span>
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isLive ? 'bg-red-500' : 'bg-gray-500'} opacity-75`}></span>
+                  <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isLive ? 'bg-red-500' : 'bg-gray-500'}`}></span>
                 </span>
-                <span className={`text-[8px] font-black uppercase tracking-wider font-mono ${isLive ? 'text-red-600' : 'text-neutral-500'}`}>
+                <span className={`text-[8px] font-black uppercase tracking-wider font-mono ${isLive ? 'text-red-500' : 'text-gray-400'}`}>
                   {isLive ? 'Ao Vivo' : 'Offline'}
                 </span>
               </div>
             </div>
 
             {/* Separator line */}
-            <div className="border-t border-neutral-100 my-4 relative z-10" />
+            <div className="border-t border-white/10 my-4 relative z-10" />
 
             {/* Goal Progress Section */}
             <div className="relative z-10 space-y-3 pb-1">
               {goal && goal.enabled ? (
                 <>
                   <div className="flex justify-between items-center">
-                    <div className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest font-mono flex items-center gap-1.5">
-                      <TrendingUp className="w-3.5 h-3.5 text-[#10b981]" /> Progresso da Meta
+                    <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest font-mono flex items-center gap-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-cyan-400" /> Progresso da Meta
                     </div>
-                    <span className="text-[8px] text-neutral-400 font-mono tracking-wider uppercase">{goal.title}</span>
+                    <span className="text-[8px] text-gray-500 font-mono tracking-wider uppercase">{goal.title}</span>
                   </div>
 
                   <div className="flex items-end justify-between pt-0.5">
                     <div className="space-y-0.5">
-                      <span className="text-2xl font-black font-mono tracking-tighter text-neutral-800">
+                      <span className="text-2xl font-black font-mono tracking-tighter text-white">
                         {Math.round((goal.current / goal.target) * 100)}%
                       </span>
-                      <p className="text-[8px] text-neutral-400 uppercase tracking-widest font-black font-mono">Completo</p>
+                      <p className="text-[8px] text-gray-500 uppercase tracking-widest font-black font-mono">Completo</p>
                     </div>
                     <div className="text-right font-mono space-y-0.5">
-                      <span className="text-xs text-neutral-700 font-bold">R$ {goal.current}</span>
-                      <span className="text-[9px] text-neutral-400 block">de R$ {goal.target}</span>
+                      <span className="text-xs text-gray-300 font-bold">R$ {goal.current}</span>
+                      <span className="text-[9px] text-gray-500 block">de R$ {goal.target}</span>
                     </div>
                   </div>
 
                   {/* Glowing progress line */}
-                  <div className="h-2.5 w-full bg-neutral-100 rounded-full overflow-hidden relative border border-neutral-200/30">
+                  <div className="h-2.5 w-full bg-black/40 rounded-full overflow-hidden relative border border-white/5">
                     <div 
-                      className="h-full bg-gradient-to-r from-[#10b981] to-[#06b6d4] transition-all duration-500 rounded-full relative" 
+                      className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 rounded-full relative shadow-[0_0_10px_rgba(6,182,212,0.5)]" 
                       style={{ width: `${Math.min(100, (goal.current / goal.target) * 100)}%` }} 
                     >
                       <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent h-1/2" />
                     </div>
-                    <div className="absolute inset-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] rounded-full pointer-events-none" />
                   </div>
                 </>
               ) : (
                 <div className="text-center py-1 space-y-1">
-                  <Heart className="w-5 h-5 text-neutral-300 mx-auto" />
-                  <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider font-mono">DotaPlay Live Stream</h3>
-                  <p className="text-[9px] text-neutral-400 leading-normal">Seu apoio ajuda a manter o canal online com lives diárias.</p>
+                  <Heart className="w-5 h-5 text-gray-500 mx-auto" />
+                  <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-mono">DotaPlay Live Stream</h3>
+                  <p className="text-[9px] text-gray-500 leading-normal">Seu apoio ajuda a manter o canal online com lives diárias.</p>
                 </div>
               )}
             </div>
@@ -464,16 +455,16 @@ export default function DotaPixDonatePage() {
           
           {paymentQrCode ? (
             /* Capsule 4: Pix QR Code Widget */
-            <div className="bg-white border border-neutral-200/60 rounded-[2rem] p-6 space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative transition-all duration-300">
+            <div className="bg-black/20 border border-white/10 backdrop-blur-md rounded-[2rem] p-6 space-y-6 relative transition-all duration-300 glass-card hover:bg-black/30 hover:border-white/20">
               
               {paymentStatus === 'approved' ? (
                 <div className="flex flex-col items-center text-center space-y-4 py-8">
-                  <div className="w-16 h-16 bg-[#10b981]/10 rounded-full flex items-center justify-center border border-[#10b981]/20 shadow-lg shadow-[#10b981]/5">
-                    <CheckCircle className="w-8 h-8 text-[#10b981]" />
+                  <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center border border-cyan-500/30 shadow-lg shadow-cyan-500/10">
+                    <CheckCircle className="w-8 h-8 text-cyan-400" />
                   </div>
-                  <h2 className="text-base font-bold text-neutral-800 tracking-tight uppercase font-mono">Doação Recebida!</h2>
-                  <p className="text-neutral-500 text-xs leading-relaxed max-w-[260px]">
-                    Muito obrigado, <span className="text-[#10b981] font-bold">{donorName}</span>! Seu apoio foi computado e o alerta foi enviado para o streaming.
+                  <h2 className="text-base font-bold text-white tracking-tight uppercase font-mono">Doação Recebida!</h2>
+                  <p className="text-gray-400 text-xs leading-relaxed max-w-[260px]">
+                    Muito obrigado, <span className="text-cyan-400 font-bold">{donorName}</span>! Seu apoio foi computado e o alerta foi enviado para o streaming.
                   </p>
                   <Button 
                     onClick={() => {
@@ -485,7 +476,7 @@ export default function DotaPixDonatePage() {
                       setAudioBlob(null);
                       setAudioUrl(null);
                     }}
-                    className="bg-neutral-900 hover:bg-neutral-800 text-white font-extrabold rounded-full px-6 py-2.5 border-none text-[10px] tracking-widest uppercase transition-all duration-200"
+                    className="bg-gradient-gaming shadow-glow text-white font-extrabold rounded-full px-6 py-2.5 border-none text-[10px] tracking-widest uppercase transition-all duration-200"
                   >
                     Novo Envio
                   </Button>
@@ -493,33 +484,32 @@ export default function DotaPixDonatePage() {
               ) : (
                 <div className="w-full flex flex-col items-center space-y-5">
                   <div className="text-center space-y-1">
-                    <h3 className="font-bold text-neutral-800 text-xs uppercase tracking-wider font-mono">QR CODE DE PAGAMENTO</h3>
-                    <p className="text-[9px] text-neutral-400 uppercase tracking-widest font-mono">Leia no app do seu banco</p>
+                    <h3 className="font-bold text-white text-xs uppercase tracking-wider font-mono">QR CODE DE PAGAMENTO</h3>
+                    <p className="text-[9px] text-gray-400 uppercase tracking-widest font-mono">Leia no app do seu banco</p>
                   </div>
                   
-                  <div className="bg-neutral-50 border border-neutral-200/60 p-4.5 rounded-[2rem] shadow-inner relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.01)_1px,transparent_1px)] bg-[size:10px_10px]" />
+                  <div className="bg-white border border-white/20 p-4 rounded-[2rem] shadow-[0_0_30px_rgba(0,0,0,0.5)] relative overflow-hidden flex items-center justify-center">
                     <img 
                       src={`data:image/png;base64,${paymentQrCode}`} 
                       alt="Pix QR Code" 
-                      className="w-40 h-40 rounded-2xl relative z-10 shadow-lg"
+                      className="w-40 h-40 rounded-xl relative z-10"
                     />
                   </div>
 
-                  <div className="flex items-center justify-center gap-2 text-[#10b981] text-xs font-semibold animate-pulse font-mono">
+                  <div className="flex items-center justify-center gap-2 text-cyan-400 text-xs font-semibold animate-pulse font-mono">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span className="text-[10px] tracking-wider">AGUARDANDO CONFIRMAÇÃO...</span>
                   </div>
 
                   <div className="w-full space-y-1.5">
-                    <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider px-1">Pix Copia e Cola</label>
+                    <label className="text-[9px] text-gray-400 font-bold uppercase tracking-wider px-1">Pix Copia e Cola</label>
                     <div className="flex gap-2">
                       <Input 
                         value={paymentCopyPaste || ''} 
                         readOnly 
-                        className="bg-neutral-50 border-neutral-200 text-neutral-800 text-xs rounded-xl h-11 shadow-inner"
+                        className="bg-black/50 border-white/10 text-white text-xs rounded-xl h-11 font-mono"
                       />
-                      <Button onClick={copyToClipboard} size="icon" className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl h-11 w-11 shrink-0 border-none transition-all">
+                      <Button onClick={copyToClipboard} size="icon" className="bg-gradient-gaming shadow-glow text-white rounded-xl h-11 w-11 shrink-0 border-none transition-all hover:scale-105">
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
@@ -531,7 +521,7 @@ export default function DotaPixDonatePage() {
                       setPaymentCopyPaste(null);
                       setDonationId(null);
                     }}
-                    className="text-neutral-400 hover:text-neutral-600 text-xs mt-2"
+                    className="text-gray-500 hover:text-white hover:bg-white/5 text-xs mt-2"
                   >
                     Voltar
                   </Button>
@@ -540,21 +530,21 @@ export default function DotaPixDonatePage() {
             </div>
           ) : (
             /* Capsule 3: Form Card */
-            <div className="bg-white border border-neutral-200/60 rounded-[2rem] p-6 space-y-5 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative transition-all duration-300 hover:border-neutral-300">
+            <div className="bg-black/20 border border-white/10 backdrop-blur-md rounded-[2rem] p-6 space-y-5 relative transition-all duration-300 hover:bg-black/30 hover:border-white/20 glass-card">
               
               {/* Nome de usuário */}
               <div className="space-y-1.5">
-                <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest px-1 font-mono">Seu nome de usuário</label>
+                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-widest px-1 font-mono">Seu nome de usuário</label>
                 <Input
                   placeholder="Ex: GamerPro"
                   value={donorName}
                   onChange={(e) => setDonorName(e.target.value)}
-                  className="bg-slate-50 border-neutral-200 text-neutral-800 placeholder-neutral-400 rounded-2xl focus:ring-1 focus:ring-black/10 focus:border-neutral-300 h-11 px-4 text-xs shadow-inner"
+                  className="bg-black/50 border-white/10 text-white placeholder-gray-600 rounded-2xl focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 h-11 px-4 text-xs shadow-inner"
                 />
               </div>
 
               {/* Abas Enviar Mensagem / Gravar Áudio - Pill style */}
-              <div className="grid grid-cols-2 gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-neutral-200/50 shadow-inner">
+              <div className="grid grid-cols-2 gap-1.5 bg-black/40 p-1 rounded-2xl border border-white/5 shadow-inner">
                 <button
                   type="button"
                   onClick={() => {
@@ -567,8 +557,8 @@ export default function DotaPixDonatePage() {
                   }}
                   className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold tracking-widest uppercase transition-all duration-300 font-mono ${
                     messageType === 'text' 
-                      ? 'bg-white text-neutral-800 shadow-md border border-neutral-200/30' 
-                      : 'text-neutral-400 hover:text-neutral-600'
+                      ? 'bg-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] border border-cyan-500/30' 
+                      : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
                   }`}
                 >
                   <PenTool className="w-3.5 h-3.5" />
@@ -586,8 +576,8 @@ export default function DotaPixDonatePage() {
                   }}
                   className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-bold tracking-widest uppercase transition-all duration-300 font-mono ${
                     messageType === 'audio' 
-                      ? 'bg-white text-neutral-800 shadow-md border border-neutral-200/30' 
-                      : 'text-neutral-400 hover:text-neutral-600'
+                      ? 'bg-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] border border-cyan-500/30' 
+                      : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
                   }`}
                 >
                   <Mic className="w-3.5 h-3.5" />
@@ -605,26 +595,26 @@ export default function DotaPixDonatePage() {
                       onChange={(e) => setMessage(e.target.value.substring(0, 200))}
                       maxLength={200}
                       rows={3}
-                      className="w-full bg-slate-50 border border-neutral-200 rounded-2xl px-4 py-3 text-xs text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-black/10 focus:border-neutral-300 shadow-inner resize-none"
+                      className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 shadow-inner resize-none font-mono"
                     />
-                    <div className="absolute right-3.5 bottom-3 text-neutral-400 text-[9px] font-bold font-mono">
+                    <div className="absolute right-3.5 bottom-3 text-gray-500 text-[9px] font-bold font-mono">
                       {message.length}/200
                     </div>
                   </div>
 
                   {/* Seleção de Voz - Pill type select */}
                   <div className="space-y-1.5 relative">
-                    <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest px-1 font-mono">Voz para o Alerta</label>
+                    <label className="text-[9px] text-gray-400 font-bold uppercase tracking-widest px-1 font-mono">Voz para o Alerta</label>
                     
                     {/* Custom select trigger button */}
                     <button
                       type="button"
                       onClick={() => setShowVoiceMenu(!showVoiceMenu)}
-                      className="w-full bg-slate-50 hover:bg-slate-100/50 border border-neutral-200 rounded-2xl px-4 py-3 text-xs text-neutral-800 flex items-center justify-between transition-all focus:outline-none focus:ring-1 focus:ring-black/10 shadow-inner font-mono"
+                      className="w-full bg-black/50 hover:bg-black/70 border border-white/10 rounded-2xl px-4 py-3 text-xs text-white flex items-center justify-between transition-all focus:outline-none focus:ring-1 focus:ring-cyan-500/50 shadow-inner font-mono"
                     >
                       <span className="flex items-center gap-2">
-                        <Volume2 className="w-3.5 h-3.5 text-neutral-400" />
-                        <span className="font-extrabold text-neutral-800">
+                        <Volume2 className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="font-extrabold text-white">
                           {voiceId === 'br_001' ? 'Voz padrão' : 
                            voiceId === 'pt_male_bueno' ? 'Galvão Bueno' :
                            voiceId === 'bp_female_ivete' ? 'Ivete Sangalo' :
@@ -640,7 +630,7 @@ export default function DotaPixDonatePage() {
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setShowVoiceMenu(false)} />
                         
-                        <div className="absolute left-0 right-0 z-50 mt-2 bg-white border border-neutral-200 rounded-[1.8rem] p-2.5 shadow-[0_15px_40px_rgba(0,0,0,0.08)] max-h-60 overflow-y-auto space-y-1 scrollbar-none animate-in fade-in-50 slide-in-from-top-1 duration-150">
+                        <div className="absolute left-0 right-0 z-50 mt-2 bg-neutral-900 border border-white/10 rounded-[1.8rem] p-2.5 shadow-[0_15px_40px_rgba(0,0,0,0.5)] max-h-60 overflow-y-auto space-y-1 scrollbar-none animate-in fade-in-50 slide-in-from-top-1 duration-150 backdrop-blur-xl">
                           {[
                             { id: 'br_001', name: 'Voz padrão', description: 'Tradicional' },
                             { id: 'pt_male_bueno', name: 'Galvão Bueno', description: 'Narrador' },
@@ -666,10 +656,10 @@ export default function DotaPixDonatePage() {
                                     setAmount(requiredMin.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
                                   }
                                 }}
-                                className={`w-full flex items-center justify-between p-2.5 rounded-[1.2rem] transition-all text-left ${
+                                className={`w-full flex items-center justify-between p-2.5 rounded-[1.2rem] transition-all text-left font-mono ${
                                   isSelected 
-                                    ? 'bg-slate-50 text-[#10b981] border border-neutral-200/50' 
-                                    : 'hover:bg-slate-50 border border-transparent text-neutral-500 hover:text-neutral-800'
+                                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.1)]' 
+                                    : 'hover:bg-white/5 border border-transparent text-gray-400 hover:text-white'
                                 }`}
                               >
                                 <div className="space-y-0.5">
@@ -677,15 +667,15 @@ export default function DotaPixDonatePage() {
                                     <span className="font-bold text-xs">{voice.name}</span>
                                     <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${
                                       isCustomVoice 
-                                        ? 'bg-blue-50 text-blue-600' 
-                                        : 'bg-[#10b981]/10 text-[#059669]'
+                                        ? 'bg-purple-500/20 text-purple-400' 
+                                        : 'bg-emerald-500/20 text-emerald-400'
                                     }`}>
                                       Min: R$ {minVal?.toFixed(2)}
                                     </span>
                                   </div>
-                                  <p className="text-[9px] text-neutral-400">{voice.description}</p>
+                                  <p className="text-[9px] text-gray-500">{voice.description}</p>
                                 </div>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-[#10b981]" />}
+                                {isSelected && <Check className="w-3.5 h-3.5 text-cyan-400" />}
                               </button>
                             );
                           })}
@@ -698,15 +688,15 @@ export default function DotaPixDonatePage() {
 
               {/* Gravar Áudio */}
               {messageType === 'audio' && (
-                <div className="flex flex-col items-center p-4 bg-slate-50 border border-neutral-200 rounded-[1.8rem] space-y-3.5 shadow-inner">
-                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest font-mono">Grave um áudio (máx. 15s)</p>
+                <div className="flex flex-col items-center p-4 bg-black/40 border border-white/10 rounded-[1.8rem] space-y-3.5 shadow-inner">
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest font-mono">Grave um áudio (máx. 15s)</p>
 
                   <div className="flex items-center gap-3">
                     {!isRecording ? (
                       <Button 
                         type="button" 
                         onClick={startRecording}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-full p-3 h-12 w-12 flex items-center justify-center shadow-lg shadow-red-500/10 border-none transition-all duration-200"
+                        className="bg-gradient-to-r from-red-500 to-pink-500 hover:scale-105 text-white rounded-full p-3 h-12 w-12 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.5)] border-none transition-all duration-200"
                       >
                         <Mic className="w-5 h-5" />
                       </Button>
@@ -714,19 +704,19 @@ export default function DotaPixDonatePage() {
                       <Button 
                         type="button" 
                         onClick={stopRecording}
-                        className="bg-neutral-600 hover:bg-neutral-500 text-white rounded-full p-3 h-12 w-12 flex items-center justify-center animate-pulse border-none"
+                        className="bg-white/10 hover:bg-white/20 text-white rounded-full p-3 h-12 w-12 flex items-center justify-center animate-pulse border border-white/20 shadow-glow"
                       >
-                        <div className="w-3 h-3 bg-red-500 rounded-sm" />
+                        <div className="w-3 h-3 bg-red-500 rounded-sm shadow-[0_0_10px_rgba(239,68,68,1)]" />
                       </Button>
                     )}
                   </div>
 
                   {audioUrl && (
                     <div className="w-full flex flex-col items-center space-y-2">
-                      <p className="text-[10px] text-[#10b981] font-bold flex items-center gap-1">
+                      <p className="text-[10px] text-cyan-400 font-bold flex items-center gap-1 font-mono">
                         <Volume2 className="w-3.5 h-3.5 animate-pulse" /> Áudio pronto para envio
                       </p>
-                      <audio src={audioUrl} controls className="w-full max-w-xs h-7 bg-white border border-neutral-200 rounded-lg" />
+                      <audio src={audioUrl} controls className="w-full max-w-xs h-8 bg-black/50 border border-white/10 rounded-lg" />
                     </div>
                   )}
                 </div>
@@ -734,16 +724,16 @@ export default function DotaPixDonatePage() {
 
               {/* Valor da Doação */}
               <div className="space-y-1.5">
-                <label className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest px-1 font-mono">Valor da doação</label>
+                <label className="text-[9px] text-gray-400 font-bold uppercase tracking-widest px-1 font-mono">Valor da doação</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-neutral-400 font-black text-base">R$</span>
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-black text-base">R$</span>
                   <Input
                     value={amount}
                     onChange={(e) => handleAmountChange(e.target.value)}
-                    className="bg-slate-50 border-neutral-200 text-neutral-800 pl-11 pr-4 py-5 text-base font-black rounded-2xl focus:ring-1 focus:ring-black/10 focus:border-neutral-300 shadow-inner"
+                    className="bg-black/50 border-white/10 text-white pl-11 pr-4 py-5 text-base font-black rounded-2xl focus:ring-1 focus:ring-cyan-500/50 focus:border-cyan-500/50 shadow-inner font-mono"
                   />
                 </div>
-                <p className="text-[10px] text-neutral-400 font-medium px-1 font-mono">
+                <p className="text-[10px] text-gray-500 font-medium px-1 font-mono">
                   Valor mínimo: R$ {
                     (settings 
                       ? (messageType === 'audio' 
@@ -760,7 +750,7 @@ export default function DotaPixDonatePage() {
                 type="button"
                 disabled={loading}
                 onClick={handleContinue}
-                className="w-full bg-neutral-900 hover:bg-neutral-800 text-white font-extrabold text-[10px] py-5 rounded-2xl transition-all flex items-center justify-center gap-2 border-none tracking-widest uppercase shadow-md hover:shadow-lg duration-300 font-mono"
+                className="w-full bg-gradient-gaming shadow-glow hover:scale-[1.02] text-white font-extrabold text-[10px] py-5 rounded-2xl transition-all flex items-center justify-center gap-2 border-none tracking-widest uppercase hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] duration-300 font-mono"
               >
                 {loading ? (
                   <>
@@ -772,8 +762,8 @@ export default function DotaPixDonatePage() {
                 )}
               </Button>
 
-              <p className="text-[9px] text-neutral-400 text-center leading-normal px-1">
-                Ao continuar, você concorda com os <a href="#" className="underline hover:text-neutral-500">Termos de Uso</a>.
+              <p className="text-[9px] text-gray-500 text-center leading-normal px-1 font-mono">
+                Ao continuar, você concorda com os <a href="#" className="underline hover:text-white transition-colors">Termos de Uso</a>.
               </p>
             </div>
           )}
