@@ -114,19 +114,21 @@ export default function DotaPixAdmin() {
   };
 
   const getTotalPaidForMonth = (year: number, monthZeroIndexed: number) => {
-    return donations
+    const total = donations
       .filter(d => {
         if (!d.is_paid) return false;
         const date = new Date(d.created_at);
         return date.getFullYear() === year && date.getMonth() === monthZeroIndexed;
       })
       .reduce((sum, d) => sum + Number(d.amount), 0);
+    return total * 0.98;
   };
 
   const getFilteredTotalPaid = () => {
-    return getFilteredDonations()
+    const total = getFilteredDonations()
       .filter(d => d.is_paid)
       .reduce((sum, d) => sum + Number(d.amount), 0);
+    return total * 0.98;
   };
 
   const fetchHistory = async () => {
