@@ -210,17 +210,14 @@ export default function DotaPixWidgetPage() {
       // 2. Try TikTok TTS if a TikTok voice is selected and not played yet
       if (!playedTTS && isTikTok) {
         try {
-          const response = await fetch('https://corsproxy.io/?https://tiktok-tts.weilnet.workers.dev/api/generation', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+          const { data, error } = await supabase.functions.invoke('tiktok-tts', {
+            body: {
               text: `${alert.donor_name} enviou ${formatAmountForTTS(alert.amount)}. ${alert.message}`,
               voice: alert.voice_id
-            })
+            }
           });
-          const data = await response.json();
+          
+          if (error) throw error;
           if (data.success && data.data) {
             const audio = new Audio("data:audio/mp3;base64," + data.data);
             audio.volume = 1.0;
