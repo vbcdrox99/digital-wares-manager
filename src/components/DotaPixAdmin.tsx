@@ -117,6 +117,7 @@ export default function DotaPixAdmin() {
     const total = donations
       .filter(d => {
         if (!d.is_paid) return false;
+        if (d.source === 'youtube') return false;
         const date = new Date(d.created_at);
         return date.getFullYear() === year && date.getMonth() === monthZeroIndexed;
       })
@@ -126,7 +127,7 @@ export default function DotaPixAdmin() {
 
   const getFilteredTotalPaid = () => {
     const total = getFilteredDonations()
-      .filter(d => d.is_paid)
+      .filter(d => d.is_paid && d.source !== 'youtube')
       .reduce((sum, d) => sum + Number(d.amount), 0);
     return total * 0.98;
   };
