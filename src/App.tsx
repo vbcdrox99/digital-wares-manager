@@ -18,6 +18,9 @@ import SellPage from "./pages/SellPage";
 import SellerDemoPage from "./pages/SellerDemoPage";
 import SellerAreaPage from "./pages/SellerAreaPage";
 import PerfilPage from "./pages/PerfilPage";
+import DotaPixDonatePage from "./pages/DotaPixDonatePage";
+import DotaPixWidgetPage from "./pages/DotaPixWidgetPage";
+import DotaPixGoalWidgetPage from "./pages/DotaPixGoalWidgetPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,13 +38,15 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <div className="min-h-screen bg-background">
-          <Toaster />
-          <Sonner />
+const App = () => {
+  const isWidget = window.location.pathname.includes('/dotapix/widget') || window.location.pathname.includes('/dotapix/goal');
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <div className={`min-h-screen ${isWidget ? 'bg-transparent' : 'bg-background'}`}>
+            <Toaster />
+            <Sonner />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<HomePage />} />
@@ -53,6 +58,9 @@ const App = () => (
               <Route path="/quero-vender" element={<SellPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/seller/:id" element={<SellerDemoPage />} />
+              <Route path="/dotapix" element={<DotaPixDonatePage />} />
+              <Route path="/dotapix/widget" element={<DotaPixWidgetPage />} />
+              <Route path="/dotapix/goal" element={<DotaPixGoalWidgetPage />} />
               <Route path="/area-do-vendedor" element={
                 <ProtectedRoute>
                   <SellerAreaPage />
@@ -76,6 +84,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

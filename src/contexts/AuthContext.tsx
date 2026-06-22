@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '../integrations/supabase/client';
 import type { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
 
@@ -35,7 +35,13 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const userRef = useRef<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const updateUser = (newUser: User | null) => {
+    setUser(newUser);
+    userRef.current = newUser;
+  };
 
   // Função para buscar dados do usuário simplificada
   const fetchUserData = async (userId: string): Promise<User | null> => {
@@ -103,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data.user) {
         const userData = await fetchUserData(data.user.id);
         if (userData) {
-          setUser(userData);
+          updateUser(userData);
         }
       }
 
@@ -138,7 +144,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const userDataResult = await fetchUserData(data.user.id);
         if (userDataResult) {
-          setUser(userDataResult);
+          updateUser(userDataResult);
         }
       }
 
@@ -152,7 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Função de logout
   const logout = async (): Promise<void> => {
     await supabase.auth.signOut();
-    setUser(null);
+    updateUser(null);
   };
 
   // Verificar se usuário é admin
@@ -162,22 +168,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Verificar se há usuário logado ao carregar
   useEffect(() => {
+    let active = true;
+
     const getSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-
         if (error) throw error;
 
-        if (session?.user) {
-          const userData = await fetchUserData(session.user.id);
-          if (userData) {
-            setUser(userData);
+        if (session?.user && active) {
+          if (userRef.current?.id !== session.user.id) {
+            const userData = await fetchUserData(session.user.id);
+            if (userData && active) {
+              updateUser(userData);
+            }
           }
         }
       } catch (error) {
         console.error('Erro ao recuperar sessão:', error);
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
@@ -186,18 +197,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session?.user) {
-          const userData = await fetchUserData(session.user.id);
-          if (userData) {
-            setUser(userData);
+        if (event === 'SIGNED_OUT') {
+          if (active) {
+            updateUser(null);
+            setLoading(false);
           }
-        } else {
-          setUser(null);
+        } else if (session?.user) {
+          if (userRef.current?.id !== session.user.id) {
+            const userData = await fetchUserData(session.user.id);
+            if (userData && active) {
+              updateUser(userData);
+            }
+          }
+          if (active) {
+            setLoading(false);
+          }
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const value: AuthContextType = {

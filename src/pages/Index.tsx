@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home, Star, Plus, X, Search, Check, IdCard, DollarSign } from "lucide-react";
+import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home, Star, Plus, X, Search, Check, IdCard, DollarSign, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Loading } from "@/components/ui/loading";
@@ -11,6 +11,7 @@ import Orders from "@/components/Orders";
 import ShippingQueue from "@/components/ShippingQueue";
 import Customers from "@/components/Customers";
 import Financial from "@/components/Financial";
+import DotaPixAdmin from "@/components/DotaPixAdmin";
 import { useItems } from "@/hooks/useItems";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { Item } from "@/types/inventory";
@@ -18,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const [adminSection, setAdminSection] = useState<'store' | 'dotapix'>('store');
   const { items } = useItems();
   const [premiumItemIds, setPremiumItemIds] = useLocalStorage<string[]>("premiumRaffleItemIds", []);
   const premiumSelectedItems: Item[] = premiumItemIds
@@ -115,6 +117,30 @@ const Index = () => {
                 </div>
                 <span className="text-lg font-semibold">Painel de Controle</span>
               </div>
+              <div className="hidden md:block h-6 w-px bg-white/10" />
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setAdminSection('store')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    adminSection === 'store' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-400 hover:text-white bg-white/5 border border-white/5'
+                  }`}
+                >
+                  Gerenciador da Loja
+                </button>
+                <button 
+                  onClick={() => setAdminSection('dotapix')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    adminSection === 'dotapix' 
+                      ? 'bg-[#2fd0df] text-black shadow-[0_0_10px_rgba(47,208,223,0.4)]' 
+                      : 'text-cyan-400 hover:text-cyan-300 border border-cyan-500/20 bg-cyan-950/10'
+                  }`}
+                >
+                  <Coins className="w-3.5 h-3.5" />
+                  DotaPix Live Alerts
+                </button>
+              </div>
               <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
                 <div className="flex items-center space-x-2">
                   <Home className="h-4 w-4" />
@@ -134,77 +160,84 @@ const Index = () => {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="inventory" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
-            <TabsTrigger value="inventory" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Inventário
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Pedidos
-            </TabsTrigger>
-            <TabsTrigger value="shipping" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Fila de Envios
-            </TabsTrigger>
-            <TabsTrigger value="customers" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Clientes
-            </TabsTrigger>
-            <TabsTrigger value="sellers" className="flex items-center gap-2">
-              <IdCard className="h-4 w-4" />
-              Vendedores
-            </TabsTrigger>
-            <TabsTrigger value="featured" className="flex items-center gap-2">
-              <Star className="h-4 w-4" />
-              Sorteios Premium
-            </TabsTrigger>
-            <TabsTrigger value="financial" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Financeiro
-            </TabsTrigger>
-          </TabsList>
+        {adminSection === 'dotapix' ? (
+          <ErrorBoundary>
+            <Suspense fallback={<Loading text="Carregando painel DotaPix..." />}>
+              <DotaPixAdmin />
+            </Suspense>
+          </ErrorBoundary>
+        ) : (
+          <Tabs defaultValue="inventory" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-7">
+              <TabsTrigger value="inventory" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Inventário
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                Pedidos
+              </TabsTrigger>
+              <TabsTrigger value="shipping" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Fila de Envios
+              </TabsTrigger>
+              <TabsTrigger value="customers" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Clientes
+              </TabsTrigger>
+              <TabsTrigger value="sellers" className="flex items-center gap-2">
+                <IdCard className="h-4 w-4" />
+                Vendedores
+              </TabsTrigger>
+              <TabsTrigger value="featured" className="flex items-center gap-2">
+                <Star className="h-4 w-4" />
+                Sorteios Premium
+              </TabsTrigger>
+              <TabsTrigger value="financial" className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Financeiro
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="inventory">
-            <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando catálogo do Supabase..." />}>
-                <SupabaseStockControl />
-              </Suspense>
-            </ErrorBoundary>
-          </TabsContent>
+            <TabsContent value="inventory">
+              <ErrorBoundary>
+                <Suspense fallback={<Loading text="Carregando catálogo do Supabase..." />}>
+                  <SupabaseStockControl />
+                </Suspense>
+              </ErrorBoundary>
+            </TabsContent>
 
-          <TabsContent value="orders">
-            <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando pedidos..." />}>
-                <Orders />
-              </Suspense>
-            </ErrorBoundary>
-          </TabsContent>
+            <TabsContent value="orders">
+              <ErrorBoundary>
+                <Suspense fallback={<Loading text="Carregando pedidos..." />}>
+                  <Orders />
+                </Suspense>
+              </ErrorBoundary>
+            </TabsContent>
 
-          <TabsContent value="shipping">
-            <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando fila de envios..." />}>
-                <ShippingQueue />
-              </Suspense>
-            </ErrorBoundary>
-          </TabsContent>
+            <TabsContent value="shipping">
+              <ErrorBoundary>
+                <Suspense fallback={<Loading text="Carregando fila de envios..." />}>
+                  <ShippingQueue />
+                </Suspense>
+              </ErrorBoundary>
+            </TabsContent>
 
-          <TabsContent value="customers">
-            <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando clientes..." />}>
-                <Customers />
-              </Suspense>
-            </ErrorBoundary>
-          </TabsContent>
+            <TabsContent value="customers">
+              <ErrorBoundary>
+                <Suspense fallback={<Loading text="Carregando clientes..." />}>
+                  <Customers />
+                </Suspense>
+              </ErrorBoundary>
+            </TabsContent>
 
-          <TabsContent value="financial">
-            <ErrorBoundary>
-              <Suspense fallback={<Loading text="Carregando dados financeiros..." />}>
-                <Financial />
-              </Suspense>
-            </ErrorBoundary>
-          </TabsContent>
+            <TabsContent value="financial">
+              <ErrorBoundary>
+                <Suspense fallback={<Loading text="Carregando dados financeiros..." />}>
+                  <Financial />
+                </Suspense>
+              </ErrorBoundary>
+            </TabsContent>
 
           {/* Vendedores */}
           <TabsContent value="sellers">
@@ -364,7 +397,8 @@ const Index = () => {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        )}
       </div>
     </div>
   );
