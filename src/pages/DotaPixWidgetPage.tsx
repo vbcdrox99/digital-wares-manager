@@ -301,7 +301,22 @@ export default function DotaPixWidgetPage() {
     processQueue();
   };
 
+  const [hasInteracted, setHasInteracted] = useState(!!(window as any).obsstudio);
+
+  // Inject Inter font on mount
   useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasInteracted) return;
+
     // Fetch initial unplayed paid donations
     const fetchInitial = async () => {
       if (testMode) return;
@@ -394,17 +409,21 @@ export default function DotaPixWidgetPage() {
       document.body.style.background = prevBg;
       document.body.style.backgroundColor = prevBgColor;
     };
-  }, [testMode]);
-  // Inject Inter font on mount
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, []);
+  }, [testMode, hasInteracted]);
+  if (!hasInteracted) {
+    return (
+      <div className="w-screen h-screen bg-transparent flex flex-col items-center justify-center font-['Inter']">
+        <button 
+          onClick={() => setHasInteracted(true)}
+          className="bg-[#34c759] hover:bg-[#32d74b] text-black font-black py-4 px-8 rounded-full shadow-[0_0_30px_rgba(52,199,89,0.3)] border-2 border-white/20 transition-all transform hover:scale-105"
+        >
+          ATIVAR WIDGET<br/>
+          <span className="text-sm font-medium opacity-80">(Necessário para permitir áudio no navegador)</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-screen h-screen bg-transparent overflow-hidden flex items-center justify-center select-none" style={{ fontFamily: '"Inter", sans-serif' }}>
       <style>{`
