@@ -136,68 +136,46 @@ export default function DotaPixWidgetPage() {
               format: 'mp3'
             };
 
-            let response = null;
-            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const primaryUrl = isLocalhost ? '/api-fish/v1/tts' : 'https://api.fish.audio/v1/tts';
-
             try {
-              console.log("Fish Audio - Requesting via primary URL:", primaryUrl);
-              response = await fetch(primaryUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify(payload)
+              console.log("Fish Audio - Requesting via Edge Function proxy...");
+              const { data, error } = await supabase.functions.invoke('fish-tts', {
+                body: { payload, apiKey }
               });
-              console.log("Fish Audio - Response status:", response.status);
-            } catch (err) {
-              console.warn("Fish Audio - Primary endpoint failed (possibly CORS). Trying CORS proxy fallback...", err);
-              if (!isLocalhost) {
-                try {
-                  const fallbackUrl = 'https://corsproxy.io/?' + encodeURIComponent('https://api.fish.audio/v1/tts');
-                  response = await fetch(fallbackUrl, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify(payload)
-                  });
-                  console.log("Fish Audio - Fallback response status:", response?.status);
-                } catch (fallbackErr) {
-                  console.error("Fish Audio - Fallback CORS proxy failed:", fallbackErr);
-                }
-              }
-            }
 
-            if (response && response.ok) {
-              const blob = await response.blob();
-              console.log("Fish Audio - Audio blob received successfully, playing...");
-              const audioUrl = URL.createObjectURL(blob);
-              const audio = new Audio(audioUrl);
-              audio.volume = 1.0;
-              await audio.play();
-              await new Promise<void>((resolve) => {
-                const timeoutId = setTimeout(() => {
-                  audio.pause();
-                  audio.src = '';
-                  resolve();
-                }, 15000); // 15 seconds cutoff
-                
-                audio.onended = () => {
-                  clearTimeout(timeoutId);
-                  resolve();
-                };
-                audio.onerror = (e) => {
-                  console.error("Fish Audio - Playback error:", e);
-                  clearTimeout(timeoutId);
-                  resolve();
-                };
-              });
-              playedTTS = true;
-            } else {
-              console.warn("Fish Audio - Endpoints failed. Falling back to next TTS service.");
+              if (error) {
+                console.error("Fish Audio - Edge Function Error:", error);
+                throw error;
+              }
+
+              if (data && data.success && data.audioBase64) {
+                console.log("Fish Audio - Audio received successfully, playing...");
+                const audioUrl = "data:audio/mp3;base64," + data.audioBase64;
+                const audio = new Audio(audioUrl);
+                audio.volume = 1.0;
+                await audio.play();
+                await new Promise<void>((resolve) => {
+                  const timeoutId = setTimeout(() => {
+                    audio.pause();
+                    audio.src = '';
+                    resolve();
+                  }, 15000); // 15 seconds cutoff
+                  
+                  audio.onended = () => {
+                    clearTimeout(timeoutId);
+                    resolve();
+                  };
+                  audio.onerror = (e) => {
+                    console.error("Fish Audio - Playback error:", e);
+                    clearTimeout(timeoutId);
+                    resolve();
+                  };
+                });
+                playedTTS = true;
+              } else {
+                console.warn("Fish Audio - Failed to get audio from Edge Function.", data);
+              }
+            } catch (err) {
+              console.warn("Fish Audio - Endpoints failed. Falling back to next TTS service.", err);
             }
           } else {
             console.warn("Fish Audio - Missing API Key in dotapix_settings.");
