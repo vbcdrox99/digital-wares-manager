@@ -34,12 +34,22 @@ export default function DotaPixGoalWidgetPage() {
     };
   }, []);
 
-  // Toggle between Goal progress and Call-to-action every 15 seconds
+  // Toggle between Goal progress (45s) and Call-to-action (15s)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMode(prev => prev === 'goal' ? 'promo' : 'goal');
-    }, 15000);
-    return () => clearInterval(interval);
+    let timeoutId: any;
+    
+    const tick = () => {
+      setMode(prev => {
+        const nextMode = prev === 'goal' ? 'promo' : 'goal';
+        const delay = nextMode === 'goal' ? 45000 : 15000;
+        timeoutId = setTimeout(tick, delay);
+        return nextMode;
+      });
+    };
+    
+    timeoutId = setTimeout(tick, 45000);
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const getRemainingTime = (endDateStr: string | null) => {
@@ -333,12 +343,9 @@ export default function DotaPixGoalWidgetPage() {
           85% { opacity: 1; }
           100% { transform: translateY(-60px) scale(1.1) rotate(360deg); opacity: 0; }
         }
-        @keyframes border-glow {
-          0%, 100% { border-color: rgba(52, 199, 89, 0.4); box-shadow: 0 0 20px rgba(52, 199, 89, 0.2); }
-          50% { border-color: rgba(52, 199, 89, 1); box-shadow: 0 0 35px rgba(52, 199, 89, 0.8), inset 0 0 10px rgba(52, 199, 89, 0.2); }
-        }
-        .celebrate-active {
-          animation: border-glow 1.5s ease-in-out infinite;
+        @keyframes move-stripes {
+          0% { background-position: 24px 0; }
+          100% { background-position: 0 0; }
         }
         .money-particle {
           position: absolute;
@@ -347,17 +354,21 @@ export default function DotaPixGoalWidgetPage() {
           font-size: 1.5rem;
           z-index: 30;
         }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-shimmer {
-          animation: shimmer 2.5s infinite linear;
-        }
       `}</style>
 
-      {/* Outer container */}
-      <div className={`w-[450px] min-h-[110px] bg-transparent py-3.5 px-6 relative overflow-hidden flex flex-col justify-center transition-all duration-300 ${celebrating ? 'celebrate-active scale-[1.03] border-2 border-transparent rounded-[2rem]' : ''}`}>
+        {/* Outer container: Dota 2 HUD themed glassmorphic card */}
+        <div 
+          className={`w-[540px] h-[116px] py-3 px-6 relative overflow-hidden flex flex-col justify-center transition-all duration-300 rounded-[2rem] border`}
+          style={{
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(2, 6, 23, 0.7) 100%)',
+            borderColor: celebrating ? '#fbbf24' : 'rgba(251, 191, 36, 0.25)',
+            boxShadow: celebrating 
+              ? '0 16px 45px rgba(0, 0, 0, 0.9), 0 0 35px rgba(251, 191, 36, 0.4), inset 0 0 10px rgba(251, 191, 36, 0.15)'
+              : '0 16px 40px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 0 25px rgba(251, 191, 36, 0.05)',
+            transform: celebrating ? 'scale(1.03)' : 'scale(1)',
+            backdropFilter: 'blur(16px)'
+          }}
+        >
 
         {/* Celebration Particles Overlay */}
         {celebrating && (
@@ -371,76 +382,188 @@ export default function DotaPixGoalWidgetPage() {
         )}
 
         {/* MODE 1: Goal Progress */}
-        <div className={`flex flex-col gap-2 w-full h-[78px] justify-center transition-all duration-700 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] ${
+        <div className={`flex flex-col gap-2 w-full min-h-[80px] justify-center transition-all duration-700 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] ${
           mode === 'goal' 
             ? 'opacity-100 scale-100 translate-x-0 blur-none' 
             : 'opacity-0 scale-90 -translate-x-8 blur-sm absolute inset-x-6 pointer-events-none'
         }`}>
           {/* Top row: Title and status */}
-          <div className="flex justify-between items-center relative z-10">
+          <div className="flex justify-between items-center relative z-10 px-0.5 shrink-0">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xl font-black text-white uppercase tracking-tight truncate drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
+              <span 
+                className="text-lg font-black uppercase tracking-wider truncate"
+                style={{
+                  color: '#f8fafc',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.9)'
+                }}
+              >
                 {goal.title}
               </span>
             </div>
             {timeLeft ? (
-              <span className="text-sm text-[#ff9f0a] font-black flex items-center gap-1 shrink-0 bg-[#ff9f0a]/20 px-3 py-1 rounded-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
-                <Clock className="w-4 h-4 font-black" />
-                <span>{timeLeft}</span>
+              <span 
+                className="text-xs font-extrabold flex items-center gap-1 shrink-0 px-3.5 py-1 rounded-full"
+                style={{
+                  background: 'rgba(251, 191, 36, 0.1)',
+                  border: '1px solid rgba(251, 191, 36, 0.4)',
+                  color: '#fbbf24',
+                  boxShadow: '0 2px 8px rgba(251, 191, 36, 0.15)'
+                }}
+              >
+                <Clock className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span className="tracking-wider">{timeLeft}</span>
               </span>
             ) : (
-              <span className="text-sm text-[#34c759] font-black shrink-0 bg-[#34c759]/20 px-3 py-1 rounded-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
+              <span 
+                className="text-xs font-extrabold shrink-0 px-3.5 py-1 rounded-full tracking-wider"
+                style={{
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.4)',
+                  color: '#34d399',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)'
+                }}
+              >
                 META DA LIVE
               </span>
             )}
           </div>
 
-          {/* Goal Bar: Premium modern slider */}
-          <div className="w-full h-5 bg-black/50 rounded-full relative drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] border border-white/20 my-3">
-            {/* The filled part with gradient and animation */}
+          {/* Goal Bar: Thin with animated fill and handle */}
+          <div 
+            className="w-full relative my-1.5 rounded-full shrink-0 flex items-center"
+            style={{ 
+              height: '14px', 
+              background: 'rgba(2, 6, 23, 0.95)',
+              border: '1px solid rgba(248, 250, 252, 0.08)',
+              boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.8)'
+            }}
+          >
+            {/* The fill mask that grows with percentage */}
             <div 
-              className="h-full bg-gradient-to-r from-[#ff3b30] via-[#ffcc00] to-[#34c759] rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(52,199,89,0.5)] relative overflow-hidden"
-              style={{ width: `${percentage}%` }}
+              className="absolute left-0 top-0 bottom-0 transition-all duration-1000 ease-out overflow-hidden rounded-full"
+              style={{ 
+                width: `${percentage}%`
+              }}
             >
-              {/* Shine animation */}
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
+              {/* The full-width gradient that stays fixed relative to the container */}
+              <div 
+                className="absolute left-0 top-0 bottom-0"
+                style={{ 
+                  width: '492px', // Matches the width of the track
+                  background: 'linear-gradient(90deg, #f43f5e 0%, #fbbf24 50%, #10b981 100%)',
+                  boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.15)'
+                }}
+              >
+                {/* "Filling" animation overlay: a subtle moving shimmer/stripe */}
+                <div 
+                  className="absolute inset-0 opacity-50"
+                  style={{
+                    background: 'linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, transparent 75%, transparent)',
+                    backgroundSize: '24px 24px',
+                    animation: 'move-stripes 1.5s linear infinite'
+                  }}
+                />
+              </div>
             </div>
 
-            {/* Glowing Ball Handle */}
+            {/* The handle (Bolinha) exactly like the image */}
             <div 
-              className="absolute top-1/2 transform -translate-y-1/2 -ml-3.5 w-7 h-7 bg-white rounded-full shadow-[0_0_20px_rgba(52,199,89,1)] border-[4px] border-[#34c759] z-20 transition-all duration-1000 flex items-center justify-center"
-              style={{ left: `${percentage}%` }}
+              className="absolute top-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition-all duration-1000 ease-out z-20"
+              style={{ 
+                width: '24px',
+                height: '24px',
+                left: `calc(${percentage}% - 12px)`,
+                background: '#0f172a',
+                border: '2px solid #fbbf24',
+                boxShadow: '0 0 12px rgba(251, 191, 36, 0.5), inset 0 2px 4px rgba(0,0,0,0.5)'
+              }}
             >
-              {/* Inner glowing dot */}
-              <div className="w-1.5 h-1.5 bg-[#34c759] rounded-full animate-pulse" />
+              {/* Green gem core */}
+              <div 
+                className="rounded-full"
+                style={{
+                  width: '10px',
+                  height: '10px',
+                  background: '#10b981',
+                  boxShadow: '0 0 8px #10b981, inset 0 1px 2px rgba(255, 255, 255, 0.8)'
+                }}
+              />
             </div>
           </div>
 
           {/* Bottom row: Current value, Target and percentage */}
-          <div className="flex justify-between items-center relative z-10 font-semibold mt-1">
-            <span className="text-white text-2xl font-black tracking-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">R$ {goal.current.toFixed(2)}</span>
+          <div className="flex justify-between items-center relative z-10 font-extrabold text-sm tracking-wide mt-0.5 px-0.5 shrink-0">
+            <span 
+              className="text-xl font-black tracking-tight"
+              style={{
+                color: '#f8fafc',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.9)'
+              }}
+            >
+              R$ <span style={{ color: '#fbbf24', textShadow: '0 0 12px rgba(251, 191, 36, 0.4)' }}>{goal.current.toFixed(2)}</span>
+            </span>
 
-            <div className="text-center font-black text-[#34c759] text-base bg-[#34c759]/20 px-3.5 py-1 rounded-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
+            <div 
+              className="text-center font-black text-xs px-3.5 py-1 rounded-full"
+              style={{
+                background: 'rgba(251, 191, 36, 0.1)',
+                border: '1px solid rgba(251, 191, 36, 0.3)',
+                color: '#fbbf24',
+                boxShadow: '0 2px 8px rgba(251, 191, 36, 0.15)'
+              }}
+            >
               {percentage.toFixed(0)}%
             </div>
 
-            <span className="text-white text-2xl font-black tracking-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">R$ {goal.target.toFixed(2)}</span>
+            <span 
+              className="text-xl font-black tracking-tight"
+              style={{
+                color: '#f8fafc',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.9)'
+              }}
+            >
+              R$ <span style={{ color: '#fbbf24', textShadow: '0 0 12px rgba(251, 191, 36, 0.4)' }}>{goal.target.toFixed(2)}</span>
+            </span>
           </div>
         </div>
 
         {/* MODE 2: Call-To-Action (Promo) */}
-        <div className={`flex items-center w-full h-[78px] justify-center transition-all duration-700 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] ${
+        <div className={`flex items-center w-full min-h-[80px] justify-center transition-all duration-700 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] ${
           mode === 'promo' 
             ? 'opacity-100 scale-100 translate-x-0 blur-none' 
             : 'opacity-0 scale-90 translate-x-8 blur-sm absolute inset-x-6 pointer-events-none'
         }`}>
-          {/* Middle text area - Centered and Enlarged */}
-          <div className="w-full text-center space-y-2 flex flex-col items-center justify-center">
-            <span className="text-xl font-black text-white tracking-tight uppercase drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
+          {/* Middle text area - Gaming Styled */}
+          <div className="w-full text-center space-y-3 flex flex-col items-center justify-center">
+            <span 
+              className="text-sm font-black tracking-widest uppercase"
+              style={{
+                color: '#e2e8f0',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 1)'
+              }}
+            >
               {timeLeft && timeLeft !== 'Encerrada' ? `A meta encerra em ${timeLeft}` : 'A meta está ativa'}
             </span>
-            <p className="text-xl text-white font-bold leading-snug drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
-              Caso queira ajudar digite <span className="text-[#34c759] font-black text-2xl bg-black/40 px-2 rounded-md">{goal.command}</span>
+            <p 
+              className="text-2xl font-black leading-snug flex items-center justify-center"
+              style={{
+                color: '#ffffff',
+                textShadow: '0 2px 6px rgba(0, 0, 0, 1)'
+              }}
+            >
+              Caso queira ajudar digite 
+              <span 
+                className="px-4 py-1.5 rounded-lg font-mono text-3xl font-black ml-3 animate-pulse"
+                style={{
+                  background: 'rgba(251, 191, 36, 0.15)',
+                  border: '2px solid rgba(251, 191, 36, 0.6)',
+                  color: '#fbbf24',
+                  textShadow: '0 0 15px rgba(251, 191, 36, 0.6)',
+                  boxShadow: '0 4px 12px rgba(251, 191, 36, 0.25), inset 0 2px 4px rgba(251, 191, 36, 0.1)'
+                }}
+              >
+                {goal.command}
+              </span>
             </p>
           </div>
         </div>
@@ -448,3 +571,4 @@ export default function DotaPixGoalWidgetPage() {
     </div>
   );
 }
+

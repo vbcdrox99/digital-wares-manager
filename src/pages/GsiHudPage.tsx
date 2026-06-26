@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { Hourglass, Coins, CheckCircle } from 'lucide-react';
 
 // ── Tipos ─────────────────────────────────────────────────────────────────
 interface PlayerData {
@@ -20,13 +21,17 @@ interface PlayerData {
   backpack?: (string | null)[];
   neutral?: string | null;
   selected: boolean;
+  netWorth: number;
+  buybackCost: number;
+  buybackCooldown: number;
 }
 
 interface HudData {
   inGame: boolean;
-  gameTime?: number;
-  gameState?: string;
-  goldLead?: number;
+  gameTime: number;
+  matchGameTime?: number;
+  gameState: string;
+  goldLead: number;
   radiantScore?: number;
   direScore?: number;
   players?: PlayerData[];
@@ -90,18 +95,32 @@ export default function GsiHudPage() {
 
   const leadText = data.goldLead !== undefined 
     ? (data.goldLead > 0 
-      ? `Radiant +${formatGold(data.goldLead)}` 
-      : `Dire +${formatGold(Math.abs(data.goldLead))}`)
+      ? `${data.radiantName || 'Iluminados'} +${formatGold(data.goldLead)}` 
+      : `${data.direName || 'Temidos'} +${formatGold(Math.abs(data.goldLead))}`)
     : '';
   const leadColor = data.goldLead !== undefined && data.goldLead > 0 ? '#4ade80' : '#f87171';
 
-  const isEarlyGame = data.gameTime !== undefined && data.gameTime < 420; // 7 minutos em segundos
-  const isItemsView = data.gameTime !== undefined && data.gameTime > 0 && (data.gameTime % 60 >= 45); // Aparece nos últimos 15s de cada minuto
+  const isEarlyGame = data.gameTime !== undefined && data.gameTime < 360; // 6 minutos em segundos
+  const isItemsView = data.gameTime !== undefined && data.gameTime > 0 && (data.gameTime % 240 >= 0 && data.gameTime % 240 < 15); // Aparece a cada 4 minutos, durante 15 segundos
   const isExpandedTime = data.gameTime !== undefined && data.gameTime > 0 && (data.gameTime % 120 >= 0 && data.gameTime % 120 < 15);
   const isExpanded = !isEarlyGame && !isItemsView && isExpandedTime;
+  const isUltraLateGame = data.gameTime !== undefined && data.gameTime >= 1800; // 30 minutos em segundos
 
-  // Ordena localmente baseado no tempo de jogo
+  // Ordena localmente baseado no tempo de jogo e view atual
   const sortedPlayers = [...data.players].sort((a, b) => {
+    // Na visualização de inventário, agrupa por time (Radiant 5 -> Dire 5)
+    if (isItemsView) {
+      if (a.team !== b.team) {
+        return a.team === 'radiant' ? -1 : 1;
+      }
+      // Dentro do time, ordena por farm
+      if (isEarlyGame) {
+        return (b.lastHits || 0) - (a.lastHits || 0);
+      }
+      return b.netWorth - a.netWorth;
+    }
+
+    // Nas outras telas, ordem geral de quem tá farmando mais (misturado)
     if (isEarlyGame) {
       return (b.lastHits || 0) - (a.lastHits || 0);
     }
@@ -115,15 +134,30 @@ export default function GsiHudPage() {
         background: 'transparent',
         userSelect: 'none',
         padding: '10px',
-        width: isExpanded || isItemsView ? '380px' : '280px', // Expandido horizontalmente
+        width: isExpanded || isItemsView ? '380px' : (isUltraLateGame ? '310px' : '280px'), // UltraLateGame diminuído de 360px para 310px para "encurtar" as barras
         transition: 'width 0.6s cubic-bezier(0.25, 1, 0.5, 1)',
       }}
     >
+      <style>{`
+        @keyframes shine-sweep {
+          0% { transform: translateX(-100%); }
+          20% { transform: translateX(200%); }
+          100% { transform: translateX(200%); }
+        }
+        @keyframes subtle-pulse {
+          0%, 100% { filter: brightness(1); text-shadow: 0 2px 4px rgba(0,0,0,1); }
+          50% { filter: brightness(1.25); text-shadow: 0 0 10px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,1); }
+        }
+        @keyframes move-stripes {
+          0% { background-position: 0 0; }
+          100% { background-position: 32px 0; }
+        }
+      `}</style>
       {/* ── Cabeçalho ── */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(10,10,20,0.95) 100%)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: '#000000',
+          border: '1px solid #000000',
           borderRadius: '8px 8px 0 0',
           padding: '6px 12px',
           display: 'flex',
@@ -135,7 +169,7 @@ export default function GsiHudPage() {
           borderBottom: '1px solid rgba(255,255,255,0.15)',
         }}
       >
-        <span>{isItemsView ? 'INVENTÁRIO' : (isEarlyGame ? 'ÚLTIMOS GOLPES' : 'PATRIMÔNIO LÍQUIDO')}</span>
+        <span>{isItemsView ? 'INVENTÁRIO' : (isEarlyGame ? 'LAST HIT/DENY' : (isUltraLateGame ? 'BUYBACK + PATRIMÔNIO' : 'PATRIMÔNIO LÍQUIDO'))}</span>
         <span style={{ color: leadColor, textShadow: `0 0 8px ${leadColor}33` }}>
           {leadText}
         </span>
@@ -152,7 +186,7 @@ export default function GsiHudPage() {
           border: 'none', // Removida a borda para ficar mais limpo sem o fundo
           padding: '4px',
           backdropFilter: 'blur(10px)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+          boxShadow: 'none',
         }}
       >
         {sortedPlayers.map((player, idx) => {
@@ -169,35 +203,33 @@ export default function GsiHudPage() {
           );
 
           if (isItemsView) {
+            // Layout Inventário seguindo o padrão Fin/Neg e Net Worth
             return (
               <div
                 key={player.name + idx}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '6px 8px',
-                  borderRadius: '6px',
-                  background: 'rgba(15, 23, 42, 0.4)', // Glassmorphism escuro
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  height: '36px',
+                  background: isRadiant 
+                    ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.75) 0%, rgba(6, 78, 59, 0.5) 45%, transparent 100%)' 
+                    : 'linear-gradient(90deg, rgba(225, 29, 72, 0.75) 0%, rgba(136, 19, 55, 0.5) 45%, transparent 100%)',
+                  borderTop: `1px solid ${isRadiant ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)'}`,
+                  marginBottom: idx === 4 ? '16px' : '0', // Separa Radiant e Dire (5-5)
                   position: 'relative',
-                  transition: 'all 0.4s ease',
                   overflow: 'hidden',
                 }}
               >
-                {/* Barra de time na esquerda do bloco */}
-                <div
-                  style={{
-                    width: '3px',
-                    height: '32px',
-                    borderRadius: '2px',
-                    background: teamColor,
-                    marginRight: '8px',
-                  }}
-                />
-
-                {/* Avatar do herói */}
-                <div style={{ position: 'relative', width: '56px', height: '32px', marginRight: '12px', flexShrink: 0 }}>
+                {/* Avatar do herói colado na esquerda */}
+                <div style={{ 
+                  width: '54px', 
+                  height: '100%', 
+                  flexShrink: 0,
+                  borderRight: `3px solid ${isRadiant ? '#10b981' : '#e11d48'}`,
+                  boxShadow: `2px 0 10px ${isRadiant ? 'rgba(16,185,129,0.3)' : 'rgba(225,29,72,0.3)'}`,
+                  position: 'relative',
+                  zIndex: 2
+                }}>
                   {player.heroName ? (
                     <img
                       src={heroImgUrl(player.heroName)}
@@ -205,307 +237,346 @@ export default function GsiHudPage() {
                       style={{
                         width: '100%',
                         height: '100%',
-                        borderRadius: '3px',
                         objectFit: 'cover',
-                        border: `1px solid ${player.alive ? 'rgba(255,255,255,0.2)' : '#f87171'}`,
-                        filter: 'none',
                       }}
                     />
                   ) : (
-                    <div style={{ width: '100%', height: '100%', borderRadius: '3px', background: 'rgba(255,255,255,0.05)' }} />
+                    <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)' }} />
                   )}
                   {/* Indicador de morto */}
                   {!player.alive && (
                     <div style={{
                       position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'transparent', borderRadius: '3px', fontSize: '14px', fontWeight: 900, color: '#ef4444', textShadow: '0 0 4px #000, 0 0 4px #000, 0 0 6px #000'
+                      background: 'rgba(0,0,0,0.6)', fontSize: '14px', fontWeight: 900, color: '#ef4444', textShadow: '0 0 4px #000'
                     }}>
                       {player.respawnSeconds > 0 ? player.respawnSeconds : ''}
                     </div>
                   )}
                 </div>
 
+                {/* Shimmer de luz passando pela linha periodicamente */}
+                <div 
+                  style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)',
+                    animation: `shine-sweep ${4 + (idx % 3)}s infinite linear`,
+                    animationDelay: `${idx * 0.2}s`,
+                    zIndex: 1,
+                    pointerEvents: 'none'
+                  }}
+                />
+
                 {/* Main Items Row (6x1) */}
-                <div style={{ display: 'flex', gap: '4px', flex: 1, justifyContent: 'flex-start' }}>
+                <div style={{ display: 'flex', gap: '3px', flex: 1, justifyContent: 'flex-start', paddingLeft: '14px', position: 'relative', zIndex: 2 }}>
                   {Array.from({ length: 6 }).map((_, i) => {
                      const itemName = player.items?.[i];
                      return itemName ? (
-                       <img key={i} src={itemImgUrl(itemName)} style={{ width: '40px', height: '30px', borderRadius: '3px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+                       <img key={i} src={itemImgUrl(itemName)} style={{ width: '38px', height: '28px', borderRadius: '3px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 2px 4px rgba(0,0,0,0.5)' }} />
                      ) : (
-                       <div key={i} style={{ width: '40px', height: '30px', background: 'rgba(0,0,0,0.4)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.05)' }} />
+                       <div key={i} style={{ width: '38px', height: '28px', background: 'rgba(0,0,0,0.5)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.05)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.5)' }} />
                      );
                   })}
                 </div>
               </div>
             );
           } else if (isEarlyGame) {
+            // Layout Fin/Neg estilo oficial Dota 2 + DotaPix Modern
             return (
               <div
                 key={player.name + idx}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  height: '24px', // Altura fixa pequena para ficar "prensado" igual ao jogo
-                  background: 'transparent',
+                  height: '36px',
+                  background: isRadiant 
+                    ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.75) 0%, rgba(6, 78, 59, 0.5) 45%, transparent 100%)' 
+                    : 'linear-gradient(90deg, rgba(225, 29, 72, 0.75) 0%, rgba(136, 19, 55, 0.5) 45%, transparent 100%)',
+                  borderTop: `1px solid ${isRadiant ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)'}`,
+                  marginBottom: idx === 5 ? '16px' : '0',
                   position: 'relative',
-                  transition: 'all 0.2s ease',
                   overflow: 'hidden',
                 }}
               >
-                {/* Fundo da trilha da barra (Glassmorphism) */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: '4px', 
-                    left: '52px', 
-                    right: '12px',
-                    height: '6px',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    borderRadius: '10px',
-                    boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5)',
-                    backdropFilter: 'blur(4px)',
-                    zIndex: 0,
-                  }}
-                >
-                  {/* Barra preenchida com degradê suave */}
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${barPct}%`,
-                      background: isRadiant 
-                        ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.4) 0%, rgba(52, 211, 153, 1) 100%)' 
-                        : 'linear-gradient(90deg, rgba(220, 38, 38, 0.4) 0%, rgba(248, 113, 113, 1) 100%)',
-                      borderRadius: '10px',
-                      boxShadow: isRadiant ? '0 1px 6px rgba(52, 211, 153, 0.4)' : '0 1px 6px rgba(248, 113, 113, 0.4)',
-                      transition: 'width 0.3s ease-out',
-                      position: 'relative',
-                    }}
-                  >
-                    {/* Botão/Handle brilhante na ponta (estilo UI Slider) */}
-                    <div
+                {/* Avatar do herói colado na esquerda */}
+                <div style={{ 
+                  width: '54px', 
+                  height: '100%', 
+                  flexShrink: 0,
+                  borderRight: `3px solid ${isRadiant ? '#10b981' : '#e11d48'}`,
+                  boxShadow: `2px 0 10px ${isRadiant ? 'rgba(16,185,129,0.3)' : 'rgba(225,29,72,0.3)'}`,
+                  position: 'relative',
+                  zIndex: 2
+                }}>
+                  {player.heroName ? (
+                    <img
+                      src={heroImgUrl(player.heroName)}
+                      alt={player.heroName}
                       style={{
-                        position: 'absolute',
-                        right: '-4px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        width: '10px',
-                        height: '10px',
-                        background: '#ffffff',
-                        borderRadius: '50%',
-                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.6), inset 0 -1px 2px rgba(0,0,0,0.1)',
-                        zIndex: 1,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
                       }}
                     />
-                  </div>
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)' }} />
+                  )}
+                  {/* Indicador de morto */}
+                  {!player.alive && (
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'rgba(0,0,0,0.6)', fontSize: '14px', fontWeight: 900, color: '#ef4444', textShadow: '0 0 4px #000'
+                    }}>
+                      {player.respawnSeconds > 0 ? player.respawnSeconds : ''}
+                    </div>
+                  )}
                 </div>
 
+                {/* Shimmer de luz passando pela linha periodicamente */}
+                <div 
+                  style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)',
+                    animation: `shine-sweep ${4 + (idx % 3)}s infinite linear`,
+                    animationDelay: `${idx * 0.2}s`,
+                    zIndex: 1,
+                    pointerEvents: 'none'
+                  }}
+                />
 
-
-                {/* Conteúdo principal */}
-                <div style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                  
-                  {/* Avatar do herói */}
-                  <div style={{ 
-                    width: '42px', 
-                    height: '100%', 
-                    flexShrink: 0,
-                    border: '1px solid transparent',
-                    boxSizing: 'border-box'
-                  }}>
-                    {player.heroName ? (
-                      <img
-                        src={heroImgUrl(player.heroName)}
-                        alt={player.heroName}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          filter: 'none',
-                        }}
-                      />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)' }} />
-                    )}
-                    {/* Indicador de morto (Tempo) cobrindo a foto inteira se estiver morto */}
-                    {!player.alive && (
-                      <div style={{
-                        position: 'absolute', top: 0, left: 0, width: '42px', height: '100%',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'transparent', fontSize: '14px', fontWeight: 900, color: '#ef4444', textShadow: '0 0 4px #000, 0 0 4px #000, 0 0 6px #000'
-                      }}>
-                        {player.respawnSeconds > 0 ? player.respawnSeconds : ''}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Estatística Principal (LH/DN) */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      paddingLeft: '10px',
-                      fontStyle: 'italic', // Fonte inclinada igual ao jogo
-                      textShadow: '1px 1px 2px rgba(0,0,0,0.9)',
-                    }}
-                  >
-                    <span style={{ fontSize: '14px', fontWeight: 900, color: '#f8fafc' }}>{player.lastHits ?? 0}</span>
-                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#94a3b8', margin: '0 3px' }}>/</span>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1' }}>{player.denies ?? 0}</span>
-                  </div>
-
+                {/* Estatística Principal (LH / DN) */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    paddingLeft: '14px',
+                    fontStyle: 'italic',
+                    animation: 'subtle-pulse 3s infinite',
+                    position: 'relative',
+                    zIndex: 2
+                  }}
+                >
+                  <span style={{ fontSize: '16px', fontWeight: 900, color: '#ffffff' }}>{player.lastHits ?? 0}</span>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#94a3b8', margin: '0 6px' }}>/</span>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#cbd5e1' }}>{player.denies ?? 0}</span>
                 </div>
               </div>
             );
           } else {
-            // Layout Moderno de Patrimônio Líquido (Avatar e info em cima, barra brilhante embaixo)
+            // Layout Net Worth com Barras Horizontais mantendo o padrão Fin/Neg
             return (
               <div
                 key={player.name + idx}
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                  background: 'rgba(15, 23, 42, 0.35)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  borderRadius: '8px',
-                  padding: '8px 10px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  alignItems: 'center',
+                  height: '36px',
+                  background: isRadiant 
+                    ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.75) 0%, rgba(6, 78, 59, 0.5) 45%, transparent 100%)' 
+                    : 'linear-gradient(90deg, rgba(225, 29, 72, 0.75) 0%, rgba(136, 19, 55, 0.5) 45%, transparent 100%)',
+                  borderTop: `1px solid ${isRadiant ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)'}`,
+                  marginBottom: idx === 5 ? '16px' : '0',
                   position: 'relative',
-                  transition: 'all 0.4s ease',
+                  overflow: 'hidden',
                 }}
               >
-                {/* Linha Superior: Avatar, Nomes e Valor */}
-                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  {/* Avatar do herói com borda do time */}
-                  <div 
-                    style={{ 
-                      position: 'relative', 
-                      width: '40px', 
-                      height: '24px', 
-                      flexShrink: 0,
-                      border: `1.5px solid ${teamColor}`,
-                      borderRadius: '4px',
-                      overflow: 'hidden',
-                      boxShadow: `0 0 6px ${teamColor}33`,
-                    }}
-                  >
-                    {player.heroName ? (
-                      <img
-                        src={heroImgUrl(player.heroName)}
-                        alt={player.heroName}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          display: 'block',
-                        }}
-                      />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)' }} />
-                    )}
-                    
-                    {/* Level badge */}
-                    <div style={{
-                      position: 'absolute', bottom: 0, right: 0,
-                      background: 'rgba(15, 23, 42, 0.95)',
-                      borderTopLeftRadius: '3px',
-                      padding: '0 3px', 
-                      fontSize: '7px', 
-                      fontWeight: 800, 
-                      color: '#e2e8f0',
-                      lineHeight: '10px',
-                      zIndex: 2,
-                    }}>
-                      {player.heroLevel}
-                    </div>
-
-                    {/* Indicador de morto */}
-                    {!player.alive && (
-                      <div style={{
-                        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'rgba(0,0,0,0.35)', fontSize: '11px', fontWeight: 900, color: '#ef4444', textShadow: '0 0 4px #000',
-                        zIndex: 1,
-                      }}>
-                        {player.respawnSeconds > 0 ? player.respawnSeconds : ''}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Nome do Jogador e Estatísticas adicionais */}
-                  <div style={{ marginLeft: '10px', flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span
-                        style={{
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          color: '#ffffff',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {player.name}
-                      </span>
-                      
-                      {/* Estatísticas (KD/A e GPM) animadas na expansão */}
-                      <span 
-                        style={{ 
-                          fontSize: '8px', 
-                          color: '#94a3b8', 
-                          lineHeight: 1,
-                          height: isExpanded ? '10px' : '0px',
-                          opacity: isExpanded ? 1 : 0,
-                          transition: 'all 0.4s ease',
-                          overflow: 'hidden',
-                          marginTop: isExpanded ? '2px' : '0px',
-                        }}
-                      >
-                        {player.kills}/{player.deaths}/{player.assists} • GPM: {player.gpm}
-                      </span>
-                    </div>
-
-                    {/* Valor do Patrimônio Líquido */}
-                    <span
+                {/* Avatar do herói colado na esquerda */}
+                <div style={{ 
+                  width: '54px', 
+                  height: '100%', 
+                  flexShrink: 0,
+                  borderRight: `3px solid ${isRadiant ? '#10b981' : '#e11d48'}`,
+                  boxShadow: `2px 0 10px ${isRadiant ? 'rgba(16,185,129,0.3)' : 'rgba(225,29,72,0.3)'}`,
+                  position: 'relative',
+                  zIndex: 2
+                }}>
+                  {player.heroName ? (
+                    <img
+                      src={heroImgUrl(player.heroName)}
+                      alt={player.heroName}
                       style={{
-                        fontSize: '13px',
-                        fontWeight: 900,
-                        color: '#fbbf24',
-                        textShadow: '0 0 8px rgba(251, 191, 36, 0.3)',
-                        lineHeight: 1,
-                        flexShrink: 0,
-                        marginLeft: '8px',
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
                       }}
-                    >
-                      {formatGold(player.netWorth)}
-                    </span>
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)' }} />
+                  )}
+                  
+                  {/* Indicador de Nível (Destacado) */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '2px', left: '2px',
+                    width: '18px', height: '18px',
+                    background: 'rgba(15, 23, 42, 0.95)',
+                    border: '1px solid rgba(255,255,255,0.4)',
+                    borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '10px', fontWeight: 900, color: '#ffffff',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.8)',
+                    textShadow: '0 1px 2px rgba(0,0,0,1)'
+                  }}>
+                    {player.heroLevel}
                   </div>
+
+                  {/* Indicador de morto */}
+                  {!player.alive && (
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'rgba(0,0,0,0.6)', fontSize: '14px', fontWeight: 900, color: '#ef4444', textShadow: '0 0 4px #000'
+                    }}>
+                      {player.respawnSeconds > 0 ? player.respawnSeconds : ''}
+                    </div>
+                  )}
                 </div>
 
-                {/* Linha Inferior: Barra de Net Worth com Efeito Glow */}
-                <div 
-                  style={{ 
-                    width: '100%', 
-                    height: '8px', 
-                    background: 'rgba(255, 255, 255, 0.05)', 
-                    borderRadius: '4px', 
-                    overflow: 'hidden',
-                    position: 'relative',
-                  }}
-                >
-                  <div
+                {/* Coluna de Buyback (Ultra Late Game) - idêntico ao painel do Dota */}
+                {isUltraLateGame && (() => {
+                  // h.buyback_cooldown = segundos restantes de punição (0 = sem punição)
+                  const cd = player.buybackCooldown || 0;
+                  // p.buyback_cost = custo em ouro para recomprar agora
+                  const cost = player.buybackCost || 0;
+
+                  const isCooldown = cd > 0;                          // Ainda em punição de tempo?
+                  const isMissingGold = (player.gold || 0) < cost;   // Não tem ouro suficiente?
+                  const canBuyback = !isCooldown && !isMissingGold;   // Pode recomprar? (= SIM)
+
+                  const bbMin = Math.floor(cd / 60);
+                  const bbSec = (cd % 60).toString().padStart(2, '0');
+                  const goldNeeded = cost - (player.gold || 0);
+
+                  return (
+                    <div style={{
+                      width: '56px',
+                      height: '100%',
+                      flexShrink: 0,
+                      background: canBuyback
+                        ? 'rgba(16, 185, 129, 0.12)'
+                        : 'rgba(0,0,0,0.55)',
+                      borderRight: `1px solid ${
+                        canBuyback
+                          ? 'rgba(16, 185, 129, 0.4)'
+                          : 'rgba(255,255,255,0.08)'
+                      }`,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '1px',
+                      position: 'relative',
+                      zIndex: 2,
+                    }}>
+                      {canBuyback ? (
+                        // ✅ SIM — pode recomprar
+                        <CheckCircle
+                          size={18}
+                          color="#10b981"
+                          strokeWidth={2.5}
+                          style={{ filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.9))' }}
+                        />
+                      ) : (
+                        // ❌ NÃO — mostra o(s) bloqueio(s)
+                        <>
+                          {isCooldown && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <Hourglass size={10} color="#fca5a5" strokeWidth={2.5} />
+                              <span style={{
+                                color: '#ef4444',
+                                fontSize: '11px',
+                                fontWeight: 900,
+                                textShadow: '0 1px 3px #000',
+                                lineHeight: 1
+                              }}>
+                                {bbMin}:{bbSec}
+                              </span>
+                            </div>
+                          )}
+                          {isMissingGold && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <Coins size={10} color="#fbbf24" strokeWidth={2.5} />
+                              <span style={{
+                                color: '#fbbf24',
+                                fontSize: '11px',
+                                fontWeight: 900,
+                                textShadow: '0 1px 3px #000',
+                                lineHeight: 1
+                              }}>
+                                {goldNeeded}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Container da Informação */}
+                <div style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '14px', paddingRight: '14px' }}>
+                  {/* Shimmer de luz */}
+                  <div 
                     style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)',
+                      animation: `shine-sweep ${4 + (idx % 3)}s infinite linear`,
+                      animationDelay: `${idx * 0.2}s`,
+                      zIndex: 1,
+                      pointerEvents: 'none'
+                    }}
+                  />
+
+                  {/* Valor do Net Worth e Player Name */}
+                  <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '15px', fontWeight: 900, color: '#fbbf24', fontStyle: 'italic', textShadow: '0 2px 4px rgba(0,0,0,1)' }}>
+                      {player.netWorth}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ 
+                        fontSize: '11px', 
+                        fontWeight: 800, 
+                        color: 'rgba(255,255,255,0.85)', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.5px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100px'
+                      }}>
+                        {player.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Barra Fina Elegante (Pill) - Mais Grossa e Animada */}
+                  <div style={{ position: 'relative', zIndex: 2, width: '100%', height: '8px', background: 'transparent', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{
+                      position: 'relative',
                       width: `${barPct}%`,
                       height: '100%',
                       background: isRadiant 
-                        ? 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)' 
-                        : 'linear-gradient(90deg, #ef4444 0%, #f87171 100%)',
+                        ? 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' 
+                        : 'linear-gradient(90deg, #e11d48 0%, #fb7185 100%)',
                       borderRadius: '4px',
-                      boxShadow: `0 0 8px ${teamColor}66`,
-                      transition: 'width 0.4s ease-out',
-                    }}
-                  />
+                      boxShadow: isRadiant ? '0 0 8px rgba(52, 211, 153, 0.6)' : '0 0 8px rgba(251, 113, 133, 0.6)',
+                      transition: 'width 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
+                      overflow: 'hidden'
+                    }}>
+                      {/* Listras animadas na barra */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,0.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.15) 75%, transparent 75%, transparent)',
+                        backgroundSize: '16px 16px',
+                        animation: 'move-stripes 1s linear infinite'
+                      }} />
+                    </div>
+                  </div>
                 </div>
+
               </div>
             );
           }
@@ -514,4 +585,3 @@ export default function GsiHudPage() {
     </div>
   );
 }
-

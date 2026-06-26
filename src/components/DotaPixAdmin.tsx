@@ -1014,7 +1014,7 @@ export default function DotaPixAdmin() {
                   />
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
                   <Button 
                     type="button" 
                     variant="destructive" 
@@ -1022,6 +1022,33 @@ export default function DotaPixAdmin() {
                     className="w-full text-xs font-bold py-2 rounded-xl"
                   >
                     Zerar Progresso (Iniciar Nova Meta)
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('dotapix_donations')
+                          .insert({
+                            donor_name: 'Apoiador de Teste',
+                            message_type: 'text',
+                            message: 'Simulação de apoio à meta!',
+                            amount: 10.00,
+                            is_paid: true,
+                            played_on_stream: true,
+                            source: 'test'
+                          });
+                        if (error) throw error;
+                        toast.success("Doação de teste de R$ 10,00 inserida com sucesso!");
+                        fetchHistory();
+                      } catch (err: any) {
+                        toast.error("Erro ao simular doação: " + err.message);
+                      }
+                    }}
+                    className="w-full text-xs font-bold py-2 rounded-xl border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                  >
+                    Simular PIX de R$ 10,00 (Testar Aumento da Barra)
                   </Button>
                   <p className="text-[10px] text-gray-500 mt-1 text-center">
                     A meta contará doações a partir de: {new Date(settings.goal_start_date).toLocaleString('pt-BR')}

@@ -1,0 +1,2970 @@
+{
+  "provider": {
+    "name": "Dota 2",
+    "appid": 570,
+    "version": 48,
+    "timestamp": 1782452208
+  },
+  "map": {
+    "name": "start",
+    "matchid": "8865634649",
+    "game_time": 4072,
+    "clock_time": 3066,
+    "daytime": true,
+    "nightstalker_night": false,
+    "radiant_score": 36,
+    "dire_score": 18,
+    "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+    "paused": true,
+    "win_team": "none",
+    "customgamename": "",
+    "radiant_ward_purchase_cooldown": 85,
+    "dire_ward_purchase_cooldown": 85,
+    "roshan_state": "respawn_variable",
+    "roshan_state_end_seconds": 54,
+    "tormentor_state": "alive",
+    "tormentor_state_end_seconds": 0,
+    "tormentor_state_location": "bottom",
+    "radiant_glyph_cooldown": 0,
+    "dire_glyph_cooldown": 0,
+    "radiant_scan_cooldown": 54.44873046875,
+    "radiant_scan_charges": 0,
+    "dire_scan_cooldown": 122.1484375,
+    "dire_scan_charges": 0,
+    "radiant_wisdom_shrine": false,
+    "dire_wisdom_shrine": false,
+    "radiant_lotus_pool_count": 1,
+    "dire_lotus_pool_count": 1,
+    "watchers": {
+      "watcher0": {
+        "location_x": 7917,
+        "location_y": -1524,
+        "capture_state": "not_captured"
+      },
+      "watcher1": {
+        "location_x": -6464,
+        "location_y": 6656,
+        "capture_state": "radiant"
+      },
+      "watcher2": {
+        "location_x": 2717,
+        "location_y": -658,
+        "capture_state": "not_captured"
+      },
+      "watcher3": {
+        "location_x": -3484,
+        "location_y": 34,
+        "capture_state": "radiant"
+      },
+      "watcher4": {
+        "location_x": 1032,
+        "location_y": -4261,
+        "capture_state": "dire"
+      },
+      "watcher5": {
+        "location_x": 6528,
+        "location_y": -6592,
+        "capture_state": "not_captured"
+      },
+      "watcher6": {
+        "location_x": 768,
+        "location_y": -7648,
+        "capture_state": "not_captured"
+      },
+      "watcher7": {
+        "location_x": -671,
+        "location_y": 7129,
+        "capture_state": "not_captured"
+      },
+      "watcher8": {
+        "location_x": -1528,
+        "location_y": 3925,
+        "capture_state": "not_captured"
+      },
+      "watcher9": {
+        "location_x": -7808,
+        "location_y": 1056,
+        "capture_state": "not_captured"
+      }
+    }
+  },
+  "player": {
+    "team2": {
+      "player0": {
+        "steamid": "76561198071885769",
+        "accountid": "111620041",
+        "name": "SumaiL-",
+        "activity": "playing",
+        "kills": 10,
+        "deaths": 2,
+        "assists": 13,
+        "last_hits": 534,
+        "denies": 18,
+        "kill_streak": 0,
+        "commands_issued": 7786,
+        "kill_list": {
+          "victimid_5": 1,
+          "victimid_6": 3,
+          "victimid_7": 1,
+          "victimid_8": 2,
+          "victimid_9": 3
+        },
+        "team_name": "radiant",
+        "player_slot": 13,
+        "team_slot": 0,
+        "gold": 1082,
+        "gold_reliable": 288,
+        "gold_unreliable": 794,
+        "gold_from_hero_kills": 5840,
+        "gold_from_creep_kills": 14941,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 4936,
+        "gold_from_shared": 3430,
+        "gpm": 690,
+        "xpm": 978,
+        "net_worth": 29182,
+        "hero_damage": 43461,
+        "hero_healing": 0,
+        "tower_damage": 10386,
+        "wards_purchased": 1,
+        "wards_placed": 2,
+        "wards_destroyed": 0,
+        "runes_activated": 0,
+        "water_runes_activated": 0,
+        "bounty_runes_activated": 0,
+        "camps_stacked": 3,
+        "support_gold_spent": 0,
+        "consumable_gold_spent": 1655,
+        "item_gold_spent": 30760,
+        "gold_lost_to_death": 1461,
+        "gold_spent_on_buybacks": 2384,
+        "damage_received_pre_reduction_physical": 37273,
+        "damage_received_pre_reduction_magical": 8740,
+        "damage_received_pre_reduction_pure": 2764,
+        "damage_received_post_reduction_physical": 17105,
+        "damage_received_post_reduction_magical": 4734,
+        "damage_received_post_reduction_pure": 2767,
+        "damage_outgoing_pre_reduction_physical": 98285,
+        "damage_outgoing_pre_reduction_magical": 20785,
+        "damage_outgoing_pre_reduction_pure": 0,
+        "damage_outgoing_post_reduction_physical": 33699,
+        "damage_outgoing_post_reduction_magical": 9762,
+        "damage_outgoing_post_reduction_pure": 0
+      },
+      "player1": {
+        "steamid": "76561198112433885",
+        "accountid": "152168157",
+        "name": "OmaR",
+        "activity": "playing",
+        "kills": 7,
+        "deaths": 6,
+        "assists": 20,
+        "last_hits": 57,
+        "denies": 4,
+        "kill_streak": 0,
+        "commands_issued": 15226,
+        "kill_list": {
+          "victimid_5": 1,
+          "victimid_6": 4,
+          "victimid_8": 1,
+          "victimid_9": 1
+        },
+        "team_name": "radiant",
+        "player_slot": 12,
+        "team_slot": 1,
+        "gold": 4841,
+        "gold_reliable": 2585,
+        "gold_unreliable": 2256,
+        "gold_from_hero_kills": 4794,
+        "gold_from_creep_kills": 2408,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 6012,
+        "gold_from_shared": 3463,
+        "gpm": 314,
+        "xpm": 496,
+        "net_worth": 12516,
+        "hero_damage": 14901,
+        "hero_healing": 0,
+        "tower_damage": 30,
+        "wards_purchased": 69,
+        "wards_placed": 41,
+        "wards_destroyed": 5,
+        "runes_activated": 0,
+        "water_runes_activated": 0,
+        "bounty_runes_activated": 2,
+        "camps_stacked": 1,
+        "support_gold_spent": 1800,
+        "consumable_gold_spent": 2975,
+        "item_gold_spent": 8030,
+        "gold_lost_to_death": 1155,
+        "gold_spent_on_buybacks": 0,
+        "damage_received_pre_reduction_physical": 14372,
+        "damage_received_pre_reduction_magical": 7078,
+        "damage_received_pre_reduction_pure": 461,
+        "damage_received_post_reduction_physical": 10348,
+        "damage_received_post_reduction_magical": 4223,
+        "damage_received_post_reduction_pure": 298,
+        "damage_outgoing_pre_reduction_physical": 4372,
+        "damage_outgoing_pre_reduction_magical": 26894,
+        "damage_outgoing_pre_reduction_pure": 0,
+        "damage_outgoing_post_reduction_physical": 2878,
+        "damage_outgoing_post_reduction_magical": 12023,
+        "damage_outgoing_post_reduction_pure": 0
+      },
+      "player2": {
+        "steamid": "76561198099146304",
+        "accountid": "138880576",
+        "name": "Davai",
+        "activity": "playing",
+        "kills": 12,
+        "deaths": 3,
+        "assists": 14,
+        "last_hits": 340,
+        "denies": 7,
+        "kill_streak": 1,
+        "commands_issued": 18349,
+        "kill_list": {
+          "victimid_5": 2,
+          "victimid_6": 2,
+          "victimid_7": 1,
+          "victimid_8": 6,
+          "victimid_9": 1
+        },
+        "team_name": "radiant",
+        "player_slot": 6,
+        "team_slot": 2,
+        "gold": 1509,
+        "gold_reliable": 1069,
+        "gold_unreliable": 440,
+        "gold_from_hero_kills": 6270,
+        "gold_from_creep_kills": 8184,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 4936,
+        "gold_from_shared": 3302,
+        "gpm": 538,
+        "xpm": 819,
+        "net_worth": 23339,
+        "hero_damage": 31204,
+        "hero_healing": 0,
+        "tower_damage": 382,
+        "wards_purchased": 3,
+        "wards_placed": 1,
+        "wards_destroyed": 0,
+        "runes_activated": 1,
+        "water_runes_activated": 0,
+        "bounty_runes_activated": 6,
+        "camps_stacked": 2,
+        "support_gold_spent": 130,
+        "consumable_gold_spent": 1980,
+        "item_gold_spent": 22810,
+        "gold_lost_to_death": 807,
+        "gold_spent_on_buybacks": 2024,
+        "damage_received_pre_reduction_physical": 52600,
+        "damage_received_pre_reduction_magical": 16598,
+        "damage_received_pre_reduction_pure": 7257,
+        "damage_received_post_reduction_physical": 13296,
+        "damage_received_post_reduction_magical": 10498,
+        "damage_received_post_reduction_pure": 5862,
+        "damage_outgoing_pre_reduction_physical": 21530,
+        "damage_outgoing_pre_reduction_magical": 6958,
+        "damage_outgoing_pre_reduction_pure": 17838,
+        "damage_outgoing_post_reduction_physical": 9514,
+        "damage_outgoing_post_reduction_magical": 2946,
+        "damage_outgoing_post_reduction_pure": 16208
+      },
+      "player3": {
+        "steamid": "76561198061622614",
+        "accountid": "101356886",
+        "name": "GH",
+        "activity": "playing",
+        "kills": 1,
+        "deaths": 5,
+        "assists": 23,
+        "last_hits": 163,
+        "denies": 0,
+        "kill_streak": 0,
+        "commands_issued": 15750,
+        "kill_list": {
+          "victimid_9": 1
+        },
+        "team_name": "radiant",
+        "player_slot": 19,
+        "team_slot": 3,
+        "gold": 3665,
+        "gold_reliable": 2102,
+        "gold_unreliable": 1563,
+        "gold_from_hero_kills": 3064,
+        "gold_from_creep_kills": 5203,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 6631,
+        "gold_from_shared": 2867,
+        "gpm": 376,
+        "xpm": 547,
+        "net_worth": 15025,
+        "hero_damage": 20039,
+        "hero_healing": 3077,
+        "tower_damage": 35,
+        "wards_purchased": 41,
+        "wards_placed": 25,
+        "wards_destroyed": 8,
+        "runes_activated": 1,
+        "water_runes_activated": 0,
+        "bounty_runes_activated": 1,
+        "camps_stacked": 6,
+        "support_gold_spent": 1960,
+        "consumable_gold_spent": 2300,
+        "item_gold_spent": 12050,
+        "gold_lost_to_death": 1024,
+        "gold_spent_on_buybacks": 869,
+        "damage_received_pre_reduction_physical": 22253,
+        "damage_received_pre_reduction_magical": 6798,
+        "damage_received_pre_reduction_pure": 1091,
+        "damage_received_post_reduction_physical": 12707,
+        "damage_received_post_reduction_magical": 4825,
+        "damage_received_post_reduction_pure": 1091,
+        "damage_outgoing_pre_reduction_physical": 3275,
+        "damage_outgoing_pre_reduction_magical": 36761,
+        "damage_outgoing_pre_reduction_pure": 0,
+        "damage_outgoing_post_reduction_physical": 1851,
+        "damage_outgoing_post_reduction_magical": 18188,
+        "damage_outgoing_post_reduction_pure": 0
+      },
+      "player4": {
+        "steamid": "76561198170319579",
+        "accountid": "210053851",
+        "name": "lorenof",
+        "activity": "playing",
+        "kills": 6,
+        "deaths": 2,
+        "assists": 21,
+        "last_hits": 554,
+        "denies": 8,
+        "kill_streak": 1,
+        "commands_issued": 18880,
+        "kill_list": {
+          "victimid_5": 2,
+          "victimid_6": 1,
+          "victimid_7": 2,
+          "victimid_8": 1
+        },
+        "team_name": "radiant",
+        "player_slot": 1,
+        "team_slot": 4,
+        "gold": 3926,
+        "gold_reliable": 475,
+        "gold_unreliable": 3451,
+        "gold_from_hero_kills": 4489,
+        "gold_from_creep_kills": 14806,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 4936,
+        "gold_from_shared": 3091,
+        "gpm": 678,
+        "xpm": 999,
+        "net_worth": 29301,
+        "hero_damage": 32389,
+        "hero_healing": 4978,
+        "tower_damage": 3116,
+        "wards_purchased": 1,
+        "wards_placed": 0,
+        "wards_destroyed": 0,
+        "runes_activated": 4,
+        "water_runes_activated": 1,
+        "bounty_runes_activated": 3,
+        "camps_stacked": 2,
+        "support_gold_spent": 0,
+        "consumable_gold_spent": 2150,
+        "item_gold_spent": 27330,
+        "gold_lost_to_death": 808,
+        "gold_spent_on_buybacks": 2106,
+        "damage_received_pre_reduction_physical": 32096,
+        "damage_received_pre_reduction_magical": 9796,
+        "damage_received_pre_reduction_pure": 5485,
+        "damage_received_post_reduction_physical": 12250,
+        "damage_received_post_reduction_magical": 5951,
+        "damage_received_post_reduction_pure": 4386,
+        "damage_outgoing_pre_reduction_physical": 23712,
+        "damage_outgoing_pre_reduction_magical": 42475,
+        "damage_outgoing_pre_reduction_pure": 0,
+        "damage_outgoing_post_reduction_physical": 10175,
+        "damage_outgoing_post_reduction_magical": 22214,
+        "damage_outgoing_post_reduction_pure": 0
+      }
+    },
+    "team3": {
+      "player5": {
+        "steamid": "76561198281846390",
+        "accountid": "321580662",
+        "name": "Yatoro",
+        "activity": "playing",
+        "kills": 8,
+        "deaths": 6,
+        "assists": 4,
+        "last_hits": 663,
+        "denies": 16,
+        "kill_streak": 2,
+        "commands_issued": 16073,
+        "kill_list": {
+          "victimid_0": 1,
+          "victimid_1": 1,
+          "victimid_2": 2,
+          "victimid_3": 3,
+          "victimid_4": 1
+        },
+        "team_name": "dire",
+        "player_slot": 11,
+        "team_slot": 0,
+        "gold": 4114,
+        "gold_reliable": 797,
+        "gold_unreliable": 3317,
+        "gold_from_hero_kills": 4431,
+        "gold_from_creep_kills": 11424,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 4936,
+        "gold_from_shared": 1919,
+        "gpm": 718,
+        "xpm": 867,
+        "net_worth": 34264,
+        "hero_damage": 28094,
+        "hero_healing": 0,
+        "tower_damage": 13787,
+        "wards_purchased": 1,
+        "wards_placed": 1,
+        "wards_destroyed": 2,
+        "runes_activated": 0,
+        "water_runes_activated": 0,
+        "bounty_runes_activated": 5,
+        "camps_stacked": 5,
+        "support_gold_spent": 0,
+        "consumable_gold_spent": 655,
+        "item_gold_spent": 32750,
+        "gold_lost_to_death": 1920,
+        "gold_spent_on_buybacks": 0,
+        "damage_received_pre_reduction_physical": 45614,
+        "damage_received_pre_reduction_magical": 39478,
+        "damage_received_pre_reduction_pure": 3185,
+        "damage_received_post_reduction_physical": 16952,
+        "damage_received_post_reduction_magical": 19878,
+        "damage_received_post_reduction_pure": 3170,
+        "damage_outgoing_pre_reduction_physical": 52110,
+        "damage_outgoing_pre_reduction_magical": 14353,
+        "damage_outgoing_pre_reduction_pure": 0,
+        "damage_outgoing_post_reduction_physical": 16542,
+        "damage_outgoing_post_reduction_magical": 8688,
+        "damage_outgoing_post_reduction_pure": 0
+      },
+      "player6": {
+        "steamid": "76561198807831324",
+        "accountid": "847565596",
+        "name": "rue",
+        "activity": "playing",
+        "kills": 2,
+        "deaths": 10,
+        "assists": 12,
+        "last_hits": 177,
+        "denies": 5,
+        "kill_streak": 1,
+        "commands_issued": 18575,
+        "kill_list": {
+          "victimid_1": 1,
+          "victimid_2": 1
+        },
+        "team_name": "dire",
+        "player_slot": 5,
+        "team_slot": 1,
+        "gold": 2391,
+        "gold_reliable": 1022,
+        "gold_unreliable": 1369,
+        "gold_from_hero_kills": 2688,
+        "gold_from_creep_kills": 6258,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 7635,
+        "gold_from_shared": 1978,
+        "gpm": 426,
+        "xpm": 504,
+        "net_worth": 16586,
+        "hero_damage": 12468,
+        "hero_healing": 8765,
+        "tower_damage": 3473,
+        "wards_purchased": 46,
+        "wards_placed": 25,
+        "wards_destroyed": 19,
+        "runes_activated": 1,
+        "water_runes_activated": 0,
+        "bounty_runes_activated": 0,
+        "camps_stacked": 1,
+        "support_gold_spent": 2200,
+        "consumable_gold_spent": 2235,
+        "item_gold_spent": 15800,
+        "gold_lost_to_death": 1296,
+        "gold_spent_on_buybacks": 1323,
+        "damage_received_pre_reduction_physical": 20628,
+        "damage_received_pre_reduction_magical": 22378,
+        "damage_received_pre_reduction_pure": 5121,
+        "damage_received_post_reduction_physical": 9774,
+        "damage_received_post_reduction_magical": 14187,
+        "damage_received_post_reduction_pure": 5126,
+        "damage_outgoing_pre_reduction_physical": 13475,
+        "damage_outgoing_pre_reduction_magical": 1601,
+        "damage_outgoing_pre_reduction_pure": 6833,
+        "damage_outgoing_post_reduction_physical": 5903,
+        "damage_outgoing_post_reduction_magical": 1076,
+        "damage_outgoing_post_reduction_pure": 5328
+      },
+      "player7": {
+        "steamid": "76561198066570770",
+        "accountid": "106305042",
+        "name": "Larl",
+        "activity": "playing",
+        "kills": 1,
+        "deaths": 4,
+        "assists": 11,
+        "last_hits": 474,
+        "denies": 9,
+        "kill_streak": 0,
+        "commands_issued": 15845,
+        "kill_list": {
+          "victimid_1": 1
+        },
+        "team_name": "dire",
+        "player_slot": 15,
+        "team_slot": 2,
+        "gold": 2497,
+        "gold_reliable": 778,
+        "gold_unreliable": 1719,
+        "gold_from_hero_kills": 1961,
+        "gold_from_creep_kills": 13141,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 4936,
+        "gold_from_shared": 1756,
+        "gpm": 567,
+        "xpm": 774,
+        "net_worth": 24697,
+        "hero_damage": 33711,
+        "hero_healing": 0,
+        "tower_damage": 422,
+        "wards_purchased": 1,
+        "wards_placed": 1,
+        "wards_destroyed": 2,
+        "runes_activated": 11,
+        "water_runes_activated": 2,
+        "bounty_runes_activated": 3,
+        "camps_stacked": 2,
+        "support_gold_spent": 0,
+        "consumable_gold_spent": 1665,
+        "item_gold_spent": 24500,
+        "gold_lost_to_death": 1456,
+        "gold_spent_on_buybacks": 1818,
+        "damage_received_pre_reduction_physical": 28184,
+        "damage_received_pre_reduction_magical": 25961,
+        "damage_received_pre_reduction_pure": 3358,
+        "damage_received_post_reduction_physical": 10971,
+        "damage_received_post_reduction_magical": 9333,
+        "damage_received_post_reduction_pure": 3005,
+        "damage_outgoing_pre_reduction_physical": 29944,
+        "damage_outgoing_pre_reduction_magical": 32930,
+        "damage_outgoing_pre_reduction_pure": 0,
+        "damage_outgoing_post_reduction_physical": 13335,
+        "damage_outgoing_post_reduction_magical": 20376,
+        "damage_outgoing_post_reduction_pure": 0
+      },
+      "player8": {
+        "steamid": "76561198178497315",
+        "accountid": "218231587",
+        "name": "not_me",
+        "activity": "playing",
+        "kills": 1,
+        "deaths": 11,
+        "assists": 14,
+        "last_hits": 40,
+        "denies": 0,
+        "kill_streak": 0,
+        "commands_issued": 15164,
+        "kill_list": {
+          "victimid_1": 1
+        },
+        "team_name": "dire",
+        "player_slot": 10,
+        "team_slot": 3,
+        "gold": 247,
+        "gold_reliable": 218,
+        "gold_unreliable": 29,
+        "gold_from_hero_kills": 2428,
+        "gold_from_creep_kills": 1411,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 7981,
+        "gold_from_shared": 2199,
+        "gpm": 314,
+        "xpm": 524,
+        "net_worth": 13732,
+        "hero_damage": 10200,
+        "hero_healing": 0,
+        "tower_damage": 0,
+        "wards_purchased": 64,
+        "wards_placed": 36,
+        "wards_destroyed": 5,
+        "runes_activated": 2,
+        "water_runes_activated": 1,
+        "bounty_runes_activated": 3,
+        "camps_stacked": 9,
+        "support_gold_spent": 1450,
+        "consumable_gold_spent": 2365,
+        "item_gold_spent": 13105,
+        "gold_lost_to_death": 1196,
+        "gold_spent_on_buybacks": 1127,
+        "damage_received_pre_reduction_physical": 14079,
+        "damage_received_pre_reduction_magical": 20453,
+        "damage_received_pre_reduction_pure": 3757,
+        "damage_received_post_reduction_physical": 8192,
+        "damage_received_post_reduction_magical": 11284,
+        "damage_received_post_reduction_pure": 3764,
+        "damage_outgoing_pre_reduction_physical": 1707,
+        "damage_outgoing_pre_reduction_magical": 125,
+        "damage_outgoing_pre_reduction_pure": 10224,
+        "damage_outgoing_post_reduction_physical": 1033,
+        "damage_outgoing_post_reduction_magical": 91,
+        "damage_outgoing_post_reduction_pure": 9076
+      },
+      "player9": {
+        "steamid": "76561198262479756",
+        "accountid": "302214028",
+        "name": "Collapse",
+        "activity": "playing",
+        "kills": 6,
+        "deaths": 6,
+        "assists": 9,
+        "last_hits": 532,
+        "denies": 8,
+        "kill_streak": 0,
+        "commands_issued": 16487,
+        "kill_list": {
+          "victimid_0": 1,
+          "victimid_1": 2,
+          "victimid_3": 2,
+          "victimid_4": 1
+        },
+        "team_name": "dire",
+        "player_slot": 9,
+        "team_slot": 4,
+        "gold": 2442,
+        "gold_reliable": 763,
+        "gold_unreliable": 1679,
+        "gold_from_hero_kills": 4333,
+        "gold_from_creep_kills": 10471,
+        "gold_from_summon_kills": 0,
+        "gold_from_income": 5785,
+        "gold_from_shared": 2234,
+        "gpm": 668,
+        "xpm": 983,
+        "net_worth": 28292,
+        "hero_damage": 28893,
+        "hero_healing": 0,
+        "tower_damage": 157,
+        "wards_purchased": 1,
+        "wards_placed": 1,
+        "wards_destroyed": 0,
+        "runes_activated": 1,
+        "water_runes_activated": 0,
+        "bounty_runes_activated": 5,
+        "camps_stacked": 7,
+        "support_gold_spent": 0,
+        "consumable_gold_spent": 1070,
+        "item_gold_spent": 29285,
+        "gold_lost_to_death": 2019,
+        "gold_spent_on_buybacks": 2062,
+        "damage_received_pre_reduction_physical": 42671,
+        "damage_received_pre_reduction_magical": 25604,
+        "damage_received_pre_reduction_pure": 2420,
+        "damage_received_post_reduction_physical": 12228,
+        "damage_received_post_reduction_magical": 10451,
+        "damage_received_post_reduction_pure": 1143,
+        "damage_outgoing_pre_reduction_physical": 61359,
+        "damage_outgoing_pre_reduction_magical": 0,
+        "damage_outgoing_pre_reduction_pure": 0,
+        "damage_outgoing_post_reduction_physical": 28893,
+        "damage_outgoing_post_reduction_magical": 0,
+        "damage_outgoing_post_reduction_pure": 0
+      }
+    }
+  },
+  "hero": {
+    "team2": {
+      "player0": {
+        "facet": 0,
+        "xpos": 1539,
+        "ypos": 698,
+        "id": 21,
+        "name": "npc_dota_hero_windrunner",
+        "level": 28,
+        "xp": 50017,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 2444,
+        "buyback_cooldown": 4197,
+        "health": 3564,
+        "max_health": 4036,
+        "health_percent": 88,
+        "mana": 1913,
+        "max_mana": 2103,
+        "mana_percent": 90,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": false,
+        "aghanims_shard": false,
+        "smoked": false,
+        "permanent_buffs": {},
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": true,
+        "talent_2": true,
+        "talent_3": true,
+        "talent_4": true,
+        "talent_5": false,
+        "talent_6": true,
+        "talent_7": false,
+        "talent_8": true,
+        "attributes_level": 7
+      },
+      "player1": {
+        "facet": 0,
+        "xpos": 947,
+        "ypos": 829,
+        "id": 131,
+        "name": "npc_dota_hero_ringmaster",
+        "level": 21,
+        "xp": 25390,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 1162,
+        "buyback_cooldown": 0,
+        "health": 1731,
+        "max_health": 1880,
+        "health_percent": 92,
+        "mana": 1131,
+        "max_mana": 1482,
+        "mana_percent": 76,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": false,
+        "aghanims_shard": false,
+        "smoked": false,
+        "permanent_buffs": {},
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": false,
+        "talent_2": true,
+        "talent_3": true,
+        "talent_4": false,
+        "talent_5": false,
+        "talent_6": true,
+        "talent_7": false,
+        "talent_8": false,
+        "attributes_level": 6
+      },
+      "player2": {
+        "facet": 0,
+        "xpos": 1617,
+        "ypos": 60,
+        "id": 2,
+        "name": "npc_dota_hero_axe",
+        "level": 26,
+        "xp": 41859,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 1995,
+        "buyback_cooldown": 4358,
+        "health": 2807,
+        "max_health": 3232,
+        "health_percent": 86,
+        "mana": 530,
+        "max_mana": 1189,
+        "mana_percent": 44,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": false,
+        "aghanims_shard": true,
+        "smoked": false,
+        "permanent_buffs": {
+          "modifier_axe_culling_blade_permanent": {
+            "stack_count": 10
+          },
+          "modifier_item_aghanims_shard": {
+            "stack_count": 0
+          }
+        },
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": false,
+        "talent_2": true,
+        "talent_3": true,
+        "talent_4": false,
+        "talent_5": true,
+        "talent_6": false,
+        "talent_7": true,
+        "talent_8": false,
+        "attributes_level": 7
+      },
+      "player3": {
+        "facet": 0,
+        "xpos": 729,
+        "ypos": 286,
+        "id": 110,
+        "name": "npc_dota_hero_phoenix",
+        "level": 22,
+        "xp": 27967,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 1355,
+        "buyback_cooldown": 3370,
+        "health": 1765,
+        "max_health": 3012,
+        "health_percent": 58,
+        "mana": 1001,
+        "max_mana": 1115,
+        "mana_percent": 89,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": true,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": true,
+        "break": false,
+        "aghanims_scepter": false,
+        "aghanims_shard": true,
+        "smoked": false,
+        "permanent_buffs": {
+          "modifier_item_foragers_nuts_consumed": {
+            "stack_count": 2
+          },
+          "modifier_item_aghanims_shard": {
+            "stack_count": 0
+          }
+        },
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": true,
+        "talent_2": false,
+        "talent_3": false,
+        "talent_4": true,
+        "talent_5": true,
+        "talent_6": false,
+        "talent_7": false,
+        "talent_8": false,
+        "attributes_level": 7
+      },
+      "player4": {
+        "facet": 0,
+        "xpos": 1415,
+        "ypos": 306,
+        "id": 17,
+        "name": "npc_dota_hero_storm_spirit",
+        "level": 28,
+        "xp": 51100,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 2453,
+        "buyback_cooldown": 4068,
+        "health": 2827,
+        "max_health": 2900,
+        "health_percent": 97,
+        "mana": 1044,
+        "max_mana": 2889,
+        "mana_percent": 36,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": false,
+        "aghanims_shard": true,
+        "smoked": false,
+        "permanent_buffs": {
+          "modifier_item_aghanims_shard": {
+            "stack_count": 0
+          }
+        },
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": true,
+        "talent_2": true,
+        "talent_3": true,
+        "talent_4": true,
+        "talent_5": false,
+        "talent_6": true,
+        "talent_7": true,
+        "talent_8": false,
+        "attributes_level": 7
+      }
+    },
+    "team3": {
+      "player5": {
+        "facet": 0,
+        "xpos": 1799,
+        "ypos": 86,
+        "id": 11,
+        "name": "npc_dota_hero_nevermore",
+        "level": 27,
+        "xp": 44335,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 2835,
+        "buyback_cooldown": 0,
+        "health": 690,
+        "max_health": 3906,
+        "health_percent": 17,
+        "mana": 625,
+        "max_mana": 1443,
+        "mana_percent": 43,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": false,
+        "aghanims_shard": true,
+        "smoked": false,
+        "permanent_buffs": {
+          "modifier_item_aghanims_shard": {
+            "stack_count": 0
+          }
+        },
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": true,
+        "talent_2": true,
+        "talent_3": true,
+        "talent_4": false,
+        "talent_5": true,
+        "talent_6": false,
+        "talent_7": false,
+        "talent_8": true,
+        "attributes_level": 7
+      },
+      "player6": {
+        "facet": 0,
+        "xpos": 756,
+        "ypos": -1047,
+        "id": 58,
+        "name": "npc_dota_hero_enchantress",
+        "level": 21,
+        "xp": 25790,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 1475,
+        "buyback_cooldown": 4307,
+        "health": 2920,
+        "max_health": 2959,
+        "health_percent": 98,
+        "mana": 1326,
+        "max_mana": 1918,
+        "mana_percent": 69,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": true,
+        "aghanims_shard": false,
+        "smoked": false,
+        "permanent_buffs": {},
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": true,
+        "talent_2": false,
+        "talent_3": true,
+        "talent_4": false,
+        "talent_5": true,
+        "talent_6": false,
+        "talent_7": false,
+        "talent_8": false,
+        "attributes_level": 6
+      },
+      "player7": {
+        "facet": 0,
+        "xpos": 435,
+        "ypos": -1650,
+        "id": 106,
+        "name": "npc_dota_hero_ember_spirit",
+        "level": 26,
+        "xp": 39567,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 2099,
+        "buyback_cooldown": 4080,
+        "health": 2980,
+        "max_health": 3089,
+        "health_percent": 96,
+        "mana": 934,
+        "max_mana": 1558,
+        "mana_percent": 59,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": true,
+        "aghanims_shard": true,
+        "smoked": false,
+        "permanent_buffs": {
+          "modifier_item_aghanims_shard": {
+            "stack_count": 0
+          }
+        },
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": false,
+        "talent_2": true,
+        "talent_3": true,
+        "talent_4": false,
+        "talent_5": true,
+        "talent_6": false,
+        "talent_7": true,
+        "talent_8": false,
+        "attributes_level": 7
+      },
+      "player8": {
+        "facet": 0,
+        "xpos": 1339,
+        "ypos": -320,
+        "id": 3,
+        "name": "npc_dota_hero_bane",
+        "level": 22,
+        "xp": 26791,
+        "alive": true,
+        "respawn_seconds": 0,
+        "buyback_cost": 1256,
+        "buyback_cooldown": 4306,
+        "health": 1417,
+        "max_health": 2473,
+        "health_percent": 57,
+        "mana": 1462,
+        "max_mana": 1938,
+        "mana_percent": 75,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": true,
+        "aghanims_shard": true,
+        "smoked": false,
+        "permanent_buffs": {
+          "modifier_item_aghanims_shard": {
+            "stack_count": 0
+          }
+        },
+        "has_debuff": true,
+        "selected_unit": false,
+        "talent_1": false,
+        "talent_2": true,
+        "talent_3": false,
+        "talent_4": true,
+        "talent_5": true,
+        "talent_6": false,
+        "talent_7": false,
+        "talent_8": false,
+        "attributes_level": 7
+      },
+      "player9": {
+        "facet": 0,
+        "xpos": -2674,
+        "ypos": 8084,
+        "id": 120,
+        "name": "npc_dota_hero_pangolier",
+        "level": 28,
+        "xp": 50260,
+        "alive": false,
+        "respawn_seconds": 91,
+        "buyback_cost": 2376,
+        "buyback_cooldown": 4192,
+        "health": 0,
+        "max_health": 3869,
+        "health_percent": 0,
+        "mana": 1145,
+        "max_mana": 2104,
+        "mana_percent": 54,
+        "silenced": false,
+        "stunned": false,
+        "disarmed": false,
+        "magicimmune": false,
+        "hexed": false,
+        "muted": false,
+        "break": false,
+        "aghanims_scepter": true,
+        "aghanims_shard": true,
+        "smoked": false,
+        "permanent_buffs": {
+          "modifier_item_aghanims_shard": {
+            "stack_count": 0
+          }
+        },
+        "has_debuff": false,
+        "selected_unit": true,
+        "talent_1": true,
+        "talent_2": true,
+        "talent_3": true,
+        "talent_4": true,
+        "talent_5": false,
+        "talent_6": true,
+        "talent_7": true,
+        "talent_8": false,
+        "attributes_level": 7
+      }
+    }
+  },
+  "abilities": {
+    "team2": {
+      "player0": {
+        "ability0": {
+          "name": "windrunner_shackleshot",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 7,
+          "max_cooldown": 11,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "windrunner_powershot",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 10,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "windrunner_windrun",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 3,
+          "max_cooldown": 12,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "windrunner_focusfire",
+          "level": 3,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 24,
+          "max_cooldown": 31,
+          "ultimate": true
+        }
+      },
+      "player1": {
+        "ability0": {
+          "name": "ringmaster_tame_the_beasts",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 6,
+          "max_cooldown": 11,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "ringmaster_the_box",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 17,
+          "max_cooldown": 21,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "ringmaster_impalement",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 1,
+          "max_cooldown": 2,
+          "ultimate": false,
+          "charges": 1,
+          "max_charges": 3,
+          "charge_cooldown": 15
+        },
+        "ability3": {
+          "name": "ringmaster_strongman_tonic",
+          "level": 1,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 4,
+          "ultimate": false,
+          "charges": 11,
+          "max_charges": 99,
+          "charge_cooldown": 0
+        },
+        "ability4": {
+          "name": "ringmaster_wheel",
+          "level": 3,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 34,
+          "max_cooldown": 71,
+          "ultimate": true
+        }
+      },
+      "player2": {
+        "ability0": {
+          "name": "axe_berserkers_call",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 12,
+          "max_cooldown": 13,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "axe_battle_hunger",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 6,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "axe_counter_helix",
+          "level": 4,
+          "can_cast": false,
+          "passive": true,
+          "ability_active": true,
+          "cooldown": 1,
+          "max_cooldown": 1,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "axe_culling_blade",
+          "level": 3,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": true
+        }
+      },
+      "player3": {
+        "ability0": {
+          "name": "phoenix_icarus_dive",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": false,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "phoenix_fire_spirits",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": false,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "phoenix_sun_ray_stop",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": false,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "phoenix_sun_ray_toggle_move",
+          "level": 1,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability4": {
+          "name": "phoenix_supernova",
+          "level": 3,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": false,
+          "cooldown": 115,
+          "max_cooldown": 121,
+          "ultimate": true
+        }
+      },
+      "player4": {
+        "ability0": {
+          "name": "storm_spirit_static_remnant",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 3,
+          "max_cooldown": 3,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "storm_spirit_electric_vortex",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 4,
+          "max_cooldown": 15,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "storm_spirit_overload",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 22,
+          "max_cooldown": 31,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "storm_spirit_ball_lightning",
+          "level": 3,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": true
+        },
+        "ability4": {
+          "name": "storm_spirit_galvanized",
+          "level": 1,
+          "can_cast": false,
+          "passive": true,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        }
+      }
+    },
+    "team3": {
+      "player5": {
+        "ability0": {
+          "name": "nevermore_shadowraze1",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 10,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "nevermore_shadowraze2",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 10,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "nevermore_shadowraze3",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 10,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "nevermore_frenzy",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 14,
+          "max_cooldown": 22,
+          "ultimate": false
+        },
+        "ability4": {
+          "name": "nevermore_dark_lord",
+          "level": 4,
+          "can_cast": false,
+          "passive": true,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability5": {
+          "name": "nevermore_requiem",
+          "level": 3,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 101,
+          "ultimate": true
+        }
+      },
+      "player6": {
+        "ability0": {
+          "name": "enchantress_impetus",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "enchantress_enchant",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 7,
+          "max_cooldown": 13,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "enchantress_natures_attendants",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 26,
+          "max_cooldown": 36,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "enchantress_little_friends",
+          "level": 1,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 9,
+          "max_cooldown": 21,
+          "ultimate": false
+        },
+        "ability4": {
+          "name": "enchantress_untouchable",
+          "level": 3,
+          "can_cast": false,
+          "passive": true,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": true
+        }
+      },
+      "player7": {
+        "ability0": {
+          "name": "ember_spirit_searing_chains",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 3,
+          "max_cooldown": 11,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "ember_spirit_sleight_of_fist",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false,
+          "charges": 1,
+          "max_charges": 2,
+          "charge_cooldown": 7
+        },
+        "ability2": {
+          "name": "ember_spirit_flame_guard",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 23,
+          "max_cooldown": 33,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "ember_spirit_activate_fire_remnant",
+          "level": 3,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability4": {
+          "name": "ember_spirit_immolation",
+          "level": 1,
+          "can_cast": false,
+          "passive": true,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability5": {
+          "name": "ember_spirit_fire_remnant",
+          "level": 3,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 1,
+          "ultimate": true,
+          "charges": 4,
+          "max_charges": 5,
+          "charge_cooldown": 19
+        }
+      },
+      "player8": {
+        "ability0": {
+          "name": "bane_enfeeble",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 8,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "bane_brain_sap",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 9,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "bane_nightmare",
+          "level": 4,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 10,
+          "max_cooldown": 14,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "bane_fiends_grip",
+          "level": 3,
+          "can_cast": false,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 49,
+          "max_cooldown": 56,
+          "ultimate": true
+        }
+      },
+      "player9": {
+        "ability0": {
+          "name": "pangolier_swashbuckle",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 7,
+          "ultimate": false
+        },
+        "ability1": {
+          "name": "pangolier_shield_crash",
+          "level": 4,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 4,
+          "ultimate": false
+        },
+        "ability2": {
+          "name": "pangolier_lucky_shot",
+          "level": 4,
+          "can_cast": false,
+          "passive": true,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "ultimate": false
+        },
+        "ability3": {
+          "name": "pangolier_rollup",
+          "level": 1,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 31,
+          "ultimate": false
+        },
+        "ability4": {
+          "name": "pangolier_gyroshell",
+          "level": 3,
+          "can_cast": true,
+          "passive": false,
+          "ability_active": true,
+          "cooldown": 0,
+          "max_cooldown": 61,
+          "ultimate": true
+        }
+      }
+    }
+  },
+  "items": {
+    "team2": {
+      "player0": {
+        "slot0": {
+          "name": "item_greater_crit",
+          "purchaser": 0,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot1": {
+          "name": "item_sphere",
+          "purchaser": 0,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 9,
+          "max_cooldown": 15,
+          "passive": false
+        },
+        "slot2": {
+          "name": "item_blink",
+          "purchaser": 0,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 6,
+          "max_cooldown": 16,
+          "passive": false
+        },
+        "slot3": {
+          "name": "item_black_king_bar",
+          "purchaser": 0,
+          "item_level": 3,
+          "can_cast": false,
+          "cooldown": 90,
+          "max_cooldown": 96,
+          "passive": false
+        },
+        "slot4": {
+          "name": "item_hydras_breath",
+          "purchaser": 0,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot5": {
+          "name": "item_skadi",
+          "purchaser": 0,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot6": {
+          "name": "empty"
+        },
+        "slot7": {
+          "name": "empty"
+        },
+        "slot8": {
+          "name": "empty"
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 0,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 81,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "neutral0": {
+          "name": "item_flayers_bota",
+          "purchaser": 0,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 60,
+          "max_cooldown": 66,
+          "passive": false
+        },
+        "neutral1": {
+          "name": "item_enhancement_alert",
+          "purchaser": 0,
+          "item_level": 4,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      },
+      "player1": {
+        "slot0": {
+          "name": "item_arcane_boots",
+          "purchaser": 1,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 21,
+          "max_cooldown": 56,
+          "passive": false
+        },
+        "slot1": {
+          "name": "item_blink",
+          "purchaser": 1,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 11,
+          "max_cooldown": 16,
+          "passive": false
+        },
+        "slot2": {
+          "name": "item_aether_lens",
+          "purchaser": 1,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot3": {
+          "name": "item_ghost",
+          "purchaser": 1,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 23,
+          "passive": false
+        },
+        "slot4": {
+          "name": "empty"
+        },
+        "slot5": {
+          "name": "item_ward_observer",
+          "purchaser": 1,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 1,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "slot6": {
+          "name": "empty"
+        },
+        "slot7": {
+          "name": "item_smoke_of_deceit",
+          "purchaser": 1,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "slot8": {
+          "name": "empty"
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 1,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 60,
+          "max_cooldown": 81,
+          "passive": false,
+          "item_charges": 2,
+          "charges": 2
+        },
+        "neutral0": {
+          "name": "item_dandelion_amulet",
+          "purchaser": 1,
+          "item_level": 1,
+          "passive": true
+        },
+        "neutral1": {
+          "name": "item_enhancement_keen_eyed",
+          "purchaser": 1,
+          "item_level": 3,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      },
+      "player2": {
+        "slot0": {
+          "name": "item_blink",
+          "purchaser": 2,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 5,
+          "max_cooldown": 16,
+          "passive": false
+        },
+        "slot1": {
+          "name": "item_phase_boots",
+          "purchaser": 2,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 4,
+          "max_cooldown": 9,
+          "passive": false
+        },
+        "slot2": {
+          "name": "item_blade_mail",
+          "purchaser": 2,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 26,
+          "passive": false
+        },
+        "slot3": {
+          "name": "item_lotus_orb",
+          "purchaser": 2,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 9,
+          "max_cooldown": 16,
+          "passive": false
+        },
+        "slot4": {
+          "name": "item_shivas_guard",
+          "purchaser": 2,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 25,
+          "max_cooldown": 28,
+          "passive": false
+        },
+        "slot5": {
+          "name": "item_black_king_bar",
+          "purchaser": 2,
+          "item_level": 3,
+          "can_cast": false,
+          "cooldown": 94,
+          "max_cooldown": 96,
+          "passive": false
+        },
+        "slot6": {
+          "name": "item_ward_observer",
+          "purchaser": 2,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "slot7": {
+          "name": "item_dust",
+          "purchaser": 2,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "slot8": {
+          "name": "empty"
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 2,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 61,
+          "max_cooldown": 81,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "neutral0": {
+          "name": "item_cloak_of_flames",
+          "purchaser": 2,
+          "item_level": 1,
+          "passive": true
+        },
+        "neutral1": {
+          "name": "item_enhancement_brawny",
+          "purchaser": 2,
+          "item_level": 4,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      },
+      "player3": {
+        "slot0": {
+          "name": "item_tranquil_boots",
+          "purchaser": 3,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot1": {
+          "name": "item_magic_wand",
+          "purchaser": 3,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 16,
+          "passive": false,
+          "item_charges": 17,
+          "charges": 17
+        },
+        "slot2": {
+          "name": "item_crimson_guard",
+          "purchaser": 3,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 32,
+          "max_cooldown": 41,
+          "passive": false
+        },
+        "slot3": {
+          "name": "empty"
+        },
+        "slot4": {
+          "name": "item_vladmir",
+          "purchaser": 3,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot5": {
+          "name": "item_solar_crest",
+          "purchaser": 3,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 8,
+          "max_cooldown": 17,
+          "passive": false
+        },
+        "slot6": {
+          "name": "empty"
+        },
+        "slot7": {
+          "name": "empty"
+        },
+        "slot8": {
+          "name": "empty"
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 3,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 81,
+          "passive": false,
+          "item_charges": 2,
+          "charges": 2
+        },
+        "neutral0": {
+          "name": "item_conjurers_catalyst",
+          "purchaser": 3,
+          "item_level": 1,
+          "passive": true
+        },
+        "neutral1": {
+          "name": "item_enhancement_timeless",
+          "purchaser": 3,
+          "item_level": 1,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      },
+      "player4": {
+        "slot0": {
+          "name": "item_guardian_greaves",
+          "purchaser": 4,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 31,
+          "max_cooldown": 46,
+          "passive": false
+        },
+        "slot1": {
+          "name": "item_sheepstick",
+          "purchaser": 4,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 8,
+          "max_cooldown": 21,
+          "passive": false
+        },
+        "slot2": {
+          "name": "empty"
+        },
+        "slot3": {
+          "name": "item_kaya_and_sange",
+          "purchaser": 4,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot4": {
+          "name": "item_devastator",
+          "purchaser": 4,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot5": {
+          "name": "item_black_king_bar",
+          "purchaser": 4,
+          "item_level": 3,
+          "can_cast": false,
+          "cooldown": 84,
+          "max_cooldown": 96,
+          "passive": false
+        },
+        "slot6": {
+          "name": "empty"
+        },
+        "slot7": {
+          "name": "empty"
+        },
+        "slot8": {
+          "name": "empty"
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 4,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "neutral0": {
+          "name": "item_prophets_pendulum",
+          "purchaser": 4,
+          "item_level": 1,
+          "passive": true
+        },
+        "neutral1": {
+          "name": "item_enhancement_mystical",
+          "purchaser": 4,
+          "item_level": 4,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      }
+    },
+    "team3": {
+      "player5": {
+        "slot0": {
+          "name": "item_satanic",
+          "purchaser": 5,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 25,
+          "max_cooldown": 31,
+          "passive": false
+        },
+        "slot1": {
+          "name": "item_butterfly",
+          "purchaser": 5,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot2": {
+          "name": "item_black_king_bar",
+          "purchaser": 5,
+          "item_level": 3,
+          "can_cast": false,
+          "cooldown": 88,
+          "max_cooldown": 96,
+          "passive": false
+        },
+        "slot3": {
+          "name": "item_hurricane_pike",
+          "purchaser": 5,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 3,
+          "max_cooldown": 20,
+          "passive": false
+        },
+        "slot4": {
+          "name": "item_manta",
+          "purchaser": 5,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 35,
+          "passive": false
+        },
+        "slot5": {
+          "name": "item_monkey_king_bar",
+          "purchaser": 5,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot6": {
+          "name": "empty"
+        },
+        "slot7": {
+          "name": "empty"
+        },
+        "slot8": {
+          "name": "empty"
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 5,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 81,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "neutral0": {
+          "name": "item_dandelion_amulet",
+          "purchaser": 5,
+          "item_level": 1,
+          "passive": true
+        },
+        "neutral1": {
+          "name": "item_enhancement_alert",
+          "purchaser": 5,
+          "item_level": 4,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      },
+      "player6": {
+        "slot0": {
+          "name": "item_hurricane_pike",
+          "purchaser": 6,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 5,
+          "max_cooldown": 20,
+          "passive": false
+        },
+        "slot1": {
+          "name": "item_vladmir",
+          "purchaser": 6,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot2": {
+          "name": "item_ultimate_scepter",
+          "purchaser": 6,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot3": {
+          "name": "item_ancient_janggo",
+          "purchaser": 6,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 27,
+          "max_cooldown": 46,
+          "passive": false
+        },
+        "slot4": {
+          "name": "item_gem",
+          "purchaser": 3,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 13,
+          "passive": false
+        },
+        "slot5": {
+          "name": "item_power_treads",
+          "purchaser": 6,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false
+        },
+        "slot6": {
+          "name": "item_clarity",
+          "purchaser": 6,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false,
+          "item_charges": 2,
+          "charges": 2
+        },
+        "slot7": {
+          "name": "empty"
+        },
+        "slot8": {
+          "name": "empty"
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 6,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 81,
+          "passive": false,
+          "item_charges": 2,
+          "charges": 2
+        },
+        "neutral0": {
+          "name": "item_rattlecage",
+          "purchaser": 6,
+          "item_level": 1,
+          "passive": true
+        },
+        "neutral1": {
+          "name": "item_enhancement_tough",
+          "purchaser": 6,
+          "item_level": 4,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      },
+      "player7": {
+        "slot0": {
+          "name": "item_black_king_bar",
+          "purchaser": 7,
+          "item_level": 3,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 96,
+          "passive": false
+        },
+        "slot1": {
+          "name": "item_mage_slayer",
+          "purchaser": 7,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot2": {
+          "name": "item_spirit_vessel",
+          "purchaser": 7,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 6,
+          "max_cooldown": 11,
+          "passive": false,
+          "item_charges": 4,
+          "charges": 4
+        },
+        "slot3": {
+          "name": "item_phase_boots",
+          "purchaser": 7,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 1,
+          "max_cooldown": 9,
+          "passive": false
+        },
+        "slot4": {
+          "name": "item_ultimate_scepter",
+          "purchaser": 7,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot5": {
+          "name": "item_shivas_guard",
+          "purchaser": 7,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 7,
+          "max_cooldown": 28,
+          "passive": false
+        },
+        "slot6": {
+          "name": "empty"
+        },
+        "slot7": {
+          "name": "empty"
+        },
+        "slot8": {
+          "name": "item_bottle",
+          "purchaser": 7,
+          "item_level": 1,
+          "contains_rune": "empty",
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 1,
+          "passive": false,
+          "item_charges": 3,
+          "charges": 3
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 7,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 81,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "neutral0": {
+          "name": "item_prophets_pendulum",
+          "purchaser": 7,
+          "item_level": 1,
+          "passive": true
+        },
+        "neutral1": {
+          "name": "item_enhancement_timeless",
+          "purchaser": 7,
+          "item_level": 1,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      },
+      "player8": {
+        "slot0": {
+          "name": "item_blink",
+          "purchaser": 8,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 3,
+          "max_cooldown": 4,
+          "passive": false
+        },
+        "slot1": {
+          "name": "item_glimmer_cape",
+          "purchaser": 8,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 16,
+          "passive": false
+        },
+        "slot2": {
+          "name": "item_ward_dispenser",
+          "purchaser": 8,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "slot3": {
+          "name": "item_ultimate_scepter",
+          "purchaser": 8,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot4": {
+          "name": "item_aether_lens",
+          "purchaser": 8,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot5": {
+          "name": "item_boots",
+          "purchaser": 8,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot6": {
+          "name": "item_smoke_of_deceit",
+          "purchaser": 8,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 3,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "slot7": {
+          "name": "item_ward_dispenser",
+          "purchaser": 6,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "slot8": {
+          "name": "item_magic_wand",
+          "purchaser": 8,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 16,
+          "passive": false,
+          "item_charges": 19,
+          "charges": 19
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 8,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 81,
+          "passive": false,
+          "item_charges": 3,
+          "charges": 3
+        },
+        "neutral0": {
+          "name": "item_psychic_headband",
+          "purchaser": 8,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 16,
+          "passive": false
+        },
+        "neutral1": {
+          "name": "item_enhancement_greedy",
+          "purchaser": 8,
+          "item_level": 2,
+          "passive": true,
+          "item_charges": 750,
+          "charges": 750
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      },
+      "player9": {
+        "slot0": {
+          "name": "item_abyssal_blade",
+          "purchaser": 9,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 0,
+          "passive": false
+        },
+        "slot1": {
+          "name": "item_blink",
+          "purchaser": 9,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 12,
+          "passive": false
+        },
+        "slot2": {
+          "name": "item_diffusal_blade",
+          "purchaser": 9,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 12,
+          "passive": false
+        },
+        "slot3": {
+          "name": "item_nullifier",
+          "purchaser": 9,
+          "item_level": 1,
+          "can_cast": true,
+          "cooldown": 0,
+          "max_cooldown": 8,
+          "passive": false
+        },
+        "slot4": {
+          "name": "item_octarine_core",
+          "purchaser": 9,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot5": {
+          "name": "item_ultimate_scepter",
+          "purchaser": 9,
+          "item_level": 1,
+          "passive": true
+        },
+        "slot6": {
+          "name": "empty"
+        },
+        "slot7": {
+          "name": "empty"
+        },
+        "slot8": {
+          "name": "empty"
+        },
+        "stash0": {
+          "name": "empty"
+        },
+        "stash1": {
+          "name": "empty"
+        },
+        "stash2": {
+          "name": "empty"
+        },
+        "stash3": {
+          "name": "empty"
+        },
+        "stash4": {
+          "name": "empty"
+        },
+        "stash5": {
+          "name": "empty"
+        },
+        "teleport0": {
+          "name": "item_tpscroll",
+          "purchaser": 9,
+          "item_level": 1,
+          "can_cast": false,
+          "cooldown": 21,
+          "max_cooldown": 60,
+          "passive": false,
+          "item_charges": 1,
+          "charges": 1
+        },
+        "neutral0": {
+          "name": "item_rattlecage",
+          "purchaser": 9,
+          "item_level": 1,
+          "passive": true
+        },
+        "neutral1": {
+          "name": "item_enhancement_titanic",
+          "purchaser": 9,
+          "item_level": 3,
+          "passive": true
+        },
+        "preserved_neutral6": {
+          "name": "empty"
+        },
+        "preserved_neutral7": {
+          "name": "empty"
+        },
+        "preserved_neutral8": {
+          "name": "empty"
+        },
+        "preserved_neutral9": {
+          "name": "empty"
+        },
+        "preserved_neutral10": {
+          "name": "empty"
+        }
+      }
+    }
+  },
+  "events": [],
+  "buildings": {
+    "radiant": {
+      "dota_goodguys_tower2_top": {
+        "health": 1517,
+        "max_health": 2500
+      },
+      "dota_goodguys_tower3_top": {
+        "health": 2500,
+        "max_health": 2500
+      },
+      "dota_goodguys_tower4_top": {
+        "health": 2600,
+        "max_health": 2600
+      },
+      "dota_goodguys_tower4_bot": {
+        "health": 2600,
+        "max_health": 2600
+      },
+      "good_rax_melee_top": {
+        "health": 2200,
+        "max_health": 2200
+      },
+      "good_rax_range_top": {
+        "health": 1300,
+        "max_health": 1300
+      },
+      "dota_goodguys_fort": {
+        "health": 4500,
+        "max_health": 4500
+      }
+    },
+    "dire": {
+      "dota_badguys_tower2_bot": {
+        "health": 1417,
+        "max_health": 2500
+      },
+      "dota_badguys_tower3_bot": {
+        "health": 2500,
+        "max_health": 2500
+      },
+      "dota_badguys_tower4_top": {
+        "health": 2600,
+        "max_health": 2600
+      },
+      "dota_badguys_tower4_bot": {
+        "health": 2600,
+        "max_health": 2600
+      },
+      "bad_rax_melee_top": {
+        "health": 2200,
+        "max_health": 2200
+      },
+      "bad_rax_range_top": {
+        "health": 1300,
+        "max_health": 1300
+      },
+      "bad_rax_melee_bot": {
+        "health": 2200,
+        "max_health": 2200
+      },
+      "bad_rax_range_bot": {
+        "health": 1300,
+        "max_health": 1300
+      },
+      "dota_badguys_fort": {
+        "health": 4500,
+        "max_health": 4500
+      }
+    }
+  },
+  "roshan": {
+    "health": 0,
+    "max_health": 0,
+    "alive": false,
+    "spawn_phase": 2,
+    "phase_time_remaining": 54.84912109375,
+    "xpos": 0,
+    "ypos": 0,
+    "yaw": 0
+  }
+}
