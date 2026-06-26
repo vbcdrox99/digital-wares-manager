@@ -170,21 +170,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     let active = true;
 
-    const getSession = async () => {
+    const initializeSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        // 1. Pegar a sessão local (rápido)
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
 
         if (session?.user && active) {
-          if (userRef.current?.id !== session.user.id) {
-            const userData = await fetchUserData(session.user.id);
-            if (userData && active) {
+          // 2. Buscar dados estendidos do usuário no banco
+          const userData = await fetchUserData(session.user.id);
+          
+          if (active) {
+            if (userData) {
               updateUser(userData);
+            } else {
+              // Se a query falhar (ex: erro de rede temporário), tentamos extrair a role dos metadados ou usamos customer
+              const role = session.user.app_metadata?.role || 'customer';
+              // Fallback para não deslogar o usuário em caso de lentidão do banco
+              updateUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                role: role as 'admin' | 'customer'
+              });
             }
           }
         }
       } catch (error) {
-        console.error('Erro ao recuperar sessão:', error);
+        console.error('Erro na inicialização da sessão:', error);
       } finally {
         if (active) {
           setLoading(false);
@@ -192,7 +204,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    getSession();
+    initializeSession();
 
     // Escutar mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -202,14 +214,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             updateUser(null);
             setLoading(false);
           }
-        } else if (session?.user) {
-          if (userRef.current?.id !== session.user.id) {
-            const userData = await fetchUserData(session.user.id);
-            if (userData && active) {
-              updateUser(userData);
-            }
-          }
+        } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          const userData = await fetchUserData(session.user.id);
           if (active) {
+            if (userData) {
+              updateUser(userData);
+            } else {
+              const role = session.user.app_metadata?.role || 'customer';
+              updateUser({
+                id: session.user.id,
+                email: session.user.email || '',
+                role: role as 'admin' | 'customer'
+              });
+            }
             setLoading(false);
           }
         }

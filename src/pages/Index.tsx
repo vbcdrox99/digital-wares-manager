@@ -13,6 +13,7 @@ import Customers from "@/components/Customers";
 import Financial from "@/components/Financial";
 import DotaPixAdmin from "@/components/DotaPixAdmin";
 import OpenDotaAdmin from "@/components/OpenDotaAdmin";
+import SocialAdmin from "@/components/SocialAdmin";
 import { useItems } from "@/hooks/useItems";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { Item } from "@/types/inventory";
@@ -20,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const [adminSection, setAdminSection] = useState<'store' | 'dotapix' | 'opendota'>('store');
+  const [adminSection, setAdminSection] = useState<'store' | 'dotapix' | 'opendota' | 'social'>('store');
   const { items } = useItems();
   const [premiumItemIds, setPremiumItemIds] = useLocalStorage<string[]>("premiumRaffleItemIds", []);
   const premiumSelectedItems: Item[] = premiumItemIds
@@ -152,6 +153,17 @@ const Index = () => {
                   <Search className="w-3.5 h-3.5" />
                   OpenDota API
                 </button>
+                <button 
+                  onClick={() => setAdminSection('social')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    adminSection === 'social' 
+                      ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(147,51,234,0.4)]' 
+                      : 'text-purple-400 hover:text-purple-300 border border-purple-500/20 bg-purple-950/10'
+                  }`}
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  Social Media AI
+                </button>
               </div>
               <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
                 <div className="flex items-center space-x-2">
@@ -172,7 +184,13 @@ const Index = () => {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {adminSection === 'opendota' ? (
+        {adminSection === 'social' ? (
+          <ErrorBoundary>
+            <Suspense fallback={<Loading text="Carregando painel Social..." />}>
+              <SocialAdmin />
+            </Suspense>
+          </ErrorBoundary>
+        ) : adminSection === 'opendota' ? (
           <ErrorBoundary>
             <Suspense fallback={<Loading text="Carregando painel OpenDota..." />}>
               <OpenDotaAdmin />

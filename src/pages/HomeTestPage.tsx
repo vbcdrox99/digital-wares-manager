@@ -105,7 +105,61 @@ export default function HomeTestPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-white flex overflow-hidden">
+    <div className="min-h-screen bg-[#0B0F19] text-white flex overflow-hidden relative">
+      
+      {/* ANIMATED BACKGROUND (Framer Motion) */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {/* Imagem de base mais escura */}
+        <div className="absolute inset-0 bg-[url('https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/backgrounds/featured_bg_3.jpg')] bg-cover bg-center opacity-30 mix-blend-luminosity" />
+        
+        {/* Gradiente escuro */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F19]/70 via-[#0B0F19]/90 to-[#0B0F19]" />
+        
+        {/* Glows animados */}
+        <motion.div 
+          animate={{ 
+            x: [0, 100, -50, 0], 
+            y: [0, -100, 50, 0],
+            opacity: [0.05, 0.15, 0.05] 
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[#00E5FF] blur-[150px]" 
+        />
+        <motion.div 
+          animate={{ 
+            x: [0, -80, 60, 0], 
+            y: [0, 80, -60, 0],
+            opacity: [0.05, 0.15, 0.05] 
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[30%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#FF3B8A] blur-[150px]" 
+        />
+        
+        {/* Partículas animadas estilo "Embers" do Dota */}
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ 
+              y: '110vh', 
+              x: `${Math.random() * 100}vw`,
+              opacity: 0,
+              scale: Math.random() * 0.5 + 0.5
+            }}
+            animate={{ 
+              y: '-10vh',
+              x: `${Math.random() * 100}vw`,
+              opacity: [0, 0.8, 0],
+            }}
+            transition={{ 
+              duration: Math.random() * 10 + 10,
+              repeat: Infinity,
+              delay: Math.random() * 10,
+              ease: "linear" 
+            }}
+            className="absolute w-1 h-1 rounded-full bg-[#FF6B9A] blur-[1px] shadow-[0_0_10px_#FF3B8A]"
+          />
+        ))}
+      </div>
       {/* SIDEBAR (Dark Premium / Neobrutalism misturado) */}
       <nav 
         className={`border-r border-[#1C2333] bg-[#0A0D14]/80 backdrop-blur-xl flex flex-col py-8 justify-between sticky top-0 h-screen z-20 transition-all duration-300 ${
@@ -212,9 +266,7 @@ export default function HomeTestPage() {
 
       {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col h-screen overflow-y-auto custom-scrollbar relative">
-        {/* Glow de fundo */}
-        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#00E5FF]/10 blur-[150px] pointer-events-none" />
-        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#FF3B8A]/10 blur-[150px] pointer-events-none" />
+        {/* Glow de fundo removido daqui pois agora é global, dinâmico e animado no wrapper principal */}
 
         {/* TOP BAR */}
         <header className="px-8 lg:px-12 py-8 flex items-center justify-between z-10 sticky top-0 bg-[#0B0F19]/60 backdrop-blur-md border-b border-[#1C2333]/50">
