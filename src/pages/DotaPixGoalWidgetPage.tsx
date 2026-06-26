@@ -396,7 +396,7 @@ export default function DotaPixGoalWidgetPage() {
           </div>
 
           {/* Goal Bar: Thickened, clean, premium gradient with moving handle */}
-          <div className="w-full h-6 bg-black/70 rounded-full relative drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] border-2 border-white/10 my-1">
+          <div className="w-full h-10 bg-black/70 rounded-full relative drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] border-2 border-white/10 my-2">
             {/* The filled part with gradient and animation */}
             <div 
               className="h-full bg-gradient-to-r from-[#ff3b30] via-[#ffcc00] to-[#34c759] rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(52,199,89,0.5)] relative overflow-hidden"
