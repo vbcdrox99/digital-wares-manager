@@ -2,7 +2,7 @@ import React from 'react';
 import Navigation from '@/components/Navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { Store, PlusCircle, ListChecks, ShieldCheck, ShoppingBag, Upload, X } from 'lucide-react';
+import { Store, PlusCircle, ListChecks, ShieldCheck, ShoppingBag, Upload, X, Edit, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { itemsService, type InsertItem, type Item } from '@/integrations/supabase/services/items';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +10,8 @@ import { formatCurrency } from '@/lib/utils';
 import { useRarities } from '@/hooks/useRarities';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { HeroCombobox } from "@/components/HeroCombobox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from "@/components/ui/button";
 
 
 interface SaleItem {
@@ -51,6 +53,18 @@ const SellerAreaPage: React.FC = () => {
   const [price, setPrice] = React.useState<string>('');
   const [initialStock, setInitialStock] = React.useState<string>('');
   const [rarity, setRarity] = React.useState<string>('');
+
+  // Edit states for Seller
+  const [editingItem, setEditingItem] = React.useState<Item | null>(null);
+  const [editName, setEditName] = React.useState('');
+  const [editHeroName, setEditHeroName] = React.useState('');
+  const [editImageFile, setEditImageFile] = React.useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = React.useState<string>('');
+  const [editPrice, setEditPrice] = React.useState<string>('');
+  const [editInitialStock, setEditInitialStock] = React.useState<string>('');
+  const [editCurrentStock, setEditCurrentStock] = React.useState<string>('');
+  const [editRarity, setEditRarity] = React.useState<string>('');
+  const [editSaving, setEditSaving] = React.useState<boolean>(false);
 
   const loadSellerInfo = React.useCallback(async () => {
     if (!user?.email) {
@@ -161,6 +175,107 @@ const SellerAreaPage: React.FC = () => {
       setRarity(availableRarities[0].name.toLowerCase());
     }
   }, [availableRarities, rarity]);
+
+  const handleEditItem = (item: Item) => {
+    setEditingItem(item);
+    setEditName(item.name || '');
+    setEditHeroName(item.hero_name);
+    setEditImageFile(null);
+    setEditImagePreview(item.image_url || '');
+    setEditPrice(item.price.toString());
+    setEditInitialStock(item.initial_stock.toString());
+    setEditCurrentStock((item.current_stock ?? item.initial_stock).toString());
+    setEditRarity(item.rarity.toLowerCase());
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+
+    if (!editName.trim()) {
+      toast({ title: 'Dados inválidos', description: 'Informe o nome do item.', variant: 'destructive' });
+      return;
+    }
+    if (!editHeroName.trim()) {
+      toast({ title: 'Dados inválidos', description: 'Informe o nome do herói.', variant: 'destructive' });
+      return;
+    }
+    const priceNum = Number(editPrice);
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      toast({ title: 'Dados inválidos', description: 'Preço deve ser um número maior que 0.', variant: 'destructive' });
+      return;
+    }
+    const initialStockNum = Number(editInitialStock);
+    if (!Number.isInteger(initialStockNum) || initialStockNum <= 0) {
+      toast({ title: 'Dados inválidos', description: 'Estoque inicial deve ser um inteiro maior que 0.', variant: 'destructive' });
+      return;
+    }
+    const currentStockNum = Number(editCurrentStock);
+    if (!Number.isInteger(currentStockNum) || currentStockNum < 0) {
+      toast({ title: 'Dados inválidos', description: 'Estoque atual deve ser um inteiro maior ou igual a 0.', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      setEditSaving(true);
+      let imageUrl = editingItem.image_url;
+
+      if (editImageFile) {
+        imageUrl = await uploadImage(editImageFile);
+      }
+
+      const updatedFields: any = {
+        name: editName.trim(),
+        hero_name: editHeroName.trim(),
+        price: priceNum,
+        initial_stock: initialStockNum,
+        current_stock: currentStockNum,
+        rarity: editRarity,
+        image_url: imageUrl,
+        approved: false, // Reset approval status to review
+        rejected: false,
+        rejection_reason: null
+      };
+
+      const updated = await itemsService.update(editingItem.id, updatedFields);
+      toast({
+        title: 'Item atualizado',
+        description: `As alterações de ${editName} foram salvas e enviadas para revisão.`,
+      });
+
+      setMyItems(prev => prev.map(item => item.id === editingItem.id ? (updated as Item) : item));
+      setEditingItem(null);
+    } catch (err: any) {
+      console.error('Erro ao atualizar item:', err);
+      toast({ title: 'Erro ao atualizar item', description: err.message || 'Falha ao salvar', variant: 'destructive' });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string, itemName: string) => {
+    if (!window.confirm(`Tem certeza que deseja cancelar o cadastro do item "${itemName}"?`)) return;
+
+    try {
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('item_id', itemId);
+
+      if (orderItemsError) throw orderItemsError;
+
+      await itemsService.remove(itemId);
+      toast({
+        title: 'Cadastro cancelado',
+        description: `O item "${itemName}" foi excluído com sucesso.`,
+      });
+
+      setMyItems(prev => prev.filter(item => item.id !== itemId));
+    } catch (err: any) {
+      console.error('Erro ao excluir item:', err);
+      toast({ title: 'Erro ao excluir item', description: err.message || 'Falha ao excluir', variant: 'destructive' });
+    }
+  };
 
   const uploadImage = async (file: File): Promise<string> => {
     const ext = file.name.split('.').pop();
@@ -475,34 +590,54 @@ const SellerAreaPage: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            {item.discount && item.discount > 0 ? (
-                              <>
-                                <div className="text-xs text-muted-foreground line-through">
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              {item.discount && item.discount > 0 ? (
+                                <>
+                                  <div className="text-xs text-muted-foreground line-through">
+                                    {formatCurrency(Number(item.price))}
+                                  </div>
+                                  <div className="text-sm text-emerald-300 font-semibold">
+                                    {formatCurrency(Number(item.price) * (1 - item.discount / 100))}
+                                  </div>
+                                  <div className="text-[10px] text-red-400">-{item.discount}%</div>
+                                </>
+                              ) : (
+                                <div className="text-sm text-emerald-300 font-semibold">
                                   {formatCurrency(Number(item.price))}
                                 </div>
-                                <div className="text-sm text-emerald-300 font-semibold">
-                                  {formatCurrency(Number(item.price) * (1 - item.discount / 100))}
+                              )}
+                              {(item as any).rejected ? (
+                                <div className="space-y-0.5">
+                                  <div className="text-[10px] text-red-400 font-semibold">Reprovado</div>
+                                  {(item as any).rejection_reason && (
+                                    <div className="text-[10px] text-red-300/80 max-w-[120px] leading-tight">
+                                      {(item as any).rejection_reason}
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="text-[10px] text-red-400">-{item.discount}%</div>
-                              </>
-                            ) : (
-                              <div className="text-sm text-emerald-300 font-semibold">
-                                {formatCurrency(Number(item.price))}
-                              </div>
-                            )}
-                            {(item as any).rejected ? (
-                              <div className="space-y-0.5">
-                                <div className="text-[10px] text-red-400 font-semibold">Reprovado</div>
-                                {(item as any).rejection_reason && (
-                                  <div className="text-[10px] text-red-300/80 max-w-[120px] leading-tight">
-                                    {(item as any).rejection_reason}
-                                  </div>
-                                )}
-                              </div>
-                            ) : item.approved === false ? (
-                              <div className="text-[10px] text-yellow-300">Aguardando aprovação</div>
-                            ) : null}
+                              ) : item.approved === false ? (
+                                <div className="text-[10px] text-yellow-300">Aguardando aprovação</div>
+                              ) : null}
+                            </div>
+                            <div className="flex items-center gap-1 border-l border-white/10 pl-3">
+                              <button
+                                type="button"
+                                onClick={() => handleEditItem(item)}
+                                className="p-1.5 text-gray-400 hover:text-cyan-400 hover:bg-white/5 rounded transition-colors"
+                                title="Editar item"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteItem(item.id, item.name || item.hero_name)}
+                                className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded transition-colors"
+                                title="Cancelar cadastro"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -596,6 +731,152 @@ const SellerAreaPage: React.FC = () => {
           </Tabs>
         </motion.div>
       </div>
+
+      {/* Edit Modal */}
+      <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <DialogContent className="bg-gray-900 border border-white/10 text-white max-w-lg rounded-2xl scrollbar-none max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-cyan-400">
+              <Edit className="w-5 h-5 text-cyan-400" />
+              Editar Item
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-xs">
+              Altere os detalhes do item. O item passará por uma nova aprovação do administrador.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveEdit} className="space-y-4 pt-2">
+            <div>
+              <label className="block text-xs text-gray-300 mb-1">Nome do item</label>
+              <input
+                type="text"
+                className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-300 mb-1">Nome do herói</label>
+              <HeroCombobox
+                value={editHeroName}
+                onChange={setEditHeroName}
+                className="w-full bg-black/40 border-white/10 text-white hover:bg-black/50 hover:text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-gray-300 mb-1">Upload de imagem</label>
+              <label
+                htmlFor="edit-image-upload"
+                className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                  editImagePreview
+                    ? 'border-cyan-500/50 bg-cyan-500/5'
+                    : 'border-white/10 bg-black/30 hover:border-cyan-500/40 hover:bg-cyan-500/5'
+                }`}
+              >
+                {editImagePreview ? (
+                  <div className="relative w-full h-full">
+                    <img
+                      src={editImagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-contain rounded-lg p-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setEditImageFile(null); setEditImagePreview(''); }}
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5 hover:bg-red-500/80 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-1.5 text-gray-400 text-center">
+                    <Upload className="w-6 h-6 text-gray-500" />
+                    <span className="text-xs">Clique para alterar a imagem</span>
+                    <span className="text-[10px] text-gray-500">Opcional · PNG, JPG, WEBP</span>
+                  </div>
+                )}
+              </label>
+              <input
+                id="edit-image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setEditImageFile(file);
+                  setEditImagePreview(URL.createObjectURL(file));
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-300 mb-1">Preço (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  value={editPrice}
+                  onChange={e => setEditPrice(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-300 mb-1">Estoque Atual</label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  value={editCurrentStock}
+                  onChange={e => setEditCurrentStock(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-300 mb-1">Raridade</label>
+                <select
+                  className="w-full bg-black/40 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  value={editRarity}
+                  onChange={e => setEditRarity(e.target.value)}
+                >
+                  {availableRarities.map(r => (
+                    <option key={r.id} value={r.name.toLowerCase()} className="bg-black">
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <DialogFooter className="pt-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingItem(null)}
+                className="border-white/10 text-white"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={editSaving}
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
+              >
+                {editSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Alterações'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
