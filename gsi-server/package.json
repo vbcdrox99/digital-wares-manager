@@ -1,0 +1,12 @@
+{
+  "name": "dota2-gsi-server",
+  "version": "1.0.0",
+  "description": "Servidor GSI para capturar dados em tempo real do Dota 2",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

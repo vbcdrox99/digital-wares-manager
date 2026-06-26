@@ -21,6 +21,9 @@ import PerfilPage from "./pages/PerfilPage";
 import DotaPixDonatePage from "./pages/DotaPixDonatePage";
 import DotaPixWidgetPage from "./pages/DotaPixWidgetPage";
 import DotaPixGoalWidgetPage from "./pages/DotaPixGoalWidgetPage";
+import OpenDotaWidgetPage from "./pages/OpenDotaWidgetPage";
+import GsiHudPage from "./pages/GsiHudPage";
+import HomeTestPage from "./pages/HomeTestPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,7 +42,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const isWidget = window.location.pathname.includes('/dotapix/widget') || window.location.pathname.includes('/dotapix/goal');
+  const isWidget = window.location.pathname.includes('/dotapix/widget') || window.location.pathname.includes('/dotapix/goal') || window.location.pathname.includes('/opendota/widget') || window.location.pathname.includes('/gsi/hud');
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -61,6 +64,8 @@ const App = () => {
               <Route path="/dotapix" element={<DotaPixDonatePage />} />
               <Route path="/dotapix/widget" element={<DotaPixWidgetPage />} />
               <Route path="/dotapix/goal" element={<DotaPixGoalWidgetPage />} />
+              <Route path="/opendota/widget" element={<OpenDotaWidgetPage />} />
+              <Route path="/gsi/hud" element={<GsiHudPage />} />
               <Route path="/area-do-vendedor" element={
                 <ProtectedRoute>
                   <SellerAreaPage />
@@ -77,6 +82,7 @@ const App = () => {
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/hometest" element={<HomeTestPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

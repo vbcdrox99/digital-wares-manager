@@ -349,10 +349,8 @@ export default function DotaPixGoalWidgetPage() {
         }
       `}</style>
 
-      {/* Outer Dynamic Island inspired goal container - Dark Theme */}
-      <div className={`w-[450px] min-h-[110px] bg-black border border-neutral-800/80 rounded-[2rem] py-3.5 px-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] relative overflow-hidden flex flex-col justify-center transition-all duration-300 ${celebrating ? 'celebrate-active scale-[1.03]' : ''}`}>
-        {/* Subtle light reflect at the top */}
-        <div className="absolute top-0 left-6 right-6 h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+      {/* Outer container */}
+      <div className={`w-[450px] min-h-[110px] bg-transparent py-3.5 px-6 relative overflow-hidden flex flex-col justify-center transition-all duration-300 ${celebrating ? 'celebrate-active scale-[1.03] border-2 border-transparent rounded-[2rem]' : ''}`}>
 
         {/* Celebration Particles Overlay */}
         {celebrating && (
@@ -374,42 +372,42 @@ export default function DotaPixGoalWidgetPage() {
           {/* Top row: Title and status */}
           <div className="flex justify-between items-center relative z-10">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xl font-black text-white uppercase tracking-tight truncate">
+              <span className="text-xl font-black text-white uppercase tracking-tight truncate drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
                 {goal.title}
               </span>
             </div>
             {timeLeft ? (
-              <span className="text-sm text-[#ff9f0a] font-black flex items-center gap-1 shrink-0 bg-[#ff9f0a]/10 px-3 py-1 rounded-full">
+              <span className="text-sm text-[#ff9f0a] font-black flex items-center gap-1 shrink-0 bg-[#ff9f0a]/20 px-3 py-1 rounded-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
                 <Clock className="w-4 h-4 font-black" />
                 <span>{timeLeft}</span>
               </span>
             ) : (
-              <span className="text-sm text-[#34c759] font-black shrink-0 bg-[#34c759]/10 px-3 py-1 rounded-full">
+              <span className="text-sm text-[#34c759] font-black shrink-0 bg-[#34c759]/20 px-3 py-1 rounded-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
                 META DA LIVE
               </span>
             )}
           </div>
 
           {/* Goal Bar: Ultra slim, clean, premium gradient with moving handle */}
-          <div className="w-full h-1.5 bg-[#1c1c1e] rounded-full relative">
+          <div className="w-full h-2.5 bg-black/60 rounded-full relative drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] border border-white/10">
             <div 
-              className="h-full bg-gradient-to-r from-[#ff3b30] via-[#ffcc00] to-[#34c759] rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(52,199,89,0.25)] relative"
+              className="h-full bg-gradient-to-r from-[#ff3b30] via-[#ffcc00] to-[#34c759] rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(52,199,89,0.5)] relative"
               style={{ width: `${percentage}%` }}
             >
               {/* Ball following the bar */}
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] border-2 border-[#34c759] z-20 transition-all duration-1000" />
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] border-2 border-[#34c759] z-20 transition-all duration-1000" />
             </div>
           </div>
 
           {/* Bottom row: Current value, Target and percentage */}
-          <div className="flex justify-between items-center relative z-10 font-semibold">
-            <span className="text-white text-2xl font-black tracking-tight">R$ {goal.current.toFixed(2)}</span>
+          <div className="flex justify-between items-center relative z-10 font-semibold mt-1">
+            <span className="text-white text-2xl font-black tracking-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">R$ {goal.current.toFixed(2)}</span>
 
-            <div className="text-center font-black text-[#34c759] text-base bg-[#34c759]/10 px-3.5 py-1 rounded-full">
+            <div className="text-center font-black text-[#34c759] text-base bg-[#34c759]/20 px-3.5 py-1 rounded-full drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
               {percentage.toFixed(0)}%
             </div>
 
-            <span className="text-white text-2xl font-black tracking-tight">R$ {goal.target.toFixed(2)}</span>
+            <span className="text-white text-2xl font-black tracking-tight drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">R$ {goal.target.toFixed(2)}</span>
           </div>
         </div>
 
@@ -420,12 +418,12 @@ export default function DotaPixGoalWidgetPage() {
             : 'opacity-0 scale-90 translate-x-8 blur-sm absolute inset-x-6 pointer-events-none'
         }`}>
           {/* Middle text area - Centered and Enlarged */}
-          <div className="w-full text-center space-y-1 flex flex-col items-center justify-center">
-            <span className="text-xl font-black text-white tracking-tight uppercase">
+          <div className="w-full text-center space-y-2 flex flex-col items-center justify-center">
+            <span className="text-xl font-black text-white tracking-tight uppercase drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
               {timeLeft && timeLeft !== 'Encerrada' ? `A meta encerra em ${timeLeft}` : 'A meta está ativa'}
             </span>
-            <p className="text-lg text-neutral-400 font-bold leading-snug">
-              Caso queira ajudar digite <span className="text-[#34c759] font-black text-xl">{goal.command}</span>
+            <p className="text-xl text-white font-bold leading-snug drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
+              Caso queira ajudar digite <span className="text-[#34c759] font-black text-2xl bg-black/40 px-2 rounded-md">{goal.command}</span>
             </p>
           </div>
         </div>
