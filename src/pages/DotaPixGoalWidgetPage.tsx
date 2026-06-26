@@ -347,6 +347,13 @@ export default function DotaPixGoalWidgetPage() {
           font-size: 1.5rem;
           z-index: 30;
         }
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .animate-shimmer {
+          animation: shimmer 2.5s infinite linear;
+        }
       `}</style>
 
       {/* Outer container */}
@@ -388,15 +395,22 @@ export default function DotaPixGoalWidgetPage() {
             )}
           </div>
 
-          {/* Goal Bar: Ultra slim, clean, premium gradient with moving handle */}
-          <div className="w-full h-2.5 bg-black/60 rounded-full relative drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] border border-white/10">
+          {/* Goal Bar: Thickened, clean, premium gradient with moving handle */}
+          <div className="w-full h-6 bg-black/70 rounded-full relative drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] border-2 border-white/10 my-1">
+            {/* The filled part with gradient and animation */}
             <div 
-              className="h-full bg-gradient-to-r from-[#ff3b30] via-[#ffcc00] to-[#34c759] rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(52,199,89,0.5)] relative"
+              className="h-full bg-gradient-to-r from-[#ff3b30] via-[#ffcc00] to-[#34c759] rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(52,199,89,0.5)] relative overflow-hidden"
               style={{ width: `${percentage}%` }}
             >
-              {/* Ball following the bar */}
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)] border-2 border-[#34c759] z-20 transition-all duration-1000" />
+              {/* Shine animation */}
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
             </div>
+
+            {/* Ball following the bar */}
+            <div 
+              className="absolute top-1/2 transform -translate-y-1/2 -ml-3.5 w-7 h-7 bg-white rounded-full shadow-[0_0_12px_rgba(255,255,255,1)] border-[3px] border-[#34c759] z-20 transition-all duration-1000"
+              style={{ left: `${percentage}%` }}
+            />
           </div>
 
           {/* Bottom row: Current value, Target and percentage */}
