@@ -395,22 +395,25 @@ export default function DotaPixGoalWidgetPage() {
             )}
           </div>
 
-          {/* Goal Bar: Thickened, clean, premium gradient with moving handle */}
-          <div className="w-full h-10 bg-black/70 rounded-full relative drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] border-2 border-white/10 my-2">
+          {/* Goal Bar: Premium modern slider */}
+          <div className="w-full h-5 bg-black/50 rounded-full relative drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] border border-white/20 my-3">
             {/* The filled part with gradient and animation */}
             <div 
-              className="h-full bg-gradient-to-r from-[#ff3b30] via-[#ffcc00] to-[#34c759] rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(52,199,89,0.5)] relative overflow-hidden"
+              className="h-full bg-gradient-to-r from-[#ff3b30] via-[#ffcc00] to-[#34c759] rounded-full transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(52,199,89,0.5)] relative overflow-hidden"
               style={{ width: `${percentage}%` }}
             >
               {/* Shine animation */}
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer" />
             </div>
 
-            {/* Ball following the bar */}
+            {/* Glowing Ball Handle */}
             <div 
-              className="absolute top-1/2 transform -translate-y-1/2 -ml-3.5 w-7 h-7 bg-white rounded-full shadow-[0_0_12px_rgba(255,255,255,1)] border-[3px] border-[#34c759] z-20 transition-all duration-1000"
+              className="absolute top-1/2 transform -translate-y-1/2 -ml-3.5 w-7 h-7 bg-white rounded-full shadow-[0_0_20px_rgba(52,199,89,1)] border-[4px] border-[#34c759] z-20 transition-all duration-1000 flex items-center justify-center"
               style={{ left: `${percentage}%` }}
-            />
+            >
+              {/* Inner glowing dot */}
+              <div className="w-1.5 h-1.5 bg-[#34c759] rounded-full animate-pulse" />
+            </div>
           </div>
 
           {/* Bottom row: Current value, Target and percentage */}

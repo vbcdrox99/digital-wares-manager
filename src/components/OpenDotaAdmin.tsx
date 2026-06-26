@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Key, Save, Database, Loader2, Send, MonitorPlay, Bot, Mic } from "lucide-react";
+import { Key, Save, Database, Loader2, Send, MonitorPlay, Bot, Mic, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,10 +16,20 @@ export default function OpenDotaAdmin() {
   const [aiLoading, setAiLoading] = useState(false);
   const [previewCard, setPreviewCard] = useState<any>(null);
   const [isListening, setIsListening] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showApiSettings, setShowApiSettings] = useState(false);
   
   // Voices States
   const [ttsVoice, setTtsVoice] = useState(() => localStorage.getItem('opendota_tts_voice') || 'br_001');
   const [fishVoices, setFishVoices] = useState<any[]>([]);
+
+  const handleCopyWidgetLink = () => {
+    const url = `${window.location.origin}/opendota/widget`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success('Link do widget copiado!');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     const fetchKey = async () => {
@@ -166,19 +176,26 @@ export default function OpenDotaAdmin() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <Card className="bg-black/30 border border-white/10 text-white">
-        <CardHeader className="border-b border-white/5 pb-4">
-          <div className="flex items-center gap-2">
-            <Database className="w-6 h-6 text-red-500" />
-            <CardTitle className="text-xl font-bold text-red-500">
-              Integração OpenDota
-            </CardTitle>
+        <CardHeader 
+          className="border-b border-white/5 pb-4 cursor-pointer hover:bg-white/5 transition-colors flex flex-row items-center justify-between"
+          onClick={() => setShowApiSettings(!showApiSettings)}
+        >
+          <div>
+            <div className="flex items-center gap-2">
+              <Database className="w-6 h-6 text-red-500" />
+              <CardTitle className="text-xl font-bold text-red-500">
+                Integração de APIs (OpenDota & Gemini)
+              </CardTitle>
+            </div>
+            <CardDescription className="text-gray-400 text-xs mt-1">
+              Configurações de chaves de API (OpenDota, Google Gemini). Clique para expandir.
+            </CardDescription>
           </div>
-          <CardDescription className="text-gray-400 text-xs">
-            Configure a API do OpenDota para buscar informações automáticas de partidas, jogadores e inventários do Dota 2.
-          </CardDescription>
+          {showApiSettings ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
         </CardHeader>
 
-        <CardContent className="pt-6 space-y-6">
+        {showApiSettings && (
+          <CardContent className="pt-6 space-y-6">
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-red-400">Chave de Autenticação (API Key)</h3>
             <p className="text-xs text-gray-400 leading-relaxed">
@@ -234,20 +251,32 @@ export default function OpenDotaAdmin() {
             </div>
           </div>
         </CardContent>
+        )}
       </Card>
 
       {/* Assistente de IA Card */}
       <Card className="bg-black/30 border border-white/10 text-white">
-        <CardHeader className="border-b border-white/5 pb-4">
-          <div className="flex items-center gap-2">
-            <Bot className="w-6 h-6 text-[#2fd0df]" />
-            <CardTitle className="text-xl font-bold text-[#2fd0df]">
-              Assistente IA do Caster
-            </CardTitle>
+        <CardHeader className="border-b border-white/5 pb-4 flex flex-row items-start justify-between">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Bot className="w-6 h-6 text-[#2fd0df]" />
+              <CardTitle className="text-xl font-bold text-[#2fd0df]">
+                Assistente IA do Caster
+              </CardTitle>
+            </div>
+            <CardDescription className="text-gray-400 text-xs max-w-xl">
+              A IA usa <strong>Google Search em tempo real</strong> para buscar estatísticas de campeonatos, times e heróis. Ideal para: winrates em torneios, resultados de eventos, informações de time. <em>Histórico individual de partidas (live)</em> em breve.
+            </CardDescription>
           </div>
-          <CardDescription className="text-gray-400 text-xs">
-            A IA usa <strong>Google Search em tempo real</strong> para buscar estatísticas de campeonatos, times e heróis. Ideal para: winrates em torneios, resultados de eventos, informações de time. <em>Histórico individual de partidas (live)</em> em breve.
-          </CardDescription>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleCopyWidgetLink}
+            className="border-[#2fd0df]/30 text-[#2fd0df] hover:bg-[#2fd0df]/10 flex-shrink-0"
+          >
+            {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+            Copiar Widget
+          </Button>
         </CardHeader>
 
         <CardContent className="pt-6 space-y-6">
