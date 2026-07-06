@@ -25,7 +25,7 @@ import OpenDotaWidgetPage from "./pages/OpenDotaWidgetPage";
 import GsiHudPage from "./pages/GsiHudPage";
 import GsiBattleSummaryPage from "./pages/GsiBattleSummaryPage";
 import HomeTestPage from "./pages/HomeTestPage";
-
+import ObsMatchesPage from "./pages/ObsMatchesPage";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -43,7 +43,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const isWidget = window.location.pathname.includes('/dotapix/widget') || window.location.pathname.includes('/dotapix/goal') || window.location.pathname.includes('/opendota/widget') || window.location.pathname.includes('/gsi/hud') || window.location.pathname.includes('/gsi/battle-summary');
+  const isWidget = window.location.pathname.includes('/dotapix/widget') || window.location.pathname.includes('/dotapix/goal') || window.location.pathname.includes('/opendota/widget') || window.location.pathname.includes('/gsi/hud') || window.location.pathname.includes('/gsi/battle-summary') || window.location.pathname.includes('/obs/jogos-do-dia');
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -68,6 +68,7 @@ const App = () => {
               <Route path="/opendota/widget" element={<OpenDotaWidgetPage />} />
               <Route path="/gsi/hud" element={<GsiHudPage />} />
               <Route path="/gsi/battle-summary" element={<GsiBattleSummaryPage />} />
+              <Route path="/obs/jogos-do-dia" element={<ObsMatchesPage />} />
               <Route path="/area-do-vendedor" element={
                 <ProtectedRoute>
                   <SellerAreaPage />

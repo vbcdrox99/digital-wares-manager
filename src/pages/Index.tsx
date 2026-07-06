@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useState, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home, Star, Plus, X, Search, Check, IdCard, DollarSign, Coins } from "lucide-react";
+import { Package, ShoppingCart, Users, TrendingUp, Settings, BarChart3, Shield, Home, Star, Plus, X, Search, Check, IdCard, DollarSign, Coins, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Loading } from "@/components/ui/loading";
@@ -13,7 +13,7 @@ import Customers from "@/components/Customers";
 import Financial from "@/components/Financial";
 import DotaPixAdmin from "@/components/DotaPixAdmin";
 import OpenDotaAdmin from "@/components/OpenDotaAdmin";
-import SocialAdmin from "@/components/SocialAdmin";
+import DotaMatchesWidget from "@/components/DotaMatchesWidget";
 import { useItems } from "@/hooks/useItems";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { Item } from "@/types/inventory";
@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const [adminSection, setAdminSection] = useState<'store' | 'dotapix' | 'opendota' | 'social'>('store');
+  const [adminSection, setAdminSection] = useState<'store' | 'dotapix' | 'opendota' | 'matches'>('store');
   const { items } = useItems();
   const [premiumItemIds, setPremiumItemIds] = useLocalStorage<string[]>("premiumRaffleItemIds", []);
   const premiumSelectedItems: Item[] = premiumItemIds
@@ -154,15 +154,15 @@ const Index = () => {
                   OpenDota API
                 </button>
                 <button 
-                  onClick={() => setAdminSection('social')}
+                  onClick={() => setAdminSection('matches')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    adminSection === 'social' 
+                    adminSection === 'matches' 
                       ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(147,51,234,0.4)]' 
                       : 'text-purple-400 hover:text-purple-300 border border-purple-500/20 bg-purple-950/10'
                   }`}
                 >
-                  <Star className="w-3.5 h-3.5" />
-                  Social Media AI
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  Jogos do Dia
                 </button>
               </div>
               <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
@@ -184,10 +184,10 @@ const Index = () => {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {adminSection === 'social' ? (
+        {adminSection === 'matches' ? (
           <ErrorBoundary>
-            <Suspense fallback={<Loading text="Carregando painel Social..." />}>
-              <SocialAdmin />
+            <Suspense fallback={<Loading text="Carregando partidas..." />}>
+              <DotaMatchesWidget />
             </Suspense>
           </ErrorBoundary>
         ) : adminSection === 'opendota' ? (
