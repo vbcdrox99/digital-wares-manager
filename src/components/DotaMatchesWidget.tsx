@@ -26,6 +26,7 @@ type OBSSetting = {
   start_date: string | null;
   end_date: string | null;
   selected_tournament: string;
+  updated_at?: string | null;
 };
 
 const DotaMatchesWidget = () => {
@@ -43,8 +44,7 @@ const DotaMatchesWidget = () => {
     return `${year}-${month}-${day}`;
   };
 
-  const [startDate, setStartDate] = useState<string>(getTodayString());
-  const [endDate, setEndDate] = useState<string>(getTodayString());
+  const [dateMode, setDateMode] = useState<string>('today');
   const [selectedTournament, setSelectedTournament] = useState<string>('all');
   
   const { toast } = useToast();
@@ -74,9 +74,65 @@ const DotaMatchesWidget = () => {
 
       if (settingsData) {
         const settings = settingsData as OBSSetting;
-        if (settings.start_date) setStartDate(settings.start_date);
-        if (settings.end_date) setEndDate(settings.end_date);
         if (settings.selected_tournament) setSelectedTournament(settings.selected_tournament);
+
+        let resolvedMode = 'today';
+        const todayStr = getTodayString();
+
+        if (settings.start_date === 'yesterday') {
+          resolvedMode = 'yesterday';
+        } else if (settings.start_date === 'tomorrow') {
+          resolvedMode = 'tomorrow';
+        } else if (settings.start_date === 'today') {
+          resolvedMode = 'today';
+        } else if (settings.start_date) {
+          // Se for uma data estática antiga que bate com hoje, considera como 'today'
+          if (settings.start_date === todayStr) {
+            resolvedMode = 'today';
+          } else {
+            // Se for de outro dia, força o reset automático para 'today'
+            resolvedMode = 'today';
+            supabase
+              .from('dota_matches_settings')
+              .upsert({
+                id: 'default',
+                start_date: 'today',
+                end_date: 'today',
+                selected_tournament: settings.selected_tournament || 'all',
+                updated_at: new Date().toISOString()
+              })
+              .then(({ error }) => {
+                if (error) console.error('Erro no reset automático de data no banco:', error);
+              });
+          }
+        }
+
+        // Se o registro foi atualizado em um dia anterior, também força o reset para 'today'
+        if (settings.updated_at) {
+          const updatedDate = new Date(settings.updated_at);
+          const updatedDateYear = updatedDate.getFullYear();
+          const updatedDateMonth = String(updatedDate.getMonth() + 1).padStart(2, '0');
+          const updatedDateDay = String(updatedDate.getDate()).padStart(2, '0');
+          const updatedDateStr = `${updatedDateYear}-${updatedDateMonth}-${updatedDateDay}`;
+          
+          if (updatedDateStr !== todayStr && resolvedMode !== 'today') {
+            resolvedMode = 'today';
+            supabase
+              .from('dota_matches_settings')
+              .upsert({
+                id: 'default',
+                start_date: 'today',
+                end_date: 'today',
+                selected_tournament: settings.selected_tournament || 'all',
+                updated_at: new Date().toISOString()
+              })
+              .then(({ error }) => {
+                if (error) console.error('Erro no reset automático de data por updated_at:', error);
+              });
+          }
+        }
+
+        setDateMode(resolvedMode);
       }
     } catch (err: any) {
       console.error('Erro ao buscar dados e configurações:', err);
@@ -141,8 +197,8 @@ const DotaMatchesWidget = () => {
         .from('dota_matches_settings')
         .upsert({
           id: 'default',
-          start_date: startDate || null,
-          end_date: endDate || null,
+          start_date: dateMode,
+          end_date: dateMode,
           selected_tournament: selectedTournament,
           updated_at: new Date().toISOString()
         });
@@ -171,8 +227,27 @@ const DotaMatchesWidget = () => {
   }, [matches]);
 
   const filteredMatches = useMemo(() => {
-    const start = startDate ? new Date(startDate + "T00:00:00") : null;
-    const end = endDate ? new Date(endDate + "T23:59:59") : null;
+    const today = new Date();
+    let targetDateStr = getTodayString();
+
+    if (dateMode === 'yesterday') {
+      const yest = new Date(today);
+      yest.setDate(yest.getDate() - 1);
+      const year = yest.getFullYear();
+      const month = String(yest.getMonth() + 1).padStart(2, '0');
+      const day = String(yest.getDate()).padStart(2, '0');
+      targetDateStr = `${year}-${month}-${day}`;
+    } else if (dateMode === 'tomorrow') {
+      const tom = new Date(today);
+      tom.setDate(tom.getDate() + 1);
+      const year = tom.getFullYear();
+      const month = String(tom.getMonth() + 1).padStart(2, '0');
+      const day = String(tom.getDate()).padStart(2, '0');
+      targetDateStr = `${year}-${month}-${day}`;
+    }
+
+    const start = new Date(targetDateStr + "T00:00:00");
+    const end = new Date(targetDateStr + "T23:59:59");
 
     return matches.filter(match => {
       const matchDate = new Date(match.match_time);
@@ -182,13 +257,14 @@ const DotaMatchesWidget = () => {
         return false;
       }
       
-      // Filtro de Data
-      if (start && matchDate < start) return false;
-      if (end && matchDate > end) return false;
+      // Filtro de Data (Sempre mostra live, senão filtra pela data do dia selecionado)
+      if (match.status === 'live') return true;
+      if (matchDate < start) return false;
+      if (matchDate > end) return false;
       
       return true;
     });
-  }, [matches, startDate, endDate, selectedTournament]);
+  }, [matches, dateMode, selectedTournament]);
 
   const copyObsUrl = () => {
     const url = `${window.location.origin}/obs/jogos-do-dia`;
@@ -223,28 +299,19 @@ const DotaMatchesWidget = () => {
 
       {/* Barra de Filtros */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-black/40 rounded-xl border border-white/10 items-end">
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 md:col-span-2">
           <label className="text-xs font-semibold text-gray-400 flex items-center gap-1.5">
-            <CalendarRange className="w-3.5 h-3.5" /> Data Inicial
+            <CalendarDays className="w-3.5 h-3.5 text-purple-400" /> Período de Exibição
           </label>
-          <input 
-            type="date" 
-            value={startDate} 
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full bg-[#0d0d0d] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500" 
-          />
-        </div>
-        
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-gray-400 flex items-center gap-1.5">
-            <CalendarRange className="w-3.5 h-3.5" /> Data Final
-          </label>
-          <input 
-            type="date" 
-            value={endDate} 
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full bg-[#0d0d0d] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500" 
-          />
+          <select 
+            value={dateMode} 
+            onChange={(e) => setDateMode(e.target.value)}
+            className="w-full bg-[#0d0d0d] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+          >
+            <option value="yesterday">Ontem (Jogos anteriores)</option>
+            <option value="today">Hoje (Ao vivo / Jogos do Dia)</option>
+            <option value="tomorrow">Amanhã (Próximos confrontos)</option>
+          </select>
         </div>
 
         <div className="flex flex-col gap-1.5">

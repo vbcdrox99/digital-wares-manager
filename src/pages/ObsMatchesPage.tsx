@@ -174,9 +174,10 @@ const ObsMatchesPage = () => {
   };
 
   const [settings, setSettings] = useState({
-    startDate: getTodayString(),
-    endDate: getTodayString(),
-    tournament: 'all'
+    startDate: 'today',
+    endDate: 'today',
+    tournament: 'all',
+    updatedAt: null as string | null
   });
 
   const fetchMatches = async () => {
@@ -205,11 +206,11 @@ const ObsMatchesPage = () => {
 
       if (data) {
         const obsSet = data as OBSSetting;
-        const todayStr = getTodayString();
         setSettings({
-          startDate: obsSet.start_date || todayStr,
-          endDate: obsSet.end_date || todayStr,
-          tournament: obsSet.selected_tournament || 'all'
+          startDate: obsSet.start_date || 'today',
+          endDate: obsSet.end_date || 'today',
+          tournament: obsSet.selected_tournament || 'all',
+          updatedAt: obsSet.updated_at || null
         });
       }
     } catch (err) {
@@ -245,11 +246,11 @@ const ObsMatchesPage = () => {
         (payload) => {
           const newSettings = payload.new as OBSSetting;
           if (newSettings) {
-            const todayStr = getTodayString();
             setSettings({
-              startDate: newSettings.start_date || todayStr,
-              endDate: newSettings.end_date || todayStr,
-              tournament: newSettings.selected_tournament || 'all'
+              startDate: newSettings.start_date || 'today',
+              endDate: newSettings.end_date || 'today',
+              tournament: newSettings.selected_tournament || 'all',
+              updatedAt: newSettings.updated_at || null
             });
           }
         }
@@ -265,8 +266,48 @@ const ObsMatchesPage = () => {
 
   // Filtrar partidas baseadas nos settings
   const filteredMatches = useMemo(() => {
-    const start = settings.startDate ? new Date(settings.startDate + "T00:00:00") : null;
-    const end = settings.endDate ? new Date(settings.endDate + "T23:59:59") : null;
+    const today = new Date();
+    const todayStr = format(today, "yyyy-MM-dd");
+
+    // Verifica se as configurações foram salvas em um dia anterior para o reset automático de meia-noite
+    let resolvedMode = settings.startDate || 'today';
+    if (settings.updatedAt) {
+      const updatedDate = new Date(settings.updatedAt);
+      const updatedDateYear = updatedDate.getFullYear();
+      const updatedDateMonth = String(updatedDate.getMonth() + 1).padStart(2, '0');
+      const updatedDateDay = String(updatedDate.getDate()).padStart(2, '0');
+      const updatedDateStr = `${updatedDateYear}-${updatedDateMonth}-${updatedDateDay}`;
+      
+      if (updatedDateStr !== todayStr) {
+        resolvedMode = 'today';
+      }
+    }
+
+    let targetDateStr = todayStr;
+    if (resolvedMode === 'yesterday') {
+      const yest = new Date(today);
+      yest.setDate(yest.getDate() - 1);
+      const year = yest.getFullYear();
+      const month = String(yest.getMonth() + 1).padStart(2, '0');
+      const day = String(yest.getDate()).padStart(2, '0');
+      targetDateStr = `${year}-${month}-${day}`;
+    } else if (resolvedMode === 'tomorrow') {
+      const tom = new Date(today);
+      tom.setDate(tom.getDate() + 1);
+      const year = tom.getFullYear();
+      const month = String(tom.getMonth() + 1).padStart(2, '0');
+      const day = String(tom.getDate()).padStart(2, '0');
+      targetDateStr = `${year}-${month}-${day}`;
+    } else if (resolvedMode !== 'today' && resolvedMode.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      if (resolvedMode === todayStr) {
+        targetDateStr = todayStr;
+      } else {
+        targetDateStr = todayStr;
+      }
+    }
+
+    const start = new Date(targetDateStr + "T00:00:00");
+    const end = new Date(targetDateStr + "T23:59:59");
 
     return matches.filter(m => {
        const safeTimeStr = m.match_time ? m.match_time.replace(' ', 'T') : '';
@@ -283,8 +324,8 @@ const ObsMatchesPage = () => {
        }
 
        // Filtro de data
-       if (start && mDate < start) return false;
-       if (end && mDate > end) return false;
+       if (mDate < start) return false;
+       if (mDate > end) return false;
 
        return true;
     });
