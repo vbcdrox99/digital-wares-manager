@@ -39,124 +39,106 @@ const MatchCard = ({ match, index }: { match: DotaMatch; index: number }) => {
     minutes = String(matchDate.getMinutes()).padStart(2, '0');
   }
 
-  // Definições de cor com base no status da partida para diferenciar de forma limpa e moderna
-  let pill1Bg = '';
-  let pill2Bg = '';
-  let centerBorder = '';
-  let logoBorder = '';
-  let centerLabelColor = '';
-  let centerTextColor = '';
-  let centerShadow = '';
-  let logoBg = '';
-  let cardGlow = '';
+  // Definições de col com base no status da partida para diferenciar de forma limpa e moderna
+  let cardBg = 'bg-[#090b14]/65 border-zinc-800/60 shadow-lg';
+  let centerBorder = 'border-white/10';
+  let centerLabelColor = 'text-zinc-400';
+  let centerTextColor = 'text-white';
+  let centerShadow = 'shadow-md';
+  let statusText = 'HORÁRIO';
+  let centerBg = 'bg-[#05060b]/75';
 
   if (isLive) {
     // Tema Roxo/Rosa Claro (Ao vivo) - Combinando com a lateral direita do OBS
-    pill1Bg = 'from-fuchsia-950/40 via-purple-950/30 to-fuchsia-950/40 border-fuchsia-500/20';
-    pill2Bg = 'from-fuchsia-950/40 via-purple-950/30 to-fuchsia-950/40 border-fuchsia-500/20';
+    cardBg = 'bg-gradient-to-r from-fuchsia-950/65 via-[#090b14]/65 to-fuchsia-950/65 border-fuchsia-500/30 shadow-[0_0_15px_rgba(217,70,239,0.25)]';
     centerBorder = 'border-fuchsia-500';
-    logoBorder = 'border-fuchsia-500/40';
-    logoBg = 'bg-[#150a1b]';
     centerLabelColor = 'text-fuchsia-400 animate-pulse';
     centerTextColor = 'text-fuchsia-300';
-    centerShadow = 'shadow-[0_0_12px_rgba(217,70,239,0.35)]';
-    cardGlow = 'after:absolute after:inset-0 after:rounded-2xl after:border after:border-fuchsia-500/10 after:pointer-events-none';
+    centerShadow = 'shadow-[0_0_15px_rgba(217,70,239,0.3)]';
+    statusText = 'AO VIVO';
+    centerBg = 'bg-fuchsia-950/65';
   } else if (isCompleted) {
     // Tema Azul/Ciano Claro (Concluído) - Combinando com a lateral esquerda do OBS
-    pill1Bg = 'from-[#0a1829]/40 via-[#07111e]/30 to-[#0a1829]/40 border-cyan-500/10';
-    pill2Bg = 'from-[#0a1829]/40 via-[#07111e]/30 to-[#0a1829]/40 border-cyan-500/10';
+    cardBg = 'bg-gradient-to-r from-[#06111e]/65 via-[#090b14]/65 to-[#06111e]/65 border-cyan-500/30 shadow-[0_0_12px_rgba(34,211,238,0.2)]';
     centerBorder = 'border-cyan-400';
-    logoBorder = 'border-cyan-500/30';
-    logoBg = 'bg-[#06111e]';
     centerLabelColor = 'text-cyan-400';
     centerTextColor = 'text-cyan-300';
-    centerShadow = 'shadow-[0_0_10px_rgba(34,211,238,0.2)]';
-    cardGlow = '';
-  } else {
-    // Tema Escuro/Aço (Por vir) - Neutro integrado ao painel
-    pill1Bg = 'from-[#111420]/45 via-[#080a10]/20 to-[#111420]/45 border-zinc-800/20';
-    pill2Bg = 'from-[#111420]/45 via-[#080a10]/20 to-[#111420]/45 border-zinc-800/20';
-    centerBorder = 'border-zinc-700/80';
-    logoBorder = 'border-zinc-800/40';
-    logoBg = 'bg-zinc-950';
-    centerLabelColor = 'text-zinc-500';
-    centerTextColor = 'text-zinc-300';
-    centerShadow = 'shadow-md';
-    cardGlow = '';
+    centerShadow = 'shadow-[0_0_12px_rgba(34,211,238,0.25)]';
+    statusText = 'FINAL';
+    centerBg = 'bg-cyan-950/65';
   }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ delay: index * 0.08 }}
-      className={`w-full flex items-center justify-between relative h-16 ${cardGlow}`}
+      className={`flex-1 max-w-[560px] h-[130px] p-4 flex items-center justify-between rounded-2xl border ${cardBg} backdrop-blur-sm relative overflow-hidden`}
     >
-      {/* Team 1 Circular Logo */}
-      <div className={`w-14 h-14 rounded-full border-2 ${logoBorder} ${logoBg} flex items-center justify-center p-1 shadow-lg z-20 flex-shrink-0 relative overflow-hidden transition-all duration-300`}>
-        {match.team1_logo ? (
-          <img 
-            src={match.team1_logo} 
-            alt="" 
-            className="w-9 h-9 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" 
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="text-[8px] font-black text-zinc-600">T1</span>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
-      </div>
+      {/* Background glassmorphism effect */}
+      <div className="absolute inset-0 bg-white/[0.01] pointer-events-none" />
 
-      {/* Team 1 Name Pill */}
-      <div className={`flex-1 h-10 flex items-center justify-center bg-gradient-to-r ${pill1Bg} rounded-l-full ml-[-12px] pr-4 pl-6 z-10 border-t border-b border-l shadow-inner min-w-0`}>
-        <span className="font-outfit text-[11px] font-semibold text-white uppercase tracking-wider text-center w-full truncate px-1">
+      {/* Team 1 (Left) */}
+      <div className="w-[220px] flex items-center justify-end gap-4 min-w-0">
+        <span className="font-outfit text-2xl font-black text-white uppercase tracking-wider truncate text-right flex-1 select-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
           {match.team1}
         </span>
+        <div className="w-22 h-22 rounded-2xl bg-black/30 border border-white/10 flex items-center justify-center p-2 shadow-md flex-shrink-0 overflow-hidden relative">
+          {match.team1_logo ? (
+            <img 
+              src={match.team1_logo} 
+              alt="" 
+              className="w-16 h-16 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" 
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="text-xs font-black text-zinc-500 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">T1</span>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
+        </div>
       </div>
 
-      {/* Central Score/VS Pill */}
-      <div className={`w-[84px] h-[52px] bg-[#090d16] border-2 ${centerBorder} rounded-[14px] flex flex-col items-center justify-center z-20 mx-[-10px] ${centerShadow} relative overflow-hidden transition-all duration-300`}>
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.06] pointer-events-none" />
+      {/* Central Score/VS Box */}
+      <div className={`w-[120px] h-[98px] ${centerBg} border-2 ${centerBorder} rounded-2xl flex flex-col items-center justify-center z-10 ${centerShadow} relative overflow-hidden flex-shrink-0 backdrop-blur-sm`}>
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none" />
         
-        {/* Top small label */}
-        <span className={`text-[7px] font-black tracking-widest uppercase leading-none mb-1 ${centerLabelColor}`}>
-          {isLive ? 'EM JOGO' : (isCompleted ? 'FINAL' : 'HORÁRIO')}
+        {/* Status label */}
+        <span className={`text-[10px] font-black tracking-[0.15em] uppercase leading-none mb-2 ${centerLabelColor} drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]`}>
+          {statusText}
         </span>
         {/* Score or Time */}
-        <div className="flex items-center justify-center font-outfit font-black text-sm leading-none z-10">
+        <div className="flex items-center justify-center font-outfit font-black leading-none z-10">
           {isLive || isCompleted ? (
-            <div className={`flex items-center ${centerTextColor} tracking-wide`}>
+            <div className={`flex items-center ${centerTextColor} tracking-wider text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]`}>
               <span className={isLive ? 'animate-pulse' : ''}>{match.score1 ?? 0}</span>
-              <span className="mx-1 text-[8px] font-black text-zinc-500 uppercase tracking-tighter opacity-80">X</span>
+              <span className="mx-2 text-sm font-black text-zinc-500 uppercase tracking-tighter opacity-80">X</span>
               <span className={isLive ? 'animate-pulse' : ''}>{match.score2 ?? 0}</span>
             </div>
           ) : (
-            <span className="text-xs text-zinc-100 tracking-wide font-bold">{hours}:{minutes}</span>
+            <span className="text-3xl text-zinc-100 tracking-wide font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{hours}:{minutes}</span>
           )}
         </div>
       </div>
 
-      {/* Team 2 Name Pill */}
-      <div className={`flex-1 h-10 flex items-center justify-center bg-gradient-to-r ${pill2Bg} rounded-r-full mr-[-12px] pl-4 pr-6 z-10 border-t border-b border-r shadow-inner min-w-0`}>
-        <span className="font-outfit text-[11px] font-semibold text-white uppercase tracking-wider text-center w-full truncate px-1">
+      {/* Team 2 (Right) */}
+      <div className="w-[220px] flex items-center justify-start gap-4 min-w-0">
+        <div className="w-22 h-22 rounded-2xl bg-black/30 border border-white/10 flex items-center justify-center p-2 shadow-md flex-shrink-0 overflow-hidden relative">
+          {match.team2_logo ? (
+            <img 
+              src={match.team2_logo} 
+              alt="" 
+              className="w-16 h-16 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" 
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="text-xs font-black text-zinc-500 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">T2</span>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
+        </div>
+        <span className="font-outfit text-2xl font-black text-white uppercase tracking-wider truncate text-left flex-1 select-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
           {match.team2}
         </span>
-      </div>
-
-      {/* Team 2 Circular Logo */}
-      <div className={`w-14 h-14 rounded-full border-2 ${logoBorder} ${logoBg} flex items-center justify-center p-1 shadow-lg z-20 flex-shrink-0 relative overflow-hidden transition-all duration-300`}>
-        {match.team2_logo ? (
-          <img 
-            src={match.team2_logo} 
-            alt="" 
-            className="w-9 h-9 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" 
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="text-[8px] font-black text-zinc-600">T2</span>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-white/10 pointer-events-none" />
       </div>
     </motion.div>
   );
@@ -333,11 +315,13 @@ const ObsMatchesPage = () => {
 
   // Paginação Automática (Foco de UX para OBS)
   const [currentPage, setCurrentPage] = useState(0);
-  const PAGE_SIZE = 5;
-  const totalPages = Math.ceil(filteredMatches.length / PAGE_SIZE);
+  const PAGE_SIZE = 3;
+  const totalPages = 1 + Math.ceil(filteredMatches.length / PAGE_SIZE);
 
   const pageMatches = useMemo(() => {
-    return filteredMatches.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+    if (currentPage === 0) return [];
+    const p = currentPage - 1;
+    return filteredMatches.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE);
   }, [filteredMatches, currentPage]);
 
   // Reseta para a página 0 se o número de confrontos ou filtros mudar
@@ -358,15 +342,10 @@ const ObsMatchesPage = () => {
     return null; // Tela limpa se não houver jogos
   }
 
-  // Calcula a altura ideal com base nas partidas exibidas na página ATUAL (evita espaço preto no último slide)
-  const minHeight = pageMatches.length > 0 
-    ? `${pageMatches.length * 64 + (pageMatches.length - 1) * 16}px`
-    : '0px';
-
   const currentDateStr = format(new Date(), "dd 'DE' MMMM 'DE' yyyy", { locale: ptBR });
 
   return (
-    <div className="w-[460px] p-5 text-white overflow-hidden bg-gradient-to-b from-[#0c0d16] to-[#05060a] border border-indigo-950/80 rounded-[24px] relative shadow-2xl transition-all duration-500 ease-in-out">
+    <div className="w-[1800px] h-[150px] text-white overflow-hidden bg-transparent flex items-center transition-all duration-500 ease-in-out">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
         .font-outfit {
@@ -374,36 +353,7 @@ const ObsMatchesPage = () => {
         }
       `}</style>
       
-      {/* Header estilo Copa com Kings League (Cores harmonizadas com o OBS) */}
-      <div className="flex items-center justify-between mb-8 font-outfit border-b border-indigo-950/40 pb-5">
-        <div className="flex items-center gap-3">
-          {/* Dota Play Logo com gradiente Ciano-Fúcsia */}
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-fuchsia-500/10">
-            <Trophy className="w-5.5 h-5.5 text-zinc-950 fill-zinc-950" />
-          </div>
-          <div>
-            <h1 className="text-lg font-black tracking-tight text-white uppercase leading-none">
-              {settings.tournament === 'all' ? 'CHOCO CUP' : settings.tournament}
-            </h1>
-            <span className="text-[8px] font-black text-zinc-500 tracking-wider uppercase mt-1 block">
-              AGENDA DE HOJE
-            </span>
-          </div>
-        </div>
-        
-        {/* Right side: Italic fuchsia text */}
-        <div className="text-right">
-          <span className="text-xl font-black italic text-fuchsia-400 tracking-tighter block leading-none">
-            CONFRONTOS
-          </span>
-          <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mt-1 block">
-            {currentDateStr}
-          </span>
-        </div>
-      </div>
-
-      {/* Lista de Partidas com Transição de Slide */}
-      <div style={{ minHeight }} className="relative overflow-hidden font-outfit transition-all duration-500 ease-in-out">
+      <div className="w-full h-full relative overflow-hidden font-outfit">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
@@ -411,11 +361,23 @@ const ObsMatchesPage = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -40 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
-            className="space-y-4"
+            className="w-full h-full flex items-center"
           >
-            {pageMatches.map((match, index) => (
-              <MatchCard key={match.id} match={match} index={index} />
-            ))}
+            {currentPage === 0 ? (
+              /* SLIDE 0: INTRO DO CAMPEONATO (APENAS NOME DO TORNEIO) */
+              <div className="flex items-center justify-center w-full h-full">
+                <h1 className="text-6xl font-black tracking-widest text-white uppercase leading-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.95)] select-none">
+                  {settings.tournament === 'all' ? 'CHOCO CUP' : settings.tournament}
+                </h1>
+              </div>
+            ) : (
+              /* SLIDES >= 1: CONFRONTOS */
+              <div className="flex-1 h-full flex justify-center items-center gap-8 px-6">
+                {pageMatches.map((match, index) => (
+                  <MatchCard key={match.id} match={match} index={index} />
+                ))}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

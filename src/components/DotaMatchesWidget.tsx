@@ -492,7 +492,7 @@ const DotaMatchesWidget = () => {
               <div className="text-xs text-gray-400 space-y-2">
                 <p>🚀 <strong>Sem dor de cabeça:</strong> Esse link é 100% estático. Não precisa atualizar no OBS mesmo se você mudar as datas ou campeonatos.</p>
                 <p>1. Copie o link acima e adicione no OBS.</p>
-                <p>2. Configure a largura para <strong>400</strong> e altura para <strong>800</strong>.</p>
+                <p>2. Configure a largura para <strong>1800</strong> e altura para <strong>150</strong>.</p>
                 <p>3. Quando quiser mudar os jogos da transmissão, ajuste a data e campeonato nas caixas ao lado e clique em <strong>Aplicar Filtros no OBS</strong>.</p>
               </div>
             </CardContent>
