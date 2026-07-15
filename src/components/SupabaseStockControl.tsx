@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Minus, Trash2, Package, Loader2, Users, Edit, Star, Settings, Palette, Check, X, ChevronsUpDown } from 'lucide-react';
+import { Plus, Minus, Trash2, Package, Loader2, Users, Edit, Star, Settings, Palette, Check, X, ChevronsUpDown, Upload } from 'lucide-react';
 import { Rarity } from '@/types/inventory';
 import { toast } from '@/hooks/use-toast';
 import { supabaseServices, Chest, Item, Customer } from '@/integrations/supabase/services';
@@ -22,6 +22,62 @@ interface RarityDefinition {
   color: string;
 }
 
+const compressImage = (file: File, maxWidth = 1000, maxHeight = 1000, quality = 0.8): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    if (file.type === 'image/svg+xml') {
+      resolve(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas context could not be created'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Canvas compression failed'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
 
 
 const SupabaseStockControl: React.FC = () => {
@@ -83,6 +139,8 @@ const SupabaseStockControl: React.FC = () => {
   });
   const [editSelectedImage, setEditSelectedImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string>('');
+  const [imageSizes, setImageSizes] = useState({ original: 0, compressed: 0 });
+  const [editImageSizes, setEditImageSizes] = useState({ original: 0, compressed: 0 });
 
   // Estados para modal de confirmação de exclusão
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -258,20 +316,27 @@ const SupabaseStockControl: React.FC = () => {
     return rarity ? rarity.color : 'bg-gray-700 text-white border-gray-800';
   };
 
+  // Função para enviar imagem para o storage
+  const uploadItemImage = async (file: File): Promise<string> => {
+    const ext = file.name.split('.').pop() || 'jpg';
+    const fileName = `admin/${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('sellers-photo')
+      .upload(fileName, file, { upsert: true });
+    
+    if (uploadError) throw uploadError;
+    
+    const { data } = supabase.storage
+      .from('sellers-photo')
+      .getPublicUrl(fileName);
+      
+    return data.publicUrl;
+  };
+
   // Função para manipular upload de imagem
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Verificar tamanho do arquivo (máx. 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Erro",
-        description: "A imagem deve ter no máximo 5MB.",
-        variant: "destructive"
-      });
-      return;
-    }
 
     // Verificar tipo do arquivo
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
@@ -284,39 +349,54 @@ const SupabaseStockControl: React.FC = () => {
       return;
     }
 
-    setSelectedImage(file);
+    const originalSize = file.size;
 
-    // Criar preview da imagem
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setImagePreview(result);
-      setNewItem({ ...newItem, image_url: result });
-    };
-    reader.readAsDataURL(file);
+    try {
+      toast({
+        title: "Processando imagem",
+        description: "Comprimindo e otimizando a imagem para a web..."
+      });
+
+      const compressedBlob = await compressImage(file, 1000, 1000, 0.8);
+      const compressedSize = compressedBlob.size;
+
+      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+        type: 'image/jpeg',
+        lastModified: Date.now()
+      });
+
+      setSelectedImage(compressedFile);
+      setImageSizes({ original: originalSize, compressed: compressedSize });
+
+      // Criar preview da imagem
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setImagePreview(result);
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      console.error('Erro ao processar imagem:', error);
+      toast({
+        title: "Erro ao processar imagem",
+        description: "Ocorreu um erro ao otimizar a imagem.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Função para limpar imagem selecionada
   const clearImage = () => {
     setSelectedImage(null);
     setImagePreview('');
+    setImageSizes({ original: 0, compressed: 0 });
     setNewItem({ ...newItem, image_url: '' });
   };
 
   // Função para manipular upload de imagem no modal de edição
-  const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Verificar tamanho do arquivo (máx. 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Erro",
-        description: "A imagem deve ter no máximo 5MB.",
-        variant: "destructive"
-      });
-      return;
-    }
 
     // Verificar tipo do arquivo
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
@@ -329,22 +409,47 @@ const SupabaseStockControl: React.FC = () => {
       return;
     }
 
-    setEditSelectedImage(file);
+    const originalSize = file.size;
 
-    // Criar preview da imagem
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setEditImagePreview(result);
-      setEditForm({ ...editForm, image_url: result });
-    };
-    reader.readAsDataURL(file);
+    try {
+      toast({
+        title: "Processando imagem",
+        description: "Comprimindo e otimizando a imagem para a web..."
+      });
+
+      const compressedBlob = await compressImage(file, 1000, 1000, 0.8);
+      const compressedSize = compressedBlob.size;
+
+      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+        type: 'image/jpeg',
+        lastModified: Date.now()
+      });
+
+      setEditSelectedImage(compressedFile);
+      setEditImageSizes({ original: originalSize, compressed: compressedSize });
+
+      // Criar preview da imagem
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setEditImagePreview(result);
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      console.error('Erro ao processar imagem para edição:', error);
+      toast({
+        title: "Erro ao processar imagem",
+        description: "Ocorreu um erro ao otimizar a imagem.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Função para limpar imagem selecionada no modal de edição
   const clearEditImage = () => {
     setEditSelectedImage(null);
     setEditImagePreview('');
+    setEditImageSizes({ original: 0, compressed: 0 });
     setEditForm({ ...editForm, image_url: '' });
   };
 
@@ -492,9 +597,16 @@ const SupabaseStockControl: React.FC = () => {
       toast({ title: 'Preencha todos os campos obrigatórios corretamente', variant: 'destructive' });
       return;
     }
+    if (!selectedImage) {
+      toast({ title: 'Faça upload de uma imagem para o item', variant: 'destructive' });
+      return;
+    }
 
     try {
       setLoading(prev => ({ ...prev, addItem: true }));
+
+      // Upload da imagem primeiro
+      const uploadedUrl = await uploadItemImage(selectedImage);
 
       const itemData = {
         name: newItem.name.trim(),
@@ -504,7 +616,7 @@ const SupabaseStockControl: React.FC = () => {
         initial_stock: newItem.initial_stock,
         current_stock: newItem.initial_stock,
         chest_id: selectedChestForAdd,
-        image_url: newItem.image_url.trim() || null
+        image_url: uploadedUrl
       };
 
       console.log('🔍 Iniciando criação de item:', itemData);
@@ -516,6 +628,7 @@ const SupabaseStockControl: React.FC = () => {
       setNewItem({ name: '', hero_name: '', rarity: 'comum', price: 0, initial_stock: 0, image_url: '' });
       setSelectedImage(null);
       setImagePreview('');
+      setImageSizes({ original: 0, compressed: 0 });
       toast({ title: 'Item adicionado com sucesso!' });
 
       // Se o baú atual for o mesmo que estamos visualizando, recarregar itens
@@ -667,6 +780,11 @@ const SupabaseStockControl: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, editItem: true }));
 
+      let imageUrl = editForm.image_url;
+      if (editSelectedImage) {
+        imageUrl = await uploadItemImage(editSelectedImage);
+      }
+
       await supabaseServices.items.update(editingItem.id, {
         name: editForm.name,
         hero_name: editForm.hero_name,
@@ -674,12 +792,15 @@ const SupabaseStockControl: React.FC = () => {
         price: editForm.price,
         initial_stock: editForm.initial_stock,
         current_stock: editForm.current_stock,
-        image_url: editForm.image_url
+        image_url: imageUrl
       });
 
       toast({ title: 'Item atualizado com sucesso!' });
       setIsEditModalOpen(false);
       setEditingItem(null);
+      setEditSelectedImage(null);
+      setEditImagePreview('');
+      setEditImageSizes({ original: 0, compressed: 0 });
 
       if (selectedChestForView) {
         await loadItemsByChestId(selectedChestForView);
@@ -998,36 +1119,49 @@ const SupabaseStockControl: React.FC = () => {
             </div>
 
             <div>
-              <Label>Imagem do Item (link externo, opcional)</Label>
+              <Label>Imagem do Item</Label>
               <div className="space-y-3">
-                <Input
-                  type="url"
-                  placeholder="https://exemplo.com/imagem.png"
-                  value={newItem.image_url || ''}
-                  onChange={(e) => setNewItem({ ...newItem, image_url: e.target.value })}
-                  className="bg-secondary/50"
-                />
-                {newItem.image_url && (
-                  <div className="relative w-64 aspect-[2/1]">
+                {imagePreview ? (
+                  <div className="relative w-full max-w-[240px] aspect-[2/1] bg-secondary/30 rounded-lg overflow-hidden border border-border flex items-center justify-center">
                     <img
-                      src={newItem.image_url}
+                      src={imagePreview}
                       alt="Preview"
-                      className="w-full h-full object-cover rounded-lg border-2 border-border"
+                      className="w-full h-full object-contain"
                     />
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center text-sm font-bold"
                       onClick={clearImage}
                     >
                       ×
                     </Button>
                   </div>
+                ) : (
+                  <label
+                    htmlFor="item-image-upload"
+                    className="flex flex-col items-center justify-center w-full min-h-[90px] border border-dashed border-border rounded-lg cursor-pointer bg-secondary/20 hover:bg-secondary/40 hover:border-primary/50 transition-all p-3 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-1.5 text-gray-400">
+                      <Upload className="w-5 h-5 text-primary" />
+                      <span className="text-xs font-semibold">Upload do PC/Celular</span>
+                      <span className="text-[9px] text-muted-foreground">JPG, PNG, WebP (será otimizada)</span>
+                    </div>
+                    <input
+                      id="item-image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
                 )}
-                <div className="text-xs text-muted-foreground">
-                  Informe a URL completa da imagem (https://...).
-                </div>
+                {imageSizes.original > 0 && (
+                  <div className="text-[10px] text-emerald-400 font-semibold leading-none">
+                    ✓ Otimizada: {(imageSizes.original / 1024).toFixed(0)} KB → {(imageSizes.compressed / 1024).toFixed(0)} KB
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1455,34 +1589,49 @@ const SupabaseStockControl: React.FC = () => {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-image-url" className="text-right">
-                Imagem do Item (link externo)
+              <Label className="text-right">
+                Imagem do Item
               </Label>
               <div className="col-span-3 space-y-2">
-                <Input
-                  id="edit-image-url"
-                  type="url"
-                  placeholder="https://exemplo.com/imagem.png"
-                  value={editForm.image_url || ''}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, image_url: e.target.value }))}
-                />
-                <p className="text-xs text-muted-foreground">Informe a URL completa da imagem (https://...).</p>
-                {editForm.image_url && (
-                  <div className="relative w-40 aspect-[2/1]">
+                {editImagePreview ? (
+                  <div className="relative w-full max-w-[200px] aspect-[2/1] bg-secondary/30 rounded overflow-hidden border flex items-center justify-center">
                     <img
-                      src={editForm.image_url}
+                      src={editImagePreview}
                       alt="Preview"
-                      className="w-full h-full object-cover rounded border"
+                      className="w-full h-full object-contain"
                     />
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 flex items-center justify-center text-sm font-bold"
                       onClick={clearEditImage}
                     >
                       ×
                     </Button>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="edit-item-image-upload"
+                    className="flex flex-col items-center justify-center w-full min-h-[80px] border border-dashed border-border rounded cursor-pointer bg-secondary/20 hover:bg-secondary/40 hover:border-primary/50 transition-all p-2 text-center"
+                  >
+                    <div className="flex flex-col items-center gap-1 text-gray-400">
+                      <Upload className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-semibold">Upload do PC/Celular</span>
+                      <span className="text-[9px] text-muted-foreground">JPG, PNG, WebP (será otimizada)</span>
+                    </div>
+                    <input
+                      id="edit-item-image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleEditImageUpload}
+                    />
+                  </label>
+                )}
+                {editImageSizes.original > 0 && (
+                  <div className="text-[10px] text-emerald-400 font-semibold leading-none">
+                    ✓ Otimizada: {(editImageSizes.original / 1024).toFixed(0)} KB → {(editImageSizes.compressed / 1024).toFixed(0)} KB
                   </div>
                 )}
               </div>
