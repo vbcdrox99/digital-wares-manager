@@ -407,6 +407,11 @@ const LoginPage: React.FC = () => {
               type="button"
               onClick={async () => {
                 const redirectPath = location.state?.from || '';
+                if (redirectPath) {
+                  localStorage.setItem('oauth_redirect_path', redirectPath);
+                } else {
+                  localStorage.removeItem('oauth_redirect_path');
+                }
                 const { error } = await supabase.auth.signInWithOAuth({
                   provider: 'google',
                   options: {

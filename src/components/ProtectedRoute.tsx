@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Shield, Lock } from 'lucide-react';
@@ -13,6 +13,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
   const { user, loading, isAdmin } = useAuth();
   const [timeoutReached, setTimeoutReached] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,13 +30,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
  
    // Se timeout foi atingido, redirecionar para login
    if (timeoutReached && loading) {
-     return <Navigate to="/login" replace />;
+     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
    }
-
-  // Redirecionar para login se não estiver autenticado
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+ 
+   // Redirecionar para login se não estiver autenticado
+   if (!user) {
+     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+   }
 
   // Verificar se precisa ser admin e o usuário não é admin
   if (requireAdmin && !isAdmin()) {

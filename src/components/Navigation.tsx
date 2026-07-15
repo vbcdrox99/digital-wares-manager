@@ -221,6 +221,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
               ) : (
                 <Link
                   to="/login"
+                  state={{ from: location.pathname }}
                   className={cn(
                     "flex items-center space-x-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all",
                     isScrolled ? "px-3 py-1 text-xs" : "px-4 py-2 text-sm font-medium"
@@ -246,6 +247,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
             ) : (
               <Link
                 to="/login"
+                state={{ from: location.pathname }}
                 className={cn(
                   "flex items-center space-x-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all text-sm",
                   isScrolled ? "px-2 py-1" : "px-3 py-1.5"

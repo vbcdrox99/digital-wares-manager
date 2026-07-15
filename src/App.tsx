@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import CatalogPage from "./pages/CatalogPage";
 import ItemDetailPage from "./pages/ItemDetailPage";
@@ -11,7 +12,7 @@ import AboutPage from "./pages/AboutPage";
 import LoginPage from "./pages/LoginPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RafflePage from "./pages/RafflePage";
 import SellPage from "./pages/SellPage";
@@ -42,6 +43,23 @@ const queryClient = new QueryClient({
   },
 });
 
+const OAuthRedirectHandler = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      const redirectPath = localStorage.getItem('oauth_redirect_path');
+      if (redirectPath) {
+        localStorage.removeItem('oauth_redirect_path');
+        navigate(redirectPath);
+      }
+    }
+  }, [user, navigate]);
+
+  return null;
+};
+
 const App = () => {
   const isWidget = window.location.pathname.includes('/dotapix/widget') || window.location.pathname.includes('/dotapix/goal') || window.location.pathname.includes('/opendota/widget') || window.location.pathname.includes('/gsi/hud') || window.location.pathname.includes('/gsi/battle-summary') || window.location.pathname.includes('/obs/jogos-do-dia');
   return (
@@ -52,6 +70,7 @@ const App = () => {
             <Toaster />
             <Sonner />
           <BrowserRouter>
+            <OAuthRedirectHandler />
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/catalog" element={<CatalogPage />} />
